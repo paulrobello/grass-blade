@@ -13,6 +13,7 @@ const CAMERA_OFFSET_X = 8.5;
 const CAMERA_OFFSET_Y = 22;
 const CAMERA_OFFSET_Z = 8.5;
 const CAMERA_VIEW_HEIGHT = 15.5;
+const GRASS_BLADES_PER_INSTANCE = 14;
 
 interface VegetationSync {
   syncTargets: (state: GameState) => void;
@@ -23,7 +24,9 @@ export interface MeadowScene {
   camera: THREE.OrthographicCamera;
   density: {
     grassInstances: number;
+    grassBlades: number;
     flowerInstances: number;
+    treeInstances: number;
   };
   resize: (aspect: number) => void;
   sync: (state: GameState, simulationTimeSeconds: number) => void;
@@ -92,9 +95,10 @@ export function createScene(seed: number): MeadowScene {
     scratchColor,
     yAxis,
   );
-  addTrees(
+  const trees = addTrees(
     scene,
     resources,
+    layout,
     scratchMatrix,
     scratchPosition,
     scratchRotation,
@@ -141,6 +145,7 @@ export function createScene(seed: number): MeadowScene {
 
     grass.syncTargets(state);
     flowers.syncTargets(state);
+    trees.syncTargets(state);
 
     camera.position.set(
       state.player.x + CAMERA_OFFSET_X,
@@ -172,7 +177,9 @@ export function createScene(seed: number): MeadowScene {
     camera,
     density: {
       grassInstances: GRASS_VISUAL_COLUMNS * GRASS_VISUAL_COLUMNS,
+      grassBlades: GRASS_VISUAL_COLUMNS * GRASS_VISUAL_COLUMNS * GRASS_BLADES_PER_INSTANCE,
       flowerInstances: FLOWER_VISUAL_COUNT,
+      treeInstances: layout.matureTreeVisuals.length,
     },
     resize,
     sync,
@@ -236,10 +243,8 @@ function addGrass(
   );
   const grass = new THREE.InstancedMesh(geometry, material, count);
   const palette = [0x227a38, 0x2f9640, 0x43ad48, 0x62c94f] as const;
-  const standingMatrices = new Float32Array(count * 16);
   const cutMatrices = new Float32Array(count * 16);
-  const visualsByTarget = Array.from({ length: layout.grassCells.length }, () => [] as number[]);
-  const flattenedTargets = new Uint8Array(layout.grassCells.length);
+  let appliedCutVisualCount = 0;
 
   for (let index = 0; index < count; index += 1) {
     const visual = layout.grassVisuals[index];
@@ -247,19 +252,15 @@ function addGrass(
       continue;
     }
 
-    const targetVisuals = visualsByTarget[visual.cellIndex];
-    targetVisuals?.push(index);
-
     position.set(visual.x, 0.015, visual.z);
     rotation.setFromAxisAngle(yAxis, visual.rotation);
     scale.set(visual.scaleX, visual.height, visual.scaleZ);
     matrix.compose(position, rotation, scale);
     grass.setMatrixAt(index, matrix);
-    writeMatrix(standingMatrices, index, matrix);
 
     position.y = 0.018;
     rotation.setFromAxisAngle(yAxis, visual.rotation + 0.38);
-    scale.set(visual.scaleX * 0.62, 0.085, visual.scaleZ * 0.62);
+    scale.set(visual.scaleX * 0.78, 0.04, visual.scaleZ * 0.78);
     matrix.compose(position, rotation, scale);
     writeMatrix(cutMatrices, index, matrix);
 
@@ -278,23 +279,15 @@ function addGrass(
     syncTargets(state: GameState): void {
       let matricesChanged = false;
 
-      for (let targetIndex = 0; targetIndex < layout.grassCells.length; targetIndex += 1) {
-        const isFlattened = state.targets[targetIndex]?.status !== "standing";
-        const nextFlattenedState = Number(isFlattened);
-        if (flattenedTargets[targetIndex] === nextFlattenedState) {
+      while (appliedCutVisualCount < state.cutGrassVisualIndices.length) {
+        const visualIndex = state.cutGrassVisualIndices[appliedCutVisualCount];
+        appliedCutVisualCount += 1;
+        if (visualIndex === undefined || visualIndex < 0 || visualIndex >= count) {
           continue;
         }
 
-        flattenedTargets[targetIndex] = nextFlattenedState;
-        const targetVisuals = visualsByTarget[targetIndex];
-        if (targetVisuals === undefined) {
-          continue;
-        }
-        const transforms = isFlattened ? cutMatrices : standingMatrices;
-        for (const visualIndex of targetVisuals) {
-          readMatrix(matrix, transforms, visualIndex);
-          grass.setMatrixAt(visualIndex, matrix);
-        }
+        readMatrix(matrix, cutMatrices, visualIndex);
+        grass.setMatrixAt(visualIndex, matrix);
         matricesChanged = true;
       }
 
@@ -307,16 +300,18 @@ function addGrass(
 
 function createGrassClumpGeometry(): THREE.BufferGeometry {
   const positions: number[] = [];
-  const blades = [
-    { angle: 0, x: -0.1, z: 0.02, width: 0.22, height: 1, lean: 0.12 },
-    { angle: Math.PI * 0.4, x: 0.1, z: -0.04, width: 0.2, height: 0.9, lean: -0.11 },
-    { angle: -Math.PI * 0.4, x: 0.01, z: 0.11, width: 0.19, height: 0.8, lean: 0.1 },
-    { angle: Math.PI * 0.78, x: -0.03, z: -0.1, width: 0.17, height: 0.72, lean: -0.08 },
-    { angle: -Math.PI * 0.78, x: 0.08, z: 0.06, width: 0.16, height: 0.66, lean: 0.07 },
-  ] as const;
 
-  for (const blade of blades) {
-    appendGrassBlade(positions, blade);
+  for (let index = 0; index < GRASS_BLADES_PER_INSTANCE; index += 1) {
+    const angle = index * 2.399963229728653;
+    const radius = Math.sqrt((index + 0.5) / GRASS_BLADES_PER_INSTANCE) * 0.21;
+    appendGrassBlade(positions, {
+      angle,
+      x: Math.cos(angle) * radius,
+      z: Math.sin(angle) * radius,
+      width: 0.06 + ((index * 5) % 7) * 0.007,
+      height: 0.62 + ((index * 7) % 11) * 0.038,
+      lean: Math.sin(index * 1.73) * 0.11,
+    });
   }
 
   const geometry = new THREE.BufferGeometry();
@@ -343,28 +338,13 @@ function appendGrassBlade(
   const forwardX = -rightZ;
   const forwardZ = rightX;
   const halfWidth = blade.width / 2;
-  const shoulderWidth = halfWidth * 0.68;
-  const shoulderX = blade.x + forwardX * blade.lean * 0.55;
-  const shoulderZ = blade.z + forwardZ * blade.lean * 0.55;
   const tipX = blade.x + forwardX * blade.lean;
   const tipZ = blade.z + forwardZ * blade.lean;
   const baseLeft = [blade.x - rightX * halfWidth, 0, blade.z - rightZ * halfWidth] as const;
   const baseRight = [blade.x + rightX * halfWidth, 0, blade.z + rightZ * halfWidth] as const;
-  const shoulderLeft = [
-    shoulderX - rightX * shoulderWidth,
-    blade.height * 0.58,
-    shoulderZ - rightZ * shoulderWidth,
-  ] as const;
-  const shoulderRight = [
-    shoulderX + rightX * shoulderWidth,
-    blade.height * 0.58,
-    shoulderZ + rightZ * shoulderWidth,
-  ] as const;
   const tip = [tipX, blade.height, tipZ] as const;
 
-  appendTriangle(positions, baseLeft, baseRight, shoulderRight);
-  appendTriangle(positions, baseLeft, shoulderRight, shoulderLeft);
-  appendTriangle(positions, shoulderLeft, shoulderRight, tip);
+  appendTriangle(positions, baseLeft, baseRight, tip);
 }
 
 function appendTriangle(
@@ -535,22 +515,14 @@ function createFlowerHeadGeometry(): THREE.CircleGeometry {
 function addTrees(
   scene: THREE.Scene,
   resources: Array<THREE.BufferGeometry | THREE.Material>,
+  layout: MeadowLayout,
   matrix: THREE.Matrix4,
   position: THREE.Vector3,
   rotation: THREE.Quaternion,
   scale: THREE.Vector3,
   color: THREE.Color,
-): void {
-  const treePositions = [
-    [-16, -15, 1.05],
-    [-8, -18, 0.85],
-    [8, -17, 1.15],
-    [17, -10, 0.95],
-    [17, 13, 1.1],
-    [7, 18, 0.9],
-    [-10, 17, 1.18],
-    [-18, 8, 0.92],
-  ] as const;
+): VegetationSync {
+  const count = layout.matureTreeVisuals.length;
   const trunkGeometry = track(resources, new THREE.CylinderGeometry(0.34, 0.5, 2.35, 7));
   const trunkMaterial = track(
     resources,
@@ -569,17 +541,20 @@ function addTrees(
       flatShading: true,
     }),
   );
-  const trunks = new THREE.InstancedMesh(trunkGeometry, trunkMaterial, treePositions.length);
-  const crowns = new THREE.InstancedMesh(crownGeometry, crownMaterial, treePositions.length);
+  const trunks = new THREE.InstancedMesh(trunkGeometry, trunkMaterial, count);
+  const crowns = new THREE.InstancedMesh(crownGeometry, crownMaterial, count);
   const crownPalette = [0x2f9c55, 0x42b45f, 0x5ac56a] as const;
+  const cutTrunkMatrices = new Float32Array(count * 16);
+  const cutCrownMatrices = new Float32Array(count * 16);
+  const cutTargets = new Uint8Array(count);
 
   rotation.identity();
-  for (let index = 0; index < treePositions.length; index += 1) {
-    const tree = treePositions[index];
+  for (let index = 0; index < count; index += 1) {
+    const tree = layout.matureTreeVisuals[index];
     if (tree === undefined) {
       continue;
     }
-    const [x, z, size] = tree;
+    const { x, z, size } = tree;
 
     position.set(x, 1.175 * size, z);
     scale.set(size, size, size);
@@ -592,6 +567,16 @@ function addTrees(
     crowns.setMatrixAt(index, matrix);
     color.setHex(crownPalette[index % crownPalette.length] ?? crownPalette[0]);
     crowns.setColorAt(index, color);
+
+    position.set(x, 0.2115 * size, z);
+    scale.set(size, 0.18 * size, size);
+    matrix.compose(position, rotation, scale);
+    writeMatrix(cutTrunkMatrices, index, matrix);
+
+    position.set(x, 0.02, z);
+    scale.setScalar(0.001);
+    matrix.compose(position, rotation, scale);
+    writeMatrix(cutCrownMatrices, index, matrix);
   }
 
   trunks.castShadow = true;
@@ -604,6 +589,33 @@ function addTrees(
     crowns.instanceColor.needsUpdate = true;
   }
   scene.add(trunks, crowns);
+
+  return {
+    syncTargets(state: GameState): void {
+      const targetOffset = layout.grassCells.length + layout.flowerTargets.length;
+      let matricesChanged = false;
+
+      for (const visual of layout.matureTreeVisuals) {
+        const isCut = state.targets[targetOffset + visual.targetIndex]?.status === "cut";
+        const nextCutState = Number(isCut);
+        if (cutTargets[visual.targetIndex] === nextCutState) {
+          continue;
+        }
+
+        cutTargets[visual.targetIndex] = nextCutState;
+        readMatrix(matrix, cutTrunkMatrices, visual.targetIndex);
+        trunks.setMatrixAt(visual.targetIndex, matrix);
+        readMatrix(matrix, cutCrownMatrices, visual.targetIndex);
+        crowns.setMatrixAt(visual.targetIndex, matrix);
+        matricesChanged = true;
+      }
+
+      if (matricesChanged) {
+        trunks.instanceMatrix.needsUpdate = true;
+        crowns.instanceMatrix.needsUpdate = true;
+      }
+    },
+  };
 }
 
 function addBoundaryStones(

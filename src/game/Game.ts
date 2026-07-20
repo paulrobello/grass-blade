@@ -259,6 +259,15 @@ export class Game {
       work: number;
       requiredWork: number;
     }> = [];
+    const solidTargets: Array<{
+      id: string;
+      kind: string;
+      position: { x: number; z: number };
+      solidRadius: number;
+      status: string;
+      work: number;
+      requiredWork: number;
+    }> = [];
 
     for (const target of this.state.targets) {
       targetCounts[target.status] += 1;
@@ -266,6 +275,17 @@ export class Game {
         activeTargets.push({
           id: target.id,
           kind: target.kind,
+          status: target.status,
+          work: round(target.accumulatedWork),
+          requiredWork: target.requiredWork,
+        });
+      }
+      if (target.solidRadius > 0 && target.status !== "cut") {
+        solidTargets.push({
+          id: target.id,
+          kind: target.kind,
+          position: { x: target.x, z: target.z },
+          solidRadius: target.solidRadius,
           status: target.status,
           work: round(target.accumulatedWork),
           requiredWork: target.requiredWork,
@@ -300,6 +320,8 @@ export class Game {
         total: this.state.targets.length,
         ...targetCounts,
         active: activeTargets,
+        solids: solidTargets,
+        visuallyCutGrassTufts: this.state.cutGrassVisualIndices.length,
         cutRevision: this.state.cutRevision,
       },
     });

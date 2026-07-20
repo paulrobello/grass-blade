@@ -48,8 +48,10 @@ The six gameplay screenshots supplied on 2026-07-20 are the current composition 
 - The avatar is one clearly readable horizontal spinning blade close to the ground, with a protected center hub and a visible swept radius.
 - The blade spins automatically clockwise. There is no attack button and no manual throttle in the MVP.
 - Starting cut radius is `2.15` world units, matching the Phase 0 placeholder silhouette. A level-up may increase the rendered radius by 4% per level, capped at 20%, but collision radius changes must be validated separately before becoming a balance mechanic.
+- The protected center hub uses a separate `0.82` world-unit solid radius. The cutting blades may overlap a solid target to apply work, but the hub cannot cross that target while it remains uncut.
 - Starting movement speed is capped at `7.5` world units per second with acceleration and deceleration, not instant velocity changes.
 - Collision and cutting use the blade's swept circle, not the decorative mesh's triangle shape.
+- Grass and flowers remain pass-through soft targets. Shrubs, saplings, mature trees, and non-cuttable obstacles use swept solid collision so movement cannot tunnel through them; a cuttable solid stops blocking on its authoritative `cut` transition.
 
 ### Controls
 
@@ -170,6 +172,7 @@ standing -> cutting -> cut -> hidden/recycled
 - On the default quality preset, standing grass zones render at least 90 decorative blades per world unit squared. Lower quality may use wider or simpler blades and a minimum of 45 blades per world unit squared, but it must preserve the appearance of a continuous canopy.
 - Flower-rich drifts cover 20-30% of the initial grass-covered area. Inside a drift, render 2-4 decorative blossoms per world unit squared, using clustered variation rather than evenly spaced single props.
 - A logical wildflower target may own several decorative blossoms that share one authoritative target ID and cut state. Decorative children never award resources independently.
+- Decorative grass uses a finer persistent visual cut mask than the reward grid. Only visual tufts intersected by the blade's swept capsule flatten; entering one logical grass target must not collapse its whole rectangular patch.
 - From the opening camera and during normal traversal, uncleared vegetation must form overlapping foreground, midground, and background coverage. Bare terrain may appear only where the world intentionally authors a path, clearing, obstacle footprint, or already-cut swath.
 - Cutting must reveal a continuous, readable swath through the canopy and flower drifts so the player's route is visible from the fixed camera.
 

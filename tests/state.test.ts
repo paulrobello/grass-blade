@@ -4,6 +4,8 @@ import {
   FIXED_TIME_STEP_SECONDS,
   MAX_MOVE_SPEED,
   MEADOW_SEED,
+  PLAYER_HUB_RADIUS,
+  PLAYER_RADIUS,
   WORLD_HALF_EXTENT,
   createInitialState,
   stepState,
@@ -16,13 +18,29 @@ import {
   FLOWER_VISUAL_COUNT,
   GRASS_LOGICAL_COLUMNS,
   GRASS_VISUAL_COLUMNS,
+  MATURE_TREE_COUNT,
   createMeadowLayout,
+  type TargetKind,
 } from "../src/game/world";
 
 const idleInput: MovementInput = {
   left: false,
   right: false,
   forward: false,
+  backward: false,
+};
+
+const positiveXInput: MovementInput = {
+  left: false,
+  right: true,
+  forward: false,
+  backward: true,
+};
+
+const negativeXInput: MovementInput = {
+  left: true,
+  right: false,
+  forward: true,
   backward: false,
 };
 
@@ -54,8 +72,11 @@ describe("active game state", () => {
     expect(first.xp).toBe(0);
     expect(first.cutRevision).toBe(0);
     expect(first.targets).toHaveLength(
-      GRASS_LOGICAL_COLUMNS * GRASS_LOGICAL_COLUMNS + FLOWER_CLUSTER_COUNT,
+      GRASS_LOGICAL_COLUMNS * GRASS_LOGICAL_COLUMNS + FLOWER_CLUSTER_COUNT + MATURE_TREE_COUNT,
     );
+    expect(first.grassVisualPositions).toBeInstanceOf(Float32Array);
+    expect(first.grassVisualCutMask).toBeInstanceOf(Uint8Array);
+    expect(first.cutGrassVisualIndices).toEqual([]);
   });
 
   it("uses an explicit seed without changing the active contract", () => {
@@ -77,6 +98,17 @@ describe("active game state", () => {
     expect(first.grassVisuals).toHaveLength(GRASS_VISUAL_COLUMNS * GRASS_VISUAL_COLUMNS);
     expect(first.flowerTargets).toHaveLength(FLOWER_CLUSTER_COUNT);
     expect(first.flowerVisuals).toHaveLength(FLOWER_VISUAL_COUNT);
+    expect(first.matureTreeTargets).toHaveLength(MATURE_TREE_COUNT);
+    expect(first.matureTreeVisuals).toEqual([
+      { x: -16, z: -15, size: 1.05, targetIndex: 0 },
+      { x: -8, z: -18, size: 0.85, targetIndex: 1 },
+      { x: 8, z: -17, size: 1.15, targetIndex: 2 },
+      { x: 17, z: -10, size: 0.95, targetIndex: 3 },
+      { x: 17, z: 13, size: 1.1, targetIndex: 4 },
+      { x: 7, z: 18, size: 0.9, targetIndex: 5 },
+      { x: -10, z: 17, size: 1.18, targetIndex: 6 },
+      { x: -18, z: 8, size: 0.92, targetIndex: 7 },
+    ]);
 
     const grassVisualCounts = Array<number>(first.grassCells.length).fill(0);
     for (const visual of first.grassVisuals) {
@@ -92,6 +124,53 @@ describe("active game state", () => {
 
     expect(first.grassCells.every(hasGrassTierValues)).toBe(true);
     expect(first.flowerTargets.every(hasFlowerTierValues)).toBe(true);
+    expect(first.matureTreeTargets.every(hasMatureTreeTierValues)).toBe(true);
+    for (const visual of first.matureTreeVisuals) {
+      const target = first.matureTreeTargets[visual.targetIndex];
+      expect(target).toMatchObject({
+        x: visual.x,
+        z: visual.z,
+        radius: visual.size * 0.5,
+        solidRadius: visual.size * 0.5,
+      });
+    }
+  });
+
+  it("marks deterministic grass visuals individually inside the swept blade capsule", () => {
+    const seed = 707;
+    const first = createInitialState(seed);
+    const replay = createInitialState(seed);
+
+    stepState(first, idleInput, FIXED_TIME_STEP_SECONDS);
+    stepState(replay, idleInput, FIXED_TIME_STEP_SECONDS);
+
+    expect(first.cutGrassVisualIndices).toEqual(replay.cutGrassVisualIndices);
+    expect(Array.from(first.grassVisualCutMask)).toEqual(Array.from(replay.grassVisualCutMask));
+    expect(first.cutGrassVisualIndices.length).toBeGreaterThan(0);
+    expect(new Set(first.cutGrassVisualIndices).size).toBe(first.cutGrassVisualIndices.length);
+
+    for (const visualIndex of first.cutGrassVisualIndices) {
+      const positionIndex = visualIndex * 2;
+      const x = first.grassVisualPositions[positionIndex];
+      const z = first.grassVisualPositions[positionIndex + 1];
+      expect(x).toBeDefined();
+      expect(z).toBeDefined();
+      expect(Math.hypot(x ?? 0, z ?? 0)).toBeLessThanOrEqual(PLAYER_RADIUS + 1e-6);
+    }
+
+    const layout = createMeadowLayout(seed);
+    const cutVisualCounts = Array<number>(layout.grassCells.length).fill(0);
+    for (const visualIndex of first.cutGrassVisualIndices) {
+      const cellIndex = layout.grassVisuals[visualIndex]?.cellIndex;
+      if (cellIndex !== undefined) {
+        cutVisualCounts[cellIndex] = (cutVisualCounts[cellIndex] ?? 0) + 1;
+      }
+    }
+    expect(cutVisualCounts.some((count) => count > 0 && count < 16)).toBe(true);
+
+    const appendOnlySnapshot = [...first.cutGrassVisualIndices];
+    stepState(first, idleInput, FIXED_TIME_STEP_SECONDS);
+    expect(first.cutGrassVisualIndices).toEqual(appendOnlySnapshot);
   });
 
   it("cuts a grass cell and awards grass plus XP on the cut tick", () => {
@@ -143,6 +222,67 @@ describe("active game state", () => {
     expect(target.status).toBe("cutting");
     expect(target.accumulatedWork).toBe(partialWork);
     expect(state.inventory.flowers).toBe(0);
+  });
+
+  it("blocks on a mature tree while a level-one blade stalls", () => {
+    const state = createInitialState(313);
+    const target = isolateTarget(state, "matureTree");
+    placeTargetAtPositiveXContact(state, target);
+
+    for (let frame = 0; frame < 240; frame += 1) {
+      stepState(state, positiveXInput, FIXED_TIME_STEP_SECONDS);
+    }
+
+    expect(state.player.x).toBeCloseTo(0, 8);
+    expect(state.player.z).toBeCloseTo(0, 8);
+    expect(target.status).toBe("cutting");
+    expect(target.accumulatedWork).toBeGreaterThan(0);
+    expect(target.accumulatedWork).toBeLessThan(target.requiredWork);
+    expect(state.player.rpm).toBeLessThan(180);
+    expect(state.inventory.wood).toBe(0);
+    expect(state.objectives.wood.collected).toBe(0);
+  });
+
+  it("allows the blade hub to back away from a solid target", () => {
+    const state = createInitialState(323);
+    const target = isolateTarget(state, "matureTree");
+    placeTargetAtPositiveXContact(state, target);
+
+    stepState(state, negativeXInput, FIXED_TIME_STEP_SECONDS);
+
+    expect(state.player.x).toBeLessThan(0);
+    expect(state.player.z).toBeCloseTo(0, 8);
+  });
+
+  it("releases movement and awards a mature tree exactly once on the cut tick", () => {
+    const state = createInitialState(333);
+    const target = isolateTarget(state, "matureTree");
+    placeTargetAtPositiveXContact(state, target);
+    target.status = "cutting";
+    target.accumulatedWork = target.requiredWork - 0.001;
+
+    const unblockedControl = createInitialState(333);
+    unblockedControl.targets = [];
+
+    stepState(state, positiveXInput, FIXED_TIME_STEP_SECONDS);
+    stepState(unblockedControl, positiveXInput, FIXED_TIME_STEP_SECONDS);
+
+    expect(target.status).toBe("cut");
+    expect(state.player.x).toBeCloseTo(unblockedControl.player.x, 10);
+    expect(state.player.z).toBeCloseTo(unblockedControl.player.z, 10);
+    expect(state.inventory.wood).toBe(6);
+    expect(state.objectives.wood.collected).toBe(6);
+    expect(state.xp).toBe(75);
+    expect(state.cutRevision).toBe(1);
+
+    for (let frame = 0; frame < 60; frame += 1) {
+      stepState(state, idleInput, FIXED_TIME_STEP_SECONDS);
+    }
+
+    expect(state.inventory.wood).toBe(6);
+    expect(state.objectives.wood.collected).toBe(6);
+    expect(state.xp).toBe(75);
+    expect(state.cutRevision).toBe(1);
   });
 
   it("does not reward an already-cut target again", () => {
@@ -236,7 +376,7 @@ describe("active game state", () => {
   });
 });
 
-function isolateTarget(state: GameState, kind: "grass" | "flower"): TargetState {
+function isolateTarget(state: GameState, kind: TargetKind): TargetState {
   const source = state.targets.find((target) => target.kind === kind);
   if (source === undefined) {
     throw new Error(`Missing ${kind} target`);
@@ -254,6 +394,15 @@ function isolateTarget(state: GameState, kind: "grass" | "flower"): TargetState 
   return target;
 }
 
+function placeTargetAtPositiveXContact(state: GameState, target: TargetState): void {
+  state.player.x = 0;
+  state.player.z = 0;
+  state.player.vx = 0;
+  state.player.vz = 0;
+  target.x = PLAYER_HUB_RADIUS + target.solidRadius;
+  target.z = 0;
+}
+
 function cutCurrentTarget(state: GameState, target: TargetState): void {
   for (let frame = 0; frame < 120 && target.status !== "cut"; frame += 1) {
     stepState(state, idleInput, FIXED_TIME_STEP_SECONDS);
@@ -262,7 +411,8 @@ function cutCurrentTarget(state: GameState, target: TargetState): void {
 }
 
 function hasGrassTierValues(target: {
-  kind: "grass" | "flower";
+  kind: TargetKind;
+  solidRadius: number;
   requiredWork: number;
   resistance: number;
   yield: number;
@@ -270,6 +420,7 @@ function hasGrassTierValues(target: {
 }): boolean {
   return (
     target.kind === "grass" &&
+    target.solidRadius === 0 &&
     target.requiredWork === 1.5 &&
     target.resistance === 0.04 &&
     target.yield === 1 &&
@@ -278,7 +429,8 @@ function hasGrassTierValues(target: {
 }
 
 function hasFlowerTierValues(target: {
-  kind: "grass" | "flower";
+  kind: TargetKind;
+  solidRadius: number;
   requiredWork: number;
   resistance: number;
   yield: number;
@@ -286,9 +438,28 @@ function hasFlowerTierValues(target: {
 }): boolean {
   return (
     target.kind === "flower" &&
+    target.solidRadius === 0 &&
     target.requiredWork === 4 &&
     target.resistance === 0.08 &&
     target.yield === 1 &&
     target.xp === 3
+  );
+}
+
+function hasMatureTreeTierValues(target: {
+  kind: TargetKind;
+  solidRadius: number;
+  requiredWork: number;
+  resistance: number;
+  yield: number;
+  xp: number;
+}): boolean {
+  return (
+    target.kind === "matureTree" &&
+    target.solidRadius > 0 &&
+    target.requiredWork === 60 &&
+    target.resistance === 1.6 &&
+    target.yield === 6 &&
+    target.xp === 75
   );
 }

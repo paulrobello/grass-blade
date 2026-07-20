@@ -8,6 +8,18 @@ export const GRASS_LOGICAL_COLUMNS = 26;
 export const GRASS_FIELD_SIZE = 41;
 export const FLOWER_CLUSTER_COUNT = 16;
 export const FLOWER_VISUAL_COUNT = 420;
+export const MATURE_TREE_COUNT = 8;
+
+const MATURE_TREE_PLACEMENTS = [
+  [-16, -15, 1.05],
+  [-8, -18, 0.85],
+  [8, -17, 1.15],
+  [17, -10, 0.95],
+  [17, 13, 1.1],
+  [7, 18, 0.9],
+  [-10, 17, 1.18],
+  [-18, 8, 0.92],
+] as const;
 
 export interface GrassVisual {
   x: number;
@@ -29,12 +41,22 @@ export interface FlowerVisual {
   colorIndex: number;
 }
 
+export interface MatureTreeVisual {
+  x: number;
+  z: number;
+  size: number;
+  targetIndex: number;
+}
+
+export type TargetKind = "grass" | "flower" | "matureTree";
+
 export interface TargetSeed {
   id: string;
-  kind: "grass" | "flower";
+  kind: TargetKind;
   x: number;
   z: number;
   radius: number;
+  solidRadius: number;
   requiredWork: number;
   resistance: number;
   yield: number;
@@ -46,6 +68,8 @@ export interface MeadowLayout {
   grassVisuals: GrassVisual[];
   flowerTargets: TargetSeed[];
   flowerVisuals: FlowerVisual[];
+  matureTreeTargets: TargetSeed[];
+  matureTreeVisuals: MatureTreeVisual[];
 }
 
 export function createMeadowLayout(seed: number): MeadowLayout {
@@ -53,8 +77,17 @@ export function createMeadowLayout(seed: number): MeadowLayout {
   const grassVisuals = createGrassVisuals(createSeededRandom(seed ^ 0x9e3779b9));
   const flowerTargets = createFlowerTargets(createSeededRandom(seed ^ 0x243f6a88));
   const flowerVisuals = createFlowerVisuals(flowerTargets, createSeededRandom(seed ^ 0xb7e15162));
+  const matureTreeTargets = createMatureTreeTargets();
+  const matureTreeVisuals = createMatureTreeVisuals();
 
-  return { grassCells, grassVisuals, flowerTargets, flowerVisuals };
+  return {
+    grassCells,
+    grassVisuals,
+    flowerTargets,
+    flowerVisuals,
+    matureTreeTargets,
+    matureTreeVisuals,
+  };
 }
 
 function createGrassCells(): TargetSeed[] {
@@ -72,6 +105,7 @@ function createGrassCells(): TargetSeed[] {
         x: -halfField + (column + 0.5) * cellSize,
         z: -halfField + (row + 0.5) * cellSize,
         radius,
+        solidRadius: 0,
         requiredWork: 1.5,
         resistance: 0.04,
         yield: 1,
@@ -125,6 +159,7 @@ function createFlowerTargets(random: () => number): TargetSeed[] {
       x: -halfUsableField + (column + 0.5) * clusterCellSize + randomRange(random, -jitter, jitter),
       z: -halfUsableField + (row + 0.5) * clusterCellSize + randomRange(random, -jitter, jitter),
       radius: 1.35 + random() * 0.35,
+      solidRadius: 0,
       requiredWork: 4,
       resistance: 0.08,
       yield: 1,
@@ -158,6 +193,33 @@ function createFlowerVisuals(targets: TargetSeed[], random: () => number): Flowe
   }
 
   return visuals;
+}
+
+function createMatureTreeTargets(): TargetSeed[] {
+  return MATURE_TREE_PLACEMENTS.map(([x, z, size], index) => {
+    const trunkRadius = 0.5 * size;
+    return {
+      id: `mature-tree-${index}`,
+      kind: "matureTree",
+      x,
+      z,
+      radius: trunkRadius,
+      solidRadius: trunkRadius,
+      requiredWork: 60,
+      resistance: 1.6,
+      yield: 6,
+      xp: 75,
+    };
+  });
+}
+
+function createMatureTreeVisuals(): MatureTreeVisual[] {
+  return MATURE_TREE_PLACEMENTS.map(([x, z, size], targetIndex) => ({
+    x,
+    z,
+    size,
+    targetIndex,
+  }));
 }
 
 function createSeededRandom(seed: number): () => number {

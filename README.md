@@ -6,9 +6,9 @@ The detailed gameplay and engineering contract lives in [PRD.md](PRD.md).
 
 ## Current status
 
-Phase 0 is complete, and the first Phase 1 gameplay slice is implemented and verified. Grass and flower clusters now have authoritative deterministic targets: moving the spinning blade through them applies RPM load and persistent cut work, collapses their visuals into a lasting trail, awards resources exactly once, and automatically levels the blade. A compact HUD exposes elapsed time, RPM, level, XP progress, and the active grass/flower quotas.
+Phase 0 is complete, and the first Phase 1 gameplay slice is implemented and verified. Grass cells, flower clusters, and eight mature trees now have authoritative deterministic targets: moving the spinning blade through them applies RPM load and persistent cut work, leaves a lasting cut trail, awards resources exactly once, and automatically levels the blade. Mature trees block the protected hub until their cut completes, then collapse to a traversable stump and award wood. A compact HUD exposes elapsed time, RPM, level, XP progress, and the active grass/flower quotas.
 
-**The full Meadow Delivery contract is not complete yet.** Dense weeds, shrubs, saplings, and mature trees are still decorative/planned targets; fiber, wood, contract completion/results, and collection effects remain Phase 1 work. See [progress.md](progress.md) for the exact handoff state.
+**The full Meadow Delivery contract is not complete yet.** Dense weeds, shrubs, and saplings are still planned targets; the active fiber/wood objectives and HUD, contract completion/results, too-tough presentation, and collection effects remain Phase 1 work. See [progress.md](progress.md) for the exact handoff state.
 
 ## Requirements
 
@@ -82,7 +82,7 @@ http://127.0.0.1:4209/?seed=12345
 
 The project uses an authoritative CPU target grid plus GPU instancing. This keeps collection, XP, quotas, tests, and debug snapshots deterministic without creating a JavaScript object or raycast for every visible blade. A chunked world-aligned GPU cut mask remains the Phase 3 scaling target.
 
-The current visual field renders a deterministic 104 by 104 lattice of 10,816 instanced five-blade grass clumps plus 420 low-poly flowers arranged across 16 seeded drifts. Each 4 by 4 group of grass visuals maps to one of 676 logical grass targets; every flower maps to one logical drift target. Cut targets stay flattened as stubble, clippings, stems, and petals for the rest of the run.
+The current visual field renders a deterministic 104 by 104 lattice of 10,816 instanced fourteen-blade grass tufts—151,424 narrow blades—plus 420 low-poly flowers arranged across 16 seeded drifts and eight mature trees. Each 4 by 4 group of grass visuals maps to one of 676 logical reward targets, but a finer persistent visual mask flattens only the individual tufts intersected by the blade's swept path. Flowers map to logical drift targets, while tree visuals and collision share the same authoritative world targets. Cut vegetation remains as stubble, clippings, stems, petals, or a stump for the rest of the run.
 
 `/Users/probello/Repos/stylized-components` is a local visual reference, not a required dependency. Its seeded area-weighted scattering, opaque instanced blades, wind shaders, shared ground mask, and flower treatment are useful techniques. Its current R3F component is not a drop-in gameplay system because it is GLB-name coupled, builds static instances, has no cut/reward state, limits rock trampling to 24 shader uniforms, and disables frustum culling for the field. The full audit and MIT reuse requirements are recorded in [PRD.md](PRD.md#local-grass-reference-audit).
 
