@@ -23,6 +23,8 @@ interface HudElements {
   grassTarget: HTMLElement;
   flowers: HTMLElement;
   flowersTarget: HTMLElement;
+  fiber: HTMLElement;
+  fiberTarget: HTMLElement;
   xpFill: HTMLElement;
 }
 
@@ -171,6 +173,8 @@ export class Game {
     setText(this.hud.grassTarget, String(objectives.grass.target));
     setText(this.hud.flowers, String(objectives.flowers.collected));
     setText(this.hud.flowersTarget, String(objectives.flowers.target));
+    setText(this.hud.fiber, String(objectives.fiber.collected));
+    setText(this.hud.fiberTarget, String(objectives.fiber.target));
     this.hud.root.style.setProperty("--rpm-progress", `${Math.round(rpmProgress * 100)}%`);
     this.hud.xpFill.style.width = `${xpProgress * 100}%`;
   }
@@ -338,6 +342,8 @@ function getHudElements(): HudElements {
     grassTarget: requireElement("hud-grass-target"),
     flowers: requireElement("hud-flowers"),
     flowersTarget: requireElement("hud-flowers-target"),
+    fiber: requireElement("hud-fiber"),
+    fiberTarget: requireElement("hud-fiber-target"),
     xpFill: requireElement("hud-xp-fill"),
   };
 }

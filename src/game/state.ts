@@ -89,7 +89,12 @@ export interface GameState {
 
 export function createInitialState(seed = MEADOW_SEED): GameState {
   const layout = createMeadowLayout(seed);
-  const targetSeeds = [...layout.grassCells, ...layout.flowerTargets, ...layout.matureTreeTargets];
+  const targetSeeds = [
+    ...layout.grassCells,
+    ...layout.flowerTargets,
+    ...layout.denseWeedTargets,
+    ...layout.matureTreeTargets,
+  ];
   const grassVisualPositions = createGrassVisualPositions(layout.grassVisuals);
 
   return {
@@ -116,7 +121,7 @@ export function createInitialState(seed = MEADOW_SEED): GameState {
       status: "active",
       grass: { status: "active", collected: 0, target: 50 },
       flowers: { status: "active", collected: 0, target: 10 },
-      fiber: { status: "planned", collected: 0, target: 6 },
+      fiber: { status: "active", collected: 0, target: 6 },
       wood: { status: "planned", collected: 0, target: 6 },
     },
     xp: 0,
@@ -376,19 +381,33 @@ function distanceToSegment(
 }
 
 function awardTarget(state: GameState, target: TargetState): void {
-  if (target.kind === "grass") {
-    state.inventory.grass += target.yield;
-    state.objectives.grass.collected += target.yield;
-  } else if (target.kind === "flower") {
-    state.inventory.flowers += target.yield;
-    state.objectives.flowers.collected += target.yield;
-  } else {
-    state.inventory.wood += target.yield;
-    state.objectives.wood.collected += target.yield;
+  switch (target.kind) {
+    case "grass":
+      state.inventory.grass += target.yield;
+      state.objectives.grass.collected += target.yield;
+      break;
+    case "flower":
+      state.inventory.flowers += target.yield;
+      state.objectives.flowers.collected += target.yield;
+      break;
+    case "denseWeed":
+      state.inventory.fiber += target.yield;
+      state.objectives.fiber.collected += target.yield;
+      break;
+    case "matureTree":
+      state.inventory.wood += target.yield;
+      state.objectives.wood.collected += target.yield;
+      break;
+    default:
+      assertNever(target.kind);
   }
 
   state.xp += target.xp;
   state.cutRevision += 1;
+}
+
+function assertNever(value: never): never {
+  throw new Error(`Unhandled target kind: ${String(value)}`);
 }
 
 function applyProgression(state: GameState): void {

@@ -14,6 +14,9 @@ import {
   type TargetState,
 } from "../src/game/state";
 import {
+  DENSE_WEED_COUNT,
+  DENSE_WEED_VISUAL_COUNT,
+  DENSE_WEED_VISUALS_PER_TARGET,
   FLOWER_CLUSTER_COUNT,
   FLOWER_VISUAL_COUNT,
   GRASS_LOGICAL_COLUMNS,
@@ -66,13 +69,29 @@ describe("active game state", () => {
       status: "active",
       grass: { status: "active", collected: 0, target: 50 },
       flowers: { status: "active", collected: 0, target: 10 },
-      fiber: { status: "planned", collected: 0, target: 6 },
+      fiber: { status: "active", collected: 0, target: 6 },
       wood: { status: "planned", collected: 0, target: 6 },
     });
     expect(first.xp).toBe(0);
     expect(first.cutRevision).toBe(0);
     expect(first.targets).toHaveLength(
-      GRASS_LOGICAL_COLUMNS * GRASS_LOGICAL_COLUMNS + FLOWER_CLUSTER_COUNT + MATURE_TREE_COUNT,
+      GRASS_LOGICAL_COLUMNS * GRASS_LOGICAL_COLUMNS +
+        FLOWER_CLUSTER_COUNT +
+        DENSE_WEED_COUNT +
+        MATURE_TREE_COUNT,
+    );
+    const grassEnd = GRASS_LOGICAL_COLUMNS * GRASS_LOGICAL_COLUMNS;
+    const flowersEnd = grassEnd + FLOWER_CLUSTER_COUNT;
+    const denseWeedsEnd = flowersEnd + DENSE_WEED_COUNT;
+    expect(first.targets.slice(0, grassEnd).every((target) => target.kind === "grass")).toBe(true);
+    expect(
+      first.targets.slice(grassEnd, flowersEnd).every((target) => target.kind === "flower"),
+    ).toBe(true);
+    expect(
+      first.targets.slice(flowersEnd, denseWeedsEnd).every((target) => target.kind === "denseWeed"),
+    ).toBe(true);
+    expect(first.targets.slice(denseWeedsEnd).every((target) => target.kind === "matureTree")).toBe(
+      true,
     );
     expect(first.grassVisualPositions).toBeInstanceOf(Float32Array);
     expect(first.grassVisualCutMask).toBeInstanceOf(Uint8Array);
@@ -90,7 +109,7 @@ describe("active game state", () => {
 
   it("builds deterministic logical targets and visual mappings", () => {
     const first = createMeadowLayout(12345);
-    createMeadowLayout(98765);
+    const interleaved = createMeadowLayout(98765);
     const replay = createMeadowLayout(12345);
 
     expect(replay).toEqual(first);
@@ -98,7 +117,13 @@ describe("active game state", () => {
     expect(first.grassVisuals).toHaveLength(GRASS_VISUAL_COLUMNS * GRASS_VISUAL_COLUMNS);
     expect(first.flowerTargets).toHaveLength(FLOWER_CLUSTER_COUNT);
     expect(first.flowerVisuals).toHaveLength(FLOWER_VISUAL_COUNT);
+    expect(first.denseWeedTargets).toHaveLength(DENSE_WEED_COUNT);
+    expect(first.denseWeedVisuals).toHaveLength(DENSE_WEED_VISUAL_COUNT);
     expect(first.matureTreeTargets).toHaveLength(MATURE_TREE_COUNT);
+    expect(first.denseWeedTargets.map((target) => target.id)).toEqual(
+      interleaved.denseWeedTargets.map((target) => target.id),
+    );
+    expect(first.denseWeedTargets).not.toEqual(interleaved.denseWeedTargets);
     expect(first.matureTreeVisuals).toEqual([
       { x: -16, z: -15, size: 1.05, targetIndex: 0 },
       { x: -8, z: -18, size: 0.85, targetIndex: 1 },
@@ -122,8 +147,24 @@ describe("active game state", () => {
     }
     expect(flowerVisualCounts.every((count) => count === 26 || count === 27)).toBe(true);
 
+    const denseWeedVisualCounts = Array<number>(first.denseWeedTargets.length).fill(0);
+    for (const visual of first.denseWeedVisuals) {
+      denseWeedVisualCounts[visual.targetIndex] =
+        (denseWeedVisualCounts[visual.targetIndex] ?? 0) + 1;
+      const target = first.denseWeedTargets[visual.targetIndex];
+      expect(target).toBeDefined();
+      expect(Math.hypot(visual.x - (target?.x ?? 0), visual.z - (target?.z ?? 0))).toBeLessThan(
+        target?.radius ?? 0,
+      );
+    }
+    expect(denseWeedVisualCounts.every((count) => count === DENSE_WEED_VISUALS_PER_TARGET)).toBe(
+      true,
+    );
+
     expect(first.grassCells.every(hasGrassTierValues)).toBe(true);
     expect(first.flowerTargets.every(hasFlowerTierValues)).toBe(true);
+    expect(first.denseWeedTargets.every(hasDenseWeedTierValues)).toBe(true);
+    expect(first.denseWeedTargets.some((target) => Math.hypot(target.x, target.z) < 6)).toBe(true);
     expect(first.matureTreeTargets.every(hasMatureTreeTierValues)).toBe(true);
     for (const visual of first.matureTreeVisuals) {
       const target = first.matureTreeTargets[visual.targetIndex];
@@ -199,6 +240,92 @@ describe("active game state", () => {
     expect(state.inventory.grass).toBe(0);
     expect(state.xp).toBe(3);
     expect(state.cutRevision).toBe(1);
+  });
+
+  it("cuts an isolated dense weed within its recommended-level timing range", () => {
+    const state = createInitialState(212);
+    const target = isolateTarget(state, "denseWeed");
+    prepareLevelTwoBlade(state);
+
+    const cutTicks = cutCurrentTarget(state, target);
+    const cutSeconds = cutTicks * FIXED_TIME_STEP_SECONDS;
+
+    expect(cutSeconds).toBeGreaterThanOrEqual(0.7);
+    expect(cutSeconds).toBeLessThanOrEqual(1.1);
+  });
+
+  it("persists partial dense-weed work after the blade leaves contact", () => {
+    const state = createInitialState(222);
+    const target = isolateTarget(state, "denseWeed");
+    prepareLevelTwoBlade(state);
+
+    for (let frame = 0; frame < 12; frame += 1) {
+      stepState(state, idleInput, FIXED_TIME_STEP_SECONDS);
+    }
+    const partialWork = target.accumulatedWork;
+    expect(target.status).toBe("cutting");
+    expect(partialWork).toBeGreaterThan(0);
+    expect(partialWork).toBeLessThan(target.requiredWork);
+
+    state.player.x = WORLD_HALF_EXTENT - state.player.radius;
+    state.player.z = WORLD_HALF_EXTENT - state.player.radius;
+    state.player.vx = 0;
+    state.player.vz = 0;
+    for (let frame = 0; frame < 30; frame += 1) {
+      stepState(state, idleInput, FIXED_TIME_STEP_SECONDS);
+    }
+
+    expect(target.status).toBe("cutting");
+    expect(target.accumulatedWork).toBe(partialWork);
+    expect(state.inventory.fiber).toBe(0);
+  });
+
+  it("awards one Fiber and six XP exactly once on the dense-weed cut tick", () => {
+    const state = createInitialState(232);
+    const target = isolateTarget(state, "denseWeed");
+    target.status = "cutting";
+    target.accumulatedWork = target.requiredWork - 0.001;
+
+    stepState(state, idleInput, FIXED_TIME_STEP_SECONDS);
+
+    expect(target.status).toBe("cut");
+    expect(state.inventory.fiber).toBe(1);
+    expect(state.objectives.fiber.collected).toBe(1);
+    expect(state.xp).toBe(6);
+    expect(state.cutRevision).toBe(1);
+
+    for (let frame = 0; frame < 120; frame += 1) {
+      stepState(state, idleInput, FIXED_TIME_STEP_SECONDS);
+    }
+
+    expect(state.inventory.fiber).toBe(1);
+    expect(state.objectives.fiber.collected).toBe(1);
+    expect(state.xp).toBe(6);
+    expect(state.cutRevision).toBe(1);
+  });
+
+  it("replays seeded dense-weed contact identically", () => {
+    const first = createInitialState(242);
+    const replay = createInitialState(242);
+    const firstTarget = first.targets.find((target) => target.kind === "denseWeed");
+    const replayTarget = replay.targets.find((target) => target.kind === "denseWeed");
+    if (firstTarget === undefined || replayTarget === undefined) {
+      throw new Error("Missing seeded dense weed");
+    }
+
+    first.player.x = firstTarget.x;
+    first.player.z = firstTarget.z;
+    replay.player.x = replayTarget.x;
+    replay.player.z = replayTarget.z;
+    prepareLevelTwoBlade(first);
+    prepareLevelTwoBlade(replay);
+
+    for (let frame = 0; frame < 45; frame += 1) {
+      stepState(first, idleInput, FIXED_TIME_STEP_SECONDS);
+      stepState(replay, idleInput, FIXED_TIME_STEP_SECONDS);
+    }
+
+    expect(replay).toEqual(first);
   });
 
   it("persists partial work after contact ends", () => {
@@ -403,16 +530,26 @@ function placeTargetAtPositiveXContact(state: GameState, target: TargetState): v
   target.z = 0;
 }
 
-function cutCurrentTarget(state: GameState, target: TargetState): void {
-  for (let frame = 0; frame < 120 && target.status !== "cut"; frame += 1) {
+function cutCurrentTarget(state: GameState, target: TargetState): number {
+  let cutTicks = 0;
+  for (; cutTicks < 120 && target.status !== "cut"; cutTicks += 1) {
     stepState(state, idleInput, FIXED_TIME_STEP_SECONDS);
   }
   expect(target.status).toBe("cut");
+  return cutTicks;
+}
+
+function prepareLevelTwoBlade(state: GameState): void {
+  state.xp = 20;
+  state.player.level = 2;
+  state.player.rpm = 760;
+  state.player.targetRpm = 760;
 }
 
 function hasGrassTierValues(target: {
   kind: TargetKind;
   solidRadius: number;
+  recommendedLevel: number;
   requiredWork: number;
   resistance: number;
   yield: number;
@@ -421,6 +558,7 @@ function hasGrassTierValues(target: {
   return (
     target.kind === "grass" &&
     target.solidRadius === 0 &&
+    target.recommendedLevel === 1 &&
     target.requiredWork === 1.5 &&
     target.resistance === 0.04 &&
     target.yield === 1 &&
@@ -431,6 +569,7 @@ function hasGrassTierValues(target: {
 function hasFlowerTierValues(target: {
   kind: TargetKind;
   solidRadius: number;
+  recommendedLevel: number;
   requiredWork: number;
   resistance: number;
   yield: number;
@@ -439,6 +578,7 @@ function hasFlowerTierValues(target: {
   return (
     target.kind === "flower" &&
     target.solidRadius === 0 &&
+    target.recommendedLevel === 1 &&
     target.requiredWork === 4 &&
     target.resistance === 0.08 &&
     target.yield === 1 &&
@@ -446,9 +586,30 @@ function hasFlowerTierValues(target: {
   );
 }
 
+function hasDenseWeedTierValues(target: {
+  kind: TargetKind;
+  solidRadius: number;
+  recommendedLevel: number;
+  requiredWork: number;
+  resistance: number;
+  yield: number;
+  xp: number;
+}): boolean {
+  return (
+    target.kind === "denseWeed" &&
+    target.solidRadius === 0 &&
+    target.recommendedLevel === 2 &&
+    target.requiredWork === 12 &&
+    target.resistance === 0.25 &&
+    target.yield === 1 &&
+    target.xp === 6
+  );
+}
+
 function hasMatureTreeTierValues(target: {
   kind: TargetKind;
   solidRadius: number;
+  recommendedLevel: number;
   requiredWork: number;
   resistance: number;
   yield: number;
@@ -457,6 +618,7 @@ function hasMatureTreeTierValues(target: {
   return (
     target.kind === "matureTree" &&
     target.solidRadius > 0 &&
+    target.recommendedLevel === 6 &&
     target.requiredWork === 60 &&
     target.resistance === 1.6 &&
     target.yield === 6 &&

@@ -2,13 +2,24 @@ const TAU = Math.PI * 2;
 const GRASS_COLOR_COUNT = 4;
 const FLOWER_COLOR_COUNT = 5;
 const FLOWER_CLUSTER_COLUMNS = 4;
+const DENSE_WEED_COLOR_COUNT = 3;
 
 export const GRASS_VISUAL_COLUMNS = 104;
 export const GRASS_LOGICAL_COLUMNS = 26;
 export const GRASS_FIELD_SIZE = 41;
 export const FLOWER_CLUSTER_COUNT = 16;
 export const FLOWER_VISUAL_COUNT = 420;
+export const DENSE_WEED_COUNT = 12;
+export const DENSE_WEED_VISUALS_PER_TARGET = 9;
+export const DENSE_WEED_VISUAL_COUNT = DENSE_WEED_COUNT * DENSE_WEED_VISUALS_PER_TARGET;
 export const MATURE_TREE_COUNT = 8;
+
+const DENSE_WEED_CLUSTER_CENTERS = [
+  [-4.8, -3.5],
+  [4.5, -4.2],
+  [-4.2, 4.8],
+  [5.5, 3.8],
+] as const;
 
 const MATURE_TREE_PLACEMENTS = [
   [-16, -15, 1.05],
@@ -41,6 +52,15 @@ export interface FlowerVisual {
   colorIndex: number;
 }
 
+export interface DenseWeedVisual {
+  x: number;
+  z: number;
+  scale: number;
+  rotation: number;
+  targetIndex: number;
+  colorIndex: number;
+}
+
 export interface MatureTreeVisual {
   x: number;
   z: number;
@@ -48,7 +68,7 @@ export interface MatureTreeVisual {
   targetIndex: number;
 }
 
-export type TargetKind = "grass" | "flower" | "matureTree";
+export type TargetKind = "grass" | "flower" | "denseWeed" | "matureTree";
 
 export interface TargetSeed {
   id: string;
@@ -57,6 +77,7 @@ export interface TargetSeed {
   z: number;
   radius: number;
   solidRadius: number;
+  recommendedLevel: number;
   requiredWork: number;
   resistance: number;
   yield: number;
@@ -68,6 +89,8 @@ export interface MeadowLayout {
   grassVisuals: GrassVisual[];
   flowerTargets: TargetSeed[];
   flowerVisuals: FlowerVisual[];
+  denseWeedTargets: TargetSeed[];
+  denseWeedVisuals: DenseWeedVisual[];
   matureTreeTargets: TargetSeed[];
   matureTreeVisuals: MatureTreeVisual[];
 }
@@ -77,6 +100,11 @@ export function createMeadowLayout(seed: number): MeadowLayout {
   const grassVisuals = createGrassVisuals(createSeededRandom(seed ^ 0x9e3779b9));
   const flowerTargets = createFlowerTargets(createSeededRandom(seed ^ 0x243f6a88));
   const flowerVisuals = createFlowerVisuals(flowerTargets, createSeededRandom(seed ^ 0xb7e15162));
+  const denseWeedTargets = createDenseWeedTargets(createSeededRandom(seed ^ 0x13198a2e));
+  const denseWeedVisuals = createDenseWeedVisuals(
+    denseWeedTargets,
+    createSeededRandom(seed ^ 0x03707344),
+  );
   const matureTreeTargets = createMatureTreeTargets();
   const matureTreeVisuals = createMatureTreeVisuals();
 
@@ -85,6 +113,8 @@ export function createMeadowLayout(seed: number): MeadowLayout {
     grassVisuals,
     flowerTargets,
     flowerVisuals,
+    denseWeedTargets,
+    denseWeedVisuals,
     matureTreeTargets,
     matureTreeVisuals,
   };
@@ -106,6 +136,7 @@ function createGrassCells(): TargetSeed[] {
         z: -halfField + (row + 0.5) * cellSize,
         radius,
         solidRadius: 0,
+        recommendedLevel: 1,
         requiredWork: 1.5,
         resistance: 0.04,
         yield: 1,
@@ -160,6 +191,7 @@ function createFlowerTargets(random: () => number): TargetSeed[] {
       z: -halfUsableField + (row + 0.5) * clusterCellSize + randomRange(random, -jitter, jitter),
       radius: 1.35 + random() * 0.35,
       solidRadius: 0,
+      recommendedLevel: 1,
       requiredWork: 4,
       resistance: 0.08,
       yield: 1,
@@ -195,6 +227,63 @@ function createFlowerVisuals(targets: TargetSeed[], random: () => number): Flowe
   return visuals;
 }
 
+function createDenseWeedTargets(random: () => number): TargetSeed[] {
+  const targets: TargetSeed[] = [];
+
+  for (let index = 0; index < DENSE_WEED_COUNT; index += 1) {
+    const clusterIndex = index % DENSE_WEED_CLUSTER_CENTERS.length;
+    const cluster = DENSE_WEED_CLUSTER_CENTERS[clusterIndex];
+    if (cluster === undefined) {
+      continue;
+    }
+
+    const memberIndex = Math.floor(index / DENSE_WEED_CLUSTER_CENTERS.length);
+    const angle = (memberIndex / 3) * TAU + randomRange(random, -0.24, 0.24);
+    const distance = 0.7 + random() * 0.65;
+    targets.push({
+      id: `dense-weed-${index}`,
+      kind: "denseWeed",
+      x: cluster[0] + Math.cos(angle) * distance,
+      z: cluster[1] + Math.sin(angle) * distance,
+      radius: 0.82 + random() * 0.16,
+      solidRadius: 0,
+      recommendedLevel: 2,
+      requiredWork: 12,
+      resistance: 0.25,
+      yield: 1,
+      xp: 6,
+    });
+  }
+
+  return targets;
+}
+
+function createDenseWeedVisuals(targets: TargetSeed[], random: () => number): DenseWeedVisual[] {
+  const visuals: DenseWeedVisual[] = [];
+
+  for (let targetIndex = 0; targetIndex < targets.length; targetIndex += 1) {
+    const target = targets[targetIndex];
+    if (target === undefined) {
+      continue;
+    }
+
+    for (let memberIndex = 0; memberIndex < DENSE_WEED_VISUALS_PER_TARGET; memberIndex += 1) {
+      const angle = random() * TAU;
+      const distance = Math.sqrt(random()) * target.radius * 0.72;
+      visuals.push({
+        x: target.x + Math.cos(angle) * distance,
+        z: target.z + Math.sin(angle) * distance,
+        scale: 0.82 + random() * 0.48,
+        rotation: random() * TAU,
+        targetIndex,
+        colorIndex: Math.floor(random() * DENSE_WEED_COLOR_COUNT),
+      });
+    }
+  }
+
+  return visuals;
+}
+
 function createMatureTreeTargets(): TargetSeed[] {
   return MATURE_TREE_PLACEMENTS.map(([x, z, size], index) => {
     const trunkRadius = 0.5 * size;
@@ -205,6 +294,7 @@ function createMatureTreeTargets(): TargetSeed[] {
       z,
       radius: trunkRadius,
       solidRadius: trunkRadius,
+      recommendedLevel: 6,
       requiredWork: 60,
       resistance: 1.6,
       yield: 6,

@@ -26,6 +26,7 @@ export interface MeadowScene {
     grassInstances: number;
     grassBlades: number;
     flowerInstances: number;
+    weedInstances: number;
     treeInstances: number;
   };
   resize: (aspect: number) => void;
@@ -95,6 +96,17 @@ export function createScene(seed: number): MeadowScene {
     scratchColor,
     yAxis,
   );
+  const weeds = addDenseWeeds(
+    scene,
+    resources,
+    layout,
+    scratchMatrix,
+    scratchPosition,
+    scratchRotation,
+    scratchScale,
+    scratchColor,
+    yAxis,
+  );
   const trees = addTrees(
     scene,
     resources,
@@ -145,6 +157,7 @@ export function createScene(seed: number): MeadowScene {
 
     grass.syncTargets(state);
     flowers.syncTargets(state);
+    weeds.syncTargets(state);
     trees.syncTargets(state);
 
     camera.position.set(
@@ -179,6 +192,7 @@ export function createScene(seed: number): MeadowScene {
       grassInstances: GRASS_VISUAL_COLUMNS * GRASS_VISUAL_COLUMNS,
       grassBlades: GRASS_VISUAL_COLUMNS * GRASS_VISUAL_COLUMNS * GRASS_BLADES_PER_INSTANCE,
       flowerInstances: FLOWER_VISUAL_COUNT,
+      weedInstances: layout.denseWeedVisuals.length,
       treeInstances: layout.matureTreeVisuals.length,
     },
     resize,
@@ -512,6 +526,166 @@ function createFlowerHeadGeometry(): THREE.CircleGeometry {
   return geometry;
 }
 
+function addDenseWeeds(
+  scene: THREE.Scene,
+  resources: Array<THREE.BufferGeometry | THREE.Material>,
+  layout: MeadowLayout,
+  matrix: THREE.Matrix4,
+  position: THREE.Vector3,
+  rotation: THREE.Quaternion,
+  scale: THREE.Vector3,
+  color: THREE.Color,
+  yAxis: THREE.Vector3,
+): VegetationSync {
+  const count = layout.denseWeedVisuals.length;
+  const geometry = track(resources, createDenseWeedGeometry());
+  const material = track(
+    resources,
+    new THREE.MeshStandardMaterial({
+      color: 0xffffff,
+      roughness: 0.78,
+      metalness: 0,
+      flatShading: true,
+      side: THREE.DoubleSide,
+    }),
+  );
+  const weeds = new THREE.InstancedMesh(geometry, material, count);
+  const palette = [0x64a92d, 0x82c638, 0xa1dc45] as const;
+  const standingMatrices = new Float32Array(count * 16);
+  const cutMatrices = new Float32Array(count * 16);
+  const visualsByTarget = Array.from(
+    { length: layout.denseWeedTargets.length },
+    () => [] as number[],
+  );
+  const flattenedTargets = new Uint8Array(layout.denseWeedTargets.length);
+
+  for (let index = 0; index < count; index += 1) {
+    const visual = layout.denseWeedVisuals[index];
+    if (visual === undefined) {
+      continue;
+    }
+
+    visualsByTarget[visual.targetIndex]?.push(index);
+    position.set(visual.x, 0.02, visual.z);
+    rotation.setFromAxisAngle(yAxis, visual.rotation);
+    scale.setScalar(visual.scale);
+    matrix.compose(position, rotation, scale);
+    weeds.setMatrixAt(index, matrix);
+    writeMatrix(standingMatrices, index, matrix);
+
+    position.y = 0.025;
+    rotation.setFromAxisAngle(yAxis, visual.rotation + 0.24);
+    scale.set(visual.scale * 1.04, visual.scale * 0.045, visual.scale * 1.04);
+    matrix.compose(position, rotation, scale);
+    writeMatrix(cutMatrices, index, matrix);
+
+    color.setHex(palette[visual.colorIndex] ?? palette[0]);
+    weeds.setColorAt(index, color);
+  }
+
+  weeds.castShadow = true;
+  weeds.receiveShadow = true;
+  weeds.instanceMatrix.needsUpdate = true;
+  if (weeds.instanceColor !== null) {
+    weeds.instanceColor.needsUpdate = true;
+  }
+  scene.add(weeds);
+
+  return {
+    syncTargets(state: GameState): void {
+      const targetOffset = layout.grassCells.length + layout.flowerTargets.length;
+      let matricesChanged = false;
+
+      for (let targetIndex = 0; targetIndex < layout.denseWeedTargets.length; targetIndex += 1) {
+        const isFlattened = state.targets[targetOffset + targetIndex]?.status !== "standing";
+        const nextFlattenedState = Number(isFlattened);
+        if (flattenedTargets[targetIndex] === nextFlattenedState) {
+          continue;
+        }
+
+        flattenedTargets[targetIndex] = nextFlattenedState;
+        const targetVisuals = visualsByTarget[targetIndex];
+        if (targetVisuals === undefined) {
+          continue;
+        }
+
+        const transforms = isFlattened ? cutMatrices : standingMatrices;
+        for (const visualIndex of targetVisuals) {
+          readMatrix(matrix, transforms, visualIndex);
+          weeds.setMatrixAt(visualIndex, matrix);
+        }
+        matricesChanged = true;
+      }
+
+      if (matricesChanged) {
+        weeds.instanceMatrix.needsUpdate = true;
+      }
+    },
+  };
+}
+
+function createDenseWeedGeometry(): THREE.BufferGeometry {
+  const positions: number[] = [];
+  const leafCount = 7;
+
+  for (let index = 0; index < leafCount; index += 1) {
+    const angle = (index / leafCount) * Math.PI * 2 + (index % 2) * 0.14;
+    const height = 1.22 + (index % 3) * 0.13;
+    const reach = 0.43 + (index % 2) * 0.09;
+    const width = 0.24 + (index % 3) * 0.025;
+    appendDenseWeedLeaf(positions, angle, height, reach, width);
+  }
+
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+  geometry.computeVertexNormals();
+  geometry.computeBoundingBox();
+  geometry.computeBoundingSphere();
+  return geometry;
+}
+
+function appendDenseWeedLeaf(
+  positions: number[],
+  angle: number,
+  height: number,
+  reach: number,
+  width: number,
+): void {
+  const forwardX = Math.cos(angle);
+  const forwardZ = Math.sin(angle);
+  const rightX = -forwardZ;
+  const rightZ = forwardX;
+  const baseDistance = 0.035;
+  const shoulderDistance = reach * 0.56;
+  const baseHalfWidth = width * 0.11;
+  const shoulderHalfWidth = width / 2;
+  const baseLeft = [
+    forwardX * baseDistance - rightX * baseHalfWidth,
+    0,
+    forwardZ * baseDistance - rightZ * baseHalfWidth,
+  ] as const;
+  const baseRight = [
+    forwardX * baseDistance + rightX * baseHalfWidth,
+    0,
+    forwardZ * baseDistance + rightZ * baseHalfWidth,
+  ] as const;
+  const shoulderLeft = [
+    forwardX * shoulderDistance - rightX * shoulderHalfWidth,
+    height * 0.58,
+    forwardZ * shoulderDistance - rightZ * shoulderHalfWidth,
+  ] as const;
+  const shoulderRight = [
+    forwardX * shoulderDistance + rightX * shoulderHalfWidth,
+    height * 0.58,
+    forwardZ * shoulderDistance + rightZ * shoulderHalfWidth,
+  ] as const;
+  const tip = [forwardX * reach, height, forwardZ * reach] as const;
+
+  appendTriangle(positions, baseLeft, baseRight, shoulderRight);
+  appendTriangle(positions, baseLeft, shoulderRight, shoulderLeft);
+  appendTriangle(positions, shoulderLeft, shoulderRight, tip);
+}
+
 function addTrees(
   scene: THREE.Scene,
   resources: Array<THREE.BufferGeometry | THREE.Material>,
@@ -592,7 +766,8 @@ function addTrees(
 
   return {
     syncTargets(state: GameState): void {
-      const targetOffset = layout.grassCells.length + layout.flowerTargets.length;
+      const targetOffset =
+        layout.grassCells.length + layout.flowerTargets.length + layout.denseWeedTargets.length;
       let matricesChanged = false;
 
       for (const visual of layout.matureTreeVisuals) {

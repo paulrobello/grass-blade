@@ -168,12 +168,15 @@ body {
   color: #26334d;
 }
 
-.objective-row:nth-of-type(2) {
+.objective-row:first-of-type {
   border-radius: 0.68rem 0.68rem 0 0;
 }
 
-.objective-row:nth-of-type(3) {
+.objective-row + .objective-row {
   border-top: 0;
+}
+
+.objective-row:nth-of-type(3) {
   border-radius: 0 0 0.68rem 0.68rem;
 }
 
@@ -262,6 +265,43 @@ body {
 
 .resource-icon--flower i:nth-child(5) {
   transform: rotate(288deg);
+}
+
+.resource-icon--fiber i {
+  position: absolute;
+  bottom: 0.22rem;
+  left: 0.78rem;
+  width: 0.19rem;
+  height: 1.32rem;
+  transform-origin: bottom center;
+  border-radius: 70% 70% 22% 22%;
+  background: linear-gradient(90deg, #d78823, #ffc952 58%, #e4a02d);
+  box-shadow: 0.05rem 0.04rem 0 #9d5c1b;
+}
+
+.resource-icon--fiber i:first-child {
+  transform: rotate(-19deg) scaleY(0.88);
+}
+
+.resource-icon--fiber i:nth-child(2) {
+  transform: rotate(1deg);
+}
+
+.resource-icon--fiber i:nth-child(3) {
+  transform: rotate(20deg) scaleY(0.92);
+}
+
+.resource-icon--fiber::after {
+  position: absolute;
+  bottom: 0.3rem;
+  left: 0.44rem;
+  width: 0.92rem;
+  height: 0.24rem;
+  transform: rotate(-4deg);
+  border: 0.04rem solid #7f4918;
+  border-radius: 999px;
+  background: #b96c22;
+  content: "";
 }
 
 .xp-track {
