@@ -1,0 +1,39 @@
+# Secrets and machine-local configuration
+.env
+.env.*
+!.env.example
+*.local
+*.local.*
+
+# Dependencies and generated output
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+
+# Browser verification artifacts
+output/
+.playwright-cli/
+playwright-report/
+test-results/
+
+# Logs and runtime state
+*.log
+*.pid
+*.seed
+*.tmp
+tmp/
+temp/
+
+# OS, editors, and agent-local state
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+.superpowers/
+.gemini/
+.gemini-clipboard/
+.claude/
+.pi/

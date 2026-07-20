@@ -1,0 +1,52 @@
+repos:
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.1
+    hooks:
+      - id: gitleaks
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-added-large-files
+      - id: check-case-conflict
+      - id: check-json
+      - id: check-merge-conflict
+      - id: check-symlinks
+      - id: check-yaml
+      - id: detect-private-key
+      - id: end-of-file-fixer
+      - id: mixed-line-ending
+      - id: trailing-whitespace
+
+  - repo: local
+    hooks:
+      - id: format
+        name: format
+        entry: make fmt
+        language: system
+        pass_filenames: false
+        always_run: true
+      - id: lint
+        name: lint
+        entry: make lint
+        language: system
+        pass_filenames: false
+        always_run: true
+      - id: typecheck
+        name: typecheck
+        entry: make typecheck
+        language: system
+        pass_filenames: false
+        always_run: true
+      - id: test
+        name: test
+        entry: make test
+        language: system
+        pass_filenames: false
+        always_run: true
+      - id: build
+        name: build
+        entry: make build
+        language: system
+        pass_filenames: false
+        always_run: true

@@ -1,0 +1,9 @@
+node_modules/
+dist/
+coverage/
+.playwright-cli/
+.vite/
+playwright-report/
+test-results/
+bun.lock
+bun.lockb

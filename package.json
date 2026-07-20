@@ -1,0 +1,34 @@
+{
+  "name": "grass-blade",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "packageManager": "bun@1.3.12",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1 --port 4209 --strictPort",
+    "preview": "vite preview --host 127.0.0.1 --port 4209 --strictPort",
+    "build": "vite build",
+    "test": "vitest run",
+    "lint": "eslint . --max-warnings 0",
+    "fmt": "prettier --write .",
+    "fmt:check": "prettier --check .",
+    "typecheck": "tsc --noEmit",
+    "checkall": "bun run fmt:check && bun run lint && bun run typecheck && bun run test && bun run build"
+  },
+  "dependencies": {
+    "three": "^0.185.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/three": "^0.185.1",
+    "eslint": "^10.7.0",
+    "globals": "^17.7.0",
+    "playwright": "^1.61.1",
+    "prettier": "^3.9.5",
+    "typescript": "6.0.3",
+    "typescript-eslint": "^8.64.0",
+    "vite": "^8.1.5",
+    "vitest": "^4.1.10"
+  }
+}
