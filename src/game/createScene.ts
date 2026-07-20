@@ -135,17 +135,12 @@ export function createScene(seed: number): MeadowScene {
   fillLight.position.set(-10, 8, -14);
   scene.add(fillLight);
 
-  let lastCutRevision = -1;
-
   function sync(state: GameState): void {
     playerRoot.position.set(state.player.x, 0, state.player.z);
     bladePivot.rotation.y = state.player.bladeAngleRadians;
 
-    if (state.cutRevision !== lastCutRevision) {
-      grass.syncTargets(state);
-      flowers.syncTargets(state);
-      lastCutRevision = state.cutRevision;
-    }
+    grass.syncTargets(state);
+    flowers.syncTargets(state);
 
     camera.position.set(
       state.player.x + CAMERA_OFFSET_X,
@@ -244,7 +239,7 @@ function addGrass(
   const standingMatrices = new Float32Array(count * 16);
   const cutMatrices = new Float32Array(count * 16);
   const visualsByTarget = Array.from({ length: layout.grassCells.length }, () => [] as number[]);
-  const cutTargets = new Uint8Array(layout.grassCells.length);
+  const flattenedTargets = new Uint8Array(layout.grassCells.length);
 
   for (let index = 0; index < count; index += 1) {
     const visual = layout.grassVisuals[index];
@@ -284,18 +279,18 @@ function addGrass(
       let matricesChanged = false;
 
       for (let targetIndex = 0; targetIndex < layout.grassCells.length; targetIndex += 1) {
-        const isCut = state.targets[targetIndex]?.status === "cut";
-        const nextCutState = Number(isCut);
-        if (cutTargets[targetIndex] === nextCutState) {
+        const isFlattened = state.targets[targetIndex]?.status !== "standing";
+        const nextFlattenedState = Number(isFlattened);
+        if (flattenedTargets[targetIndex] === nextFlattenedState) {
           continue;
         }
 
-        cutTargets[targetIndex] = nextCutState;
+        flattenedTargets[targetIndex] = nextFlattenedState;
         const targetVisuals = visualsByTarget[targetIndex];
         if (targetVisuals === undefined) {
           continue;
         }
-        const transforms = isCut ? cutMatrices : standingMatrices;
+        const transforms = isFlattened ? cutMatrices : standingMatrices;
         for (const visualIndex of targetVisuals) {
           readMatrix(matrix, transforms, visualIndex);
           grass.setMatrixAt(visualIndex, matrix);
@@ -424,7 +419,7 @@ function addFlowers(
   const cutHeadMatrices = new Float32Array(count * 16);
   const cutCenterMatrices = new Float32Array(count * 16);
   const visualsByTarget = Array.from({ length: layout.flowerTargets.length }, () => [] as number[]);
-  const cutTargets = new Uint8Array(layout.flowerTargets.length);
+  const flattenedTargets = new Uint8Array(layout.flowerTargets.length);
 
   for (let index = 0; index < count; index += 1) {
     const visual = layout.flowerVisuals[index];
@@ -487,21 +482,21 @@ function addFlowers(
       let matricesChanged = false;
 
       for (let targetIndex = 0; targetIndex < layout.flowerTargets.length; targetIndex += 1) {
-        const isCut = state.targets[targetOffset + targetIndex]?.status === "cut";
-        const nextCutState = Number(isCut);
-        if (cutTargets[targetIndex] === nextCutState) {
+        const isFlattened = state.targets[targetOffset + targetIndex]?.status !== "standing";
+        const nextFlattenedState = Number(isFlattened);
+        if (flattenedTargets[targetIndex] === nextFlattenedState) {
           continue;
         }
 
-        cutTargets[targetIndex] = nextCutState;
+        flattenedTargets[targetIndex] = nextFlattenedState;
         const targetVisuals = visualsByTarget[targetIndex];
         if (targetVisuals === undefined) {
           continue;
         }
 
-        const stemTransforms = isCut ? cutStemMatrices : standingStemMatrices;
-        const headTransforms = isCut ? cutHeadMatrices : standingHeadMatrices;
-        const centerTransforms = isCut ? cutCenterMatrices : standingCenterMatrices;
+        const stemTransforms = isFlattened ? cutStemMatrices : standingStemMatrices;
+        const headTransforms = isFlattened ? cutHeadMatrices : standingHeadMatrices;
+        const centerTransforms = isFlattened ? cutCenterMatrices : standingCenterMatrices;
         for (const visualIndex of targetVisuals) {
           readMatrix(matrix, stemTransforms, visualIndex);
           stems.setMatrixAt(visualIndex, matrix);
@@ -671,7 +666,8 @@ function addBlade(
   );
   const shadow = new THREE.Mesh(shadowGeometry, shadowMaterial);
   shadow.rotation.x = -Math.PI / 2;
-  shadow.position.y = 0.028;
+  // Keep the blob above ground patches and cut stubble while standing vegetation still occludes it.
+  shadow.position.y = 0.13;
   playerRoot.add(shadow);
 
   const baseGeometry = track(resources, new THREE.CylinderGeometry(0.7, 0.82, 0.48, 24));

@@ -64,6 +64,7 @@ Active milestone: Phase 1 — Grass/flower cutting slice verified; dense targets
 - A headed Chrome landscape route at `?seed=12345` ran for 7.333 simulated seconds without console errors and confirmed 95 exact-once cuts, 17 persistent partial cuts, 92 Grass, 3 Flowers, and blade level 3.
 - A headed Chrome portrait route at 430 by 860 ran for 4.917 simulated seconds without console or page errors and confirmed 63 exact-once cuts, 10 persistent partial cuts, 61 Grass, 2 Flowers, and blade level 3.
 - The visually inspected portrait captures are `output/playwright/phase1-portrait/initial.png` and `cut-path.png`; they show continuous standing coverage, clustered flowers, a large readable cutter, a persistent cut route, a compact top HUD, and no camera-visible void at the world edge. These local artifacts remain ignored.
+- A headed Chrome shadow/cut-sync regression route ran for 1.883 simulated seconds without console errors. Its inspected capture shows the blob shadow above ground patches and cut stubble, while all 16 partially worked `cutting` targets are visually flattened before the 25 completed targets award resources. The local artifact is `output/playwright/fix-shadow-cut-sync/shot-0.png`.
 
 ## Remaining Phase 1 TODOs
 
