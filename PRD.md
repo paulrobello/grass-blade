@@ -1,8 +1,8 @@
 # Grass Blade Product Requirements
 
-Status: Phase 0 source of truth
+Status: Active product source of truth
 Owner: Paul Robello
-Last updated: 2026-07-19
+Last updated: 2026-07-20
 
 ## Product summary
 
@@ -21,13 +21,27 @@ Cutting should feel physical without becoming a simulation game. Soft targets di
 
 ## Core player contract
 
+### Approved visual and gameplay direction
+
+The six gameplay screenshots supplied on 2026-07-20 are the current composition and feel target. They are visual and gameplay inspiration only: Grass Blade must use original or properly licensed assets and implementation, and no third-party art or code may be copied from the screenshots or the game they depict.
+
+- Frame play like a close portrait/mobile-casual game while remaining responsive and fully usable in desktop landscape and ultrawide browser windows. The camera and responsive crop must keep the cutter, its contact edge, nearby vegetation, and top-edge HUD readable together.
+- Make the player an oversized, immediately recognizable spinning cutter: a broad metal cutting silhouette around a friendly protected hub, with rotation and effective reach legible at normal play scale.
+- Standing vegetation must read as a continuous layered canopy of tall, tapered grass blades, not cones, pyramids, or sparse individual props. Overlap, height and color variation should create foreground, midground and background depth.
+- Use a bright, saturated but coherent palette. Distinct crop or resistance zones may shift green, yellow, orange, purple, or cool-white accents, but terrain, vegetation and targets must remain visually related rather than looking like unrelated asset packs.
+- Flowers, crops and produce appear in dense authored clusters embedded in the grass. Their silhouettes and resource type must remain distinguishable above the canopy.
+- A completed cut leaves a persistent, wide and sharply readable trail for the rest of the contract. Revealed ground includes low stubble, clippings or chopped marks so a cleared route does not look like an empty untextured plane.
+- Larger plants must visibly resist the cutter through sustained contact, RPM load and target response. When blade level or rendered cutter size is insufficient for comfortable progress, the game communicates that clearly without creating an invisible invulnerable tier.
+- Keep the primary HUD compact at the top edges: a glossy blue meter/timer treatment with cream panels, warm gold trim and high-contrast white text. Timer presentation is elapsed time only and never a default countdown failure condition.
+- Automatic level and tool upgrades should produce a visible cutter-power payoff. A contract may complete by satisfying its resource quotas or an authored clear-every-patch objective; both use deterministic authoritative state and a calm completion result.
+
 ### View and camera
 
-- Use a fixed orthographic isometric camera: 45 degrees of yaw and approximately 55 degrees down from horizontal.
+- Use a close fixed orthographic isometric camera: 45 degrees of yaw and approximately 55 degrees down from horizontal, tuned to evoke the approved portrait composition without sacrificing responsive desktop play.
 - The camera follows the blade center with light damping and a small look-ahead in the movement direction.
 - Camera rotation and zoom are not player controls in the first playable build.
 - Screen-relative movement means Up/W always moves toward the top of the screen, independent of world axes.
-- The blade, contact edge, nearby targets, and quota HUD must remain visible at the same time.
+- The blade should occupy enough screen space to remain the dominant moving silhouette. The blade, contact edge, nearby targets, and compact top-edge HUD must remain visible at the same time.
 
 ### Blade
 
@@ -159,7 +173,7 @@ standing -> cutting -> cut -> hidden/recycled
 - From the opening camera and during normal traversal, uncleared vegetation must form overlapping foreground, midground, and background coverage. Bare terrain may appear only where the world intentionally authors a path, clearing, obstacle footprint, or already-cut swath.
 - Cutting must reveal a continuous, readable swath through the canopy and flower drifts so the player's route is visible from the fixed camera.
 
-These are Phase 3 acceptance targets. They do not assert that the current Phase 0 runtime already renders or has been verified against a lush field.
+The direction above is authoritative for every playable phase; sparse cone or pyramid props are not an acceptable interim visual target. The exact density, chunking and performance thresholds remain Phase 3 exit gates and do not assert that the current runtime has already been verified against them.
 
 ## Technical architecture
 
@@ -256,7 +270,7 @@ If Grass Blade copies or substantially derives upstream code, add a third-party 
 
 ## Blade asset pipeline
 
-- Keep the Phase 0 primitive blade until camera scale, swept radius, movement speed, and silhouette readability are validated in play. Replacing it early would make a polished asset absorb tuning churn.
+- The Phase 0 primitive may remain only as a tuning scaffold while camera scale, swept radius and movement speed are validated. It is not the approved visual target; even an interim cutter should move toward the oversized hub-and-metal-blade readability established by the supplied references before production-asset detail work begins.
 - A custom production blade may be authored in Blender or Fusion 360. Prefer Blender for the final game asset because it supports deliberate low-poly topology, UVs, baked materials, LODs, and direct GLB export.
 - Use Fusion 360 when the design benefits from believable manufactured parts or a CAD-derived industrial silhouette. Any Fusion result must pass through Blender for mesh cleanup, simplification, material consolidation, and GLB export before entering the game.
 - Every replacement blade uses meters/world units consistently, keeps the hub at local origin, uses local `+Y` as its spin axis, and places its cutting plane parallel to local `XZ`.
@@ -330,16 +344,16 @@ If Grass Blade copies or substantially derives upstream code, add a third-party 
 
 ## Risks and open questions
 
-| Topic            | Current decision                                             | Open question / validation                                                    |
-| ---------------- | ------------------------------------------------------------ | ----------------------------------------------------------------------------- |
-| Blade silhouette | Phase 0 primitive; custom Blender/Fusion asset is authorized | Test disc, two-arm, and four-arm silhouettes for readability and friendliness |
-| Tree finish      | Authored sever/fall presentation, not rigid-body simulation  | Pick fall direction rule that cannot obscure the player or block quotas       |
-| Grass cut mask   | CPU grid projected into per-chunk GPU texture                | Validate texel density so edges look organic without large texture updates    |
-| Camera           | Fixed orthographic isometric follow camera                   | Validate pitch and zoom on laptop and ultrawide displays                      |
-| Contract length  | Meadow Delivery targets a 6-10 minute first run              | Tune only after measuring novice completion and stall moments                 |
-| Audio            | RPM pitch and material contact are important feedback        | Select generation/licensing pipeline and reduced-sensory defaults later       |
-| Art scope        | One meadow with six target types                             | Decide whether shrubs/saplings use authored models or procedural primitives   |
-| Mobile           | Explicitly deferred                                          | Reassess after desktop performance and input contracts are stable             |
+| Topic            | Current decision                                                                     | Open question / validation                                                    |
+| ---------------- | ------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------- |
+| Blade silhouette | Oversized readable hub-and-cutter direction approved; production asset still pending | Test disc, two-arm, and four-arm silhouettes for readability and friendliness |
+| Tree finish      | Authored sever/fall presentation, not rigid-body simulation                          | Pick fall direction rule that cannot obscure the player or block quotas       |
+| Grass cut mask   | CPU grid projected into per-chunk GPU texture                                        | Validate texel density so edges look organic without large texture updates    |
+| Camera           | Fixed orthographic isometric follow camera                                           | Validate pitch and zoom on laptop and ultrawide displays                      |
+| Contract length  | Meadow Delivery targets a 6-10 minute first run                                      | Tune only after measuring novice completion and stall moments                 |
+| Audio            | RPM pitch and material contact are important feedback                                | Select generation/licensing pipeline and reduced-sensory defaults later       |
+| Art scope        | One meadow with six target types                                                     | Decide whether shrubs/saplings use authored models or procedural primitives   |
+| Mobile           | Explicitly deferred                                                                  | Reassess after desktop performance and input contracts are stable             |
 
 ## Phased delivery plan
 
@@ -368,6 +382,7 @@ Deliver:
 - CPU target grid/spatial query, grass, flowers, and dense weeds.
 - Blade RPM/load/work model, persistent cut progress, exact-once resources and XP.
 - Automatic levels 1-4, Meadow Delivery quotas with temporary sapling placeholders, quota HUD, and immediate collection feedback.
+- A representative dense tapered-grass canopy, clustered flowers, an oversized readable cutter, and persistent wide cut swaths with stubble/clippings; the fully chunked shader renderer remains Phase 3 work.
 - Deterministic tests for cutting, RPM recovery, progression, and quota accounting.
 
 Exit criteria:

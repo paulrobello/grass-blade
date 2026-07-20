@@ -12,13 +12,40 @@
   </head>
   <body>
     <main id="app">
-      <canvas id="game-canvas" aria-label="Grass Blade Phase 0 meadow" tabindex="0"></canvas>
-      <section class="foundation-card" aria-live="polite">
-        <p class="eyebrow">Phase 0 · Foundation</p>
-        <h1>Grass Blade</h1>
-        <p>Move the blade through a deterministic graybox meadow.</p>
-        <p class="controls">WASD / arrows to move · F for fullscreen</p>
+      <canvas id="game-canvas" aria-label="Grass Blade meadow" tabindex="0"></canvas>
+      <section id="game-hud" class="game-hud" aria-label="Meadow Delivery status">
+        <div class="time-dial" aria-label="Elapsed time">
+          <span class="time-dial__label">TIME</span>
+          <strong id="hud-time">0:00</strong>
+          <span class="time-dial__stats">
+            <b id="hud-level">LV 1</b>
+            <span id="hud-rpm">720 RPM</span>
+          </span>
+        </div>
+
+        <div class="objective-tray" aria-live="polite">
+          <p class="objective-tray__title">MEADOW DELIVERY</p>
+          <div class="objective-row">
+            <span class="resource-icon resource-icon--grass" aria-hidden="true">
+              <i></i><i></i><i></i>
+            </span>
+            <span class="objective-row__name">Grass</span>
+            <strong><span id="hud-grass">0</span>/<span id="hud-grass-target">50</span></strong>
+          </div>
+          <div class="objective-row">
+            <span class="resource-icon resource-icon--flower" aria-hidden="true">
+              <i></i><i></i><i></i><i></i><i></i>
+            </span>
+            <span class="objective-row__name">Flowers</span>
+            <strong><span id="hud-flowers">0</span>/<span id="hud-flowers-target">10</span></strong>
+          </div>
+          <div class="xp-track" aria-label="Blade experience">
+            <span id="hud-xp-fill"></span>
+          </div>
+        </div>
       </section>
+
+      <p class="controls-hint">WASD / arrows to move <span>·</span> F fullscreen</p>
     </main>
     <script type="module" src="/src/main.ts"></script>
   </body>

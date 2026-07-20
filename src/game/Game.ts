@@ -2,6 +2,7 @@ import * as THREE from "three";
 
 import { createScene, type MeadowScene } from "./createScene";
 import {
+  CUMULATIVE_XP_THRESHOLDS,
   FIXED_TIME_STEP_SECONDS,
   MAX_FRAME_DELTA_SECONDS,
   createInitialState,
@@ -13,11 +14,24 @@ import {
 const MILLISECONDS_PER_SECOND = 1000;
 const MAX_PIXEL_RATIO = 2;
 
+interface HudElements {
+  root: HTMLElement;
+  time: HTMLElement;
+  level: HTMLElement;
+  rpm: HTMLElement;
+  grass: HTMLElement;
+  grassTarget: HTMLElement;
+  flowers: HTMLElement;
+  flowersTarget: HTMLElement;
+  xpFill: HTMLElement;
+}
+
 export class Game {
   private readonly canvas: HTMLCanvasElement;
   private readonly renderer: THREE.WebGLRenderer;
   private readonly meadow: MeadowScene;
   private readonly state: GameState;
+  private readonly hud: HudElements;
   private readonly input: MovementInput = {
     left: false,
     right: false,
@@ -26,6 +40,7 @@ export class Game {
   };
 
   private simulationTimeSeconds = 0;
+  private accumulatorSeconds = 0;
   private lastFrameTimeMs: number | null = null;
   private manualTime = false;
   private started = false;
@@ -33,6 +48,7 @@ export class Game {
   public constructor(canvas: HTMLCanvasElement, seed?: number) {
     this.canvas = canvas;
     this.state = createInitialState(seed);
+    this.hud = getHudElements();
     this.meadow = createScene(this.state.seed);
     this.renderer = new THREE.WebGLRenderer({
       canvas,
@@ -112,30 +128,51 @@ export class Game {
       return;
     }
 
+    if (!this.manualTime) {
+      this.accumulatorSeconds = 0;
+    }
     this.manualTime = true;
     this.lastFrameTimeMs = null;
-    const stepCount =
-      milliseconds === 0
-        ? 0
-        : Math.max(
-            1,
-            Math.round(milliseconds / (FIXED_TIME_STEP_SECONDS * MILLISECONDS_PER_SECOND)),
-          );
-
-    for (let step = 0; step < stepCount; step += 1) {
-      this.step(FIXED_TIME_STEP_SECONDS);
-    }
+    this.step(milliseconds / MILLISECONDS_PER_SECOND);
     this.render();
   };
 
   private step(deltaSeconds: number): void {
-    stepState(this.state, this.input, deltaSeconds);
-    this.simulationTimeSeconds += deltaSeconds;
+    this.accumulatorSeconds += deltaSeconds;
+
+    while (this.accumulatorSeconds + Number.EPSILON >= FIXED_TIME_STEP_SECONDS) {
+      stepState(this.state, this.input, FIXED_TIME_STEP_SECONDS);
+      this.simulationTimeSeconds += FIXED_TIME_STEP_SECONDS;
+      this.accumulatorSeconds -= FIXED_TIME_STEP_SECONDS;
+    }
   }
 
   private render(): void {
+    this.updateHud();
     this.meadow.sync(this.state, this.simulationTimeSeconds);
     this.renderer.render(this.meadow.scene, this.meadow.camera);
+  }
+
+  private updateHud(): void {
+    const { player, objectives, xp } = this.state;
+    const rpmProgress = clamp(player.rpm / player.targetRpm, 0, 1);
+    const previousThreshold =
+      player.level <= 1 ? 0 : (CUMULATIVE_XP_THRESHOLDS[player.level - 2] ?? 0);
+    const nextThreshold = CUMULATIVE_XP_THRESHOLDS[player.level - 1];
+    const xpProgress =
+      nextThreshold === undefined
+        ? 1
+        : clamp((xp - previousThreshold) / (nextThreshold - previousThreshold), 0, 1);
+
+    setText(this.hud.time, formatElapsedTime(this.simulationTimeSeconds));
+    setText(this.hud.level, `LV ${player.level}`);
+    setText(this.hud.rpm, `${Math.round(player.rpm)} RPM`);
+    setText(this.hud.grass, String(objectives.grass.collected));
+    setText(this.hud.grassTarget, String(objectives.grass.target));
+    setText(this.hud.flowers, String(objectives.flowers.collected));
+    setText(this.hud.flowersTarget, String(objectives.flowers.target));
+    this.hud.root.style.setProperty("--rpm-progress", `${Math.round(rpmProgress * 100)}%`);
+    this.hud.xpFill.style.width = `${xpProgress * 100}%`;
   }
 
   private readonly resize = (): void => {
@@ -214,26 +251,97 @@ export class Game {
 
   private readonly renderGameToText = (): string => {
     const { player, objectives } = this.state;
+    const targetCounts = { standing: 0, cutting: 0, cut: 0 };
+    const activeTargets: Array<{
+      id: string;
+      kind: string;
+      status: string;
+      work: number;
+      requiredWork: number;
+    }> = [];
+
+    for (const target of this.state.targets) {
+      targetCounts[target.status] += 1;
+      if (target.status === "cutting" && activeTargets.length < 12) {
+        activeTargets.push({
+          id: target.id,
+          kind: target.kind,
+          status: target.status,
+          work: round(target.accumulatedWork),
+          requiredWork: target.requiredWork,
+        });
+      }
+    }
+
     return JSON.stringify({
       coordinateSystem:
         "Ground plane is XZ with origin at meadow center and +Y up; movement is screen-relative under the fixed isometric camera.",
       mode: this.state.mode,
       seed: this.state.seed,
+      elapsedSeconds: round(this.simulationTimeSeconds),
       meadow: this.meadow.density,
       player: {
         position: { x: round(player.x), z: round(player.z) },
         velocity: { x: round(player.vx), z: round(player.vz) },
         radius: player.radius,
-        rpm: player.rpm,
+        rpm: round(player.rpm),
+        targetRpm: player.targetRpm,
+        bladeAngleRadians: round(player.bladeAngleRadians),
         level: player.level,
       },
       controls: {
         movement: "WASD or arrow keys",
         fullscreen: "F toggles; Escape exits fullscreen",
       },
+      inventory: this.state.inventory,
+      xp: this.state.xp,
       objectives,
+      targets: {
+        total: this.state.targets.length,
+        ...targetCounts,
+        active: activeTargets,
+        cutRevision: this.state.cutRevision,
+      },
     });
   };
+}
+
+function getHudElements(): HudElements {
+  return {
+    root: requireElement("game-hud"),
+    time: requireElement("hud-time"),
+    level: requireElement("hud-level"),
+    rpm: requireElement("hud-rpm"),
+    grass: requireElement("hud-grass"),
+    grassTarget: requireElement("hud-grass-target"),
+    flowers: requireElement("hud-flowers"),
+    flowersTarget: requireElement("hud-flowers-target"),
+    xpFill: requireElement("hud-xp-fill"),
+  };
+}
+
+function requireElement(id: string): HTMLElement {
+  const element = document.getElementById(id);
+  if (element === null) {
+    throw new Error(`Missing required HUD element #${id}`);
+  }
+  return element;
+}
+
+function setText(element: HTMLElement, value: string): void {
+  if (element.textContent !== value) {
+    element.textContent = value;
+  }
+}
+
+function formatElapsedTime(seconds: number): string {
+  const wholeSeconds = Math.max(0, Math.floor(seconds));
+  const minutes = Math.floor(wholeSeconds / 60);
+  return `${minutes}:${String(wholeSeconds % 60).padStart(2, "0")}`;
+}
+
+function clamp(value: number, minimum: number, maximum: number): number {
+  return Math.min(maximum, Math.max(minimum, value));
 }
 
 function round(value: number): number {

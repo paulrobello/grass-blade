@@ -6,9 +6,9 @@ The detailed gameplay and engineering contract lives in [PRD.md](PRD.md).
 
 ## Current status
 
-Phase 0 is complete and verified: the Bun/Vite/TypeScript foundation, fixed isometric scene, lush graybox meadow, placeholder blade movement, deterministic simulation seam, and agent-operable debug surface are in place.
+Phase 0 is complete, and the first Phase 1 gameplay slice is implemented and verified. Grass and flower clusters now have authoritative deterministic targets: moving the spinning blade through them applies RPM load and persistent cut work, collapses their visuals into a lasting trail, awards resources exactly once, and automatically levels the blade. A compact HUD exposes elapsed time, RPM, level, XP progress, and the active grass/flower quotas.
 
-**Cutting, collection, quotas, XP progression, level-ups, and authoritative flower/tree targets are planned; they are not shipped gameplay yet.** Dense decorative grass, flower drifts, and boundary trees are visible now, but they do not become cuttable until Phase 1. See [progress.md](progress.md) for the exact handoff state.
+**The full Meadow Delivery contract is not complete yet.** Dense weeds, shrubs, saplings, and mature trees are still decorative/planned targets; fiber, wood, contract completion/results, and collection effects remain Phase 1 work. See [progress.md](progress.md) for the exact handoff state.
 
 ## Requirements
 
@@ -63,14 +63,14 @@ The blade spins automatically; there is no attack button.
 
 ## Deterministic debug hooks
 
-Phase 0 defines a browser-facing automation contract so the game can be observed and driven without synthetic mouse gestures:
+The browser-facing automation contract lets the game be observed and driven without synthetic mouse gestures:
 
 - `?seed=<uint32>` selects a deterministic world seed.
 - `window.__grassBladeReady` becomes `true` when the scene is controllable.
 - `window.render_game_to_text()` returns a concise JSON snapshot of visible game state.
 - `window.advanceTime(milliseconds)` switches automation to manual time, advances exact 60 Hz ticks, and renders.
 
-These hooks are implemented and verified as part of the Phase 0 exit criteria. See [progress.md](progress.md) for the recorded evidence.
+These hooks include the current inventory, objectives, XP, RPM, target counts, and partially cut target work. See [progress.md](progress.md) for the recorded evidence.
 
 Example URL:
 
@@ -80,9 +80,9 @@ http://127.0.0.1:4209/?seed=12345
 
 ## Rendering direction
 
-The project will use an authoritative CPU target grid plus chunked GPU instancing and a world-aligned cut mask. This keeps collection, XP, quotas, tests, and debug snapshots deterministic without creating a JavaScript object or raycast for every visible blade.
+The project uses an authoritative CPU target grid plus GPU instancing. This keeps collection, XP, quotas, tests, and debug snapshots deterministic without creating a JavaScript object or raycast for every visible blade. A chunked world-aligned GPU cut mask remains the Phase 3 scaling target.
 
-The Phase 0 visual foundation renders a deterministic 104 by 104 jittered grass lattice (10,816 instances) plus 420 low-poly flowers arranged in seeded drifts. These are presentation-only instances for now; Phase 1 will connect dense visuals to authoritative cuttable targets.
+The current visual field renders a deterministic 104 by 104 lattice of 10,816 instanced five-blade grass clumps plus 420 low-poly flowers arranged across 16 seeded drifts. Each 4 by 4 group of grass visuals maps to one of 676 logical grass targets; every flower maps to one logical drift target. Cut targets stay flattened as stubble, clippings, stems, and petals for the rest of the run.
 
 `/Users/probello/Repos/stylized-components` is a local visual reference, not a required dependency. Its seeded area-weighted scattering, opaque instanced blades, wind shaders, shared ground mask, and flower treatment are useful techniques. Its current R3F component is not a drop-in gameplay system because it is GLB-name coupled, builds static instances, has no cut/reward state, limits rock trampling to 24 shader uniforms, and disables frustum culling for the field. The full audit and MIT reuse requirements are recorded in [PRD.md](PRD.md#local-grass-reference-audit).
 

@@ -2,8 +2,8 @@ Original prompt: "i want create a threejs based game where you are a spinning bl
 
 # Grass Blade Progress
 
-Last updated: 2026-07-19
-Active milestone: Phase 0 — Foundation complete; Phase 1 is next
+Last updated: 2026-07-20
+Active milestone: Phase 1 — Grass/flower cutting slice verified; dense targets and contract completion next
 
 ## Completed foundation intent
 
@@ -28,7 +28,7 @@ Active milestone: Phase 0 — Foundation complete; Phase 1 is next
 - [x] Confirmed pre-commit includes gitleaks, private-key detection, and local project gates.
 - [x] Confirmed the Vite server binds to `127.0.0.1:4209`.
 - [x] Confirmed the fixed isometric camera, lush graybox meadow, spinning horizontal blade, and screen-relative movement render in a headed browser.
-- [x] Confirmed 10,816 instanced grass blades and 420 five-petal flowers form continuous coverage and seeded flower drifts in opening and moved-camera captures.
+- [x] Confirmed 10,816 instanced five-blade grass clumps and 420 five-petal flowers form continuous coverage and seeded flower drifts in opening and moved-camera captures.
 - [x] Confirmed WASD, arrow keys, input release on blur, `F` fullscreen entry, and `Escape` fullscreen exit.
 - [x] Confirmed seeded reloads, fixed-step updates, `render_game_to_text`, `advanceTime`, and the ready flag.
 - [x] Ran and recorded `make checkall`.
@@ -44,22 +44,38 @@ Active milestone: Phase 0 — Foundation complete; Phase 1 is next
 - The headed input matrix produced matching screen-relative velocity vectors for each WASD/arrow pair. A separate held-input test confirmed blur zeroed velocity after normal deceleration.
 - `F` entered fullscreen on `#app`, `Escape` exited fullscreen, and the final browser sessions reported zero errors and zero warnings.
 
-## Next: Phase 1 TODOs
+## Phase 1 verified slice
 
-- [ ] Add an authoritative target model with stable IDs and the `standing -> cutting -> cut -> hidden/recycled` lifecycle.
-- [ ] Add the CPU logical grid/spatial query without per-rendered-blade objects or raycasts.
-- [ ] Implement blade RPM, aggregate contact load, torque, recovery, and persistent cut work at a fixed 60 Hz.
-- [ ] Implement grass clumps, wildflowers, and dense weeds with the exact PRD work/resistance/yield/XP values.
-- [ ] Award resources and XP once, on the cut tick, before presentation animations complete.
-- [ ] Implement cumulative XP thresholds and automatic levels 1-4, including multi-threshold awards.
-- [ ] Add the Meadow Delivery quota state and HUD, initially using a deterministic temporary wood-target fixture if needed.
-- [ ] Add pooled collapse/burst/HUD-flight collection feedback with reduced-motion behavior.
-- [ ] Add deterministic tests for timing ranges, RPM recovery, too-tough contact, idempotent rewards, level thresholds, quotas, replay, and snapshots.
-- [ ] Verify the first cut loop in a headed browser and run `make checkall`.
+- [x] Added 676 stable grass targets and 16 stable flower-drift targets with authoritative `standing -> cutting -> cut` state; later recycling remains deferred.
+- [x] Mapped a deterministic 104 by 104 visual lattice onto a 26 by 26 logical grass grid without per-rendered-blade gameplay objects or raycasts.
+- [x] Implemented swept-circle contact, aggregate RPM load, torque, recovery, and persistent cut work through a fixed 60 Hz accumulator.
+- [x] Implemented grass clumps and wildflowers with the exact PRD work, resistance, yield, and XP values.
+- [x] Awarded resources and XP atomically and exactly once on the cut tick.
+- [x] Implemented all cumulative XP thresholds and automatic levels 1-8, including multi-threshold awards.
+- [x] Added live grass/flower quota, level, RPM, elapsed-time, and XP HUD state without introducing a failure countdown.
+- [x] Replaced cone/pyramid grass with dense tapered five-blade clumps and connected cut state to persistent stubble/clipping trails.
+- [x] Replaced the placeholder bar with a large four-arm silver/cyan cutter and tightened responsive portrait/desktop framing.
+- [x] Expanded `render_game_to_text` with inventory, XP, loaded RPM, target counts, cut revision, and persistent partial-work diagnostics.
+- [x] Added deterministic tests for layout mapping, grass and flower cuts, persistent work, exact-once rewards, level thresholds, replay, movement, and boundaries.
+
+## Phase 1 verification evidence
+
+- `make checkall` passes formatting verification, ESLint, strict TypeScript, 11 deterministic Vitest tests, and the Vite production build.
+- A headed Chrome landscape route at `?seed=12345` ran for 7.333 simulated seconds without console errors and confirmed 95 exact-once cuts, 17 persistent partial cuts, 92 Grass, 3 Flowers, and blade level 3.
+- A headed Chrome portrait route at 430 by 860 ran for 4.917 simulated seconds without console or page errors and confirmed 63 exact-once cuts, 10 persistent partial cuts, 61 Grass, 2 Flowers, and blade level 3.
+- The visually inspected portrait captures are `output/playwright/phase1-portrait/initial.png` and `cut-path.png`; they show continuous standing coverage, clustered flowers, a large readable cutter, a persistent cut route, a compact top HUD, and no camera-visible void at the world edge. These local artifacts remain ignored.
+
+## Remaining Phase 1 TODOs
+
+- [ ] Add dense weeds, shrubs, saplings, and mature trees with their exact PRD work/resistance/yield/XP values and distinct resistance feedback.
+- [ ] Add fiber and wood objectives, complete Meadow Delivery accounting, deterministic contract completion, results, and restart flow.
+- [ ] Add pooled collapse/burst/HUD-flight collection feedback, level-up presentation, low-RPM/too-tough feedback, and reduced-motion behavior.
+- [ ] Add deterministic coverage for all tier timing ranges, RPM recovery, simultaneous aggregate load, too-tough contact, final quotas, and completion replay snapshots.
+- [ ] Replace the linear target scan with the planned spatial query before discrete target counts grow beyond this bounded first slice.
 
 ## Handoff rules
 
 - `PRD.md` is the gameplay and architecture source of truth. Update it in the same change whenever a locked formula, tier, quota, non-goal, or exit criterion changes.
 - Keep this file factual: completed means implemented and verified, not merely planned.
-- Cutting, progression, and quotas must remain described as planned in `README.md` until their Phase 1 browser and test gates pass.
+- Keep `README.md` explicit about which target tiers and contract systems are verified versus still planned.
 - Record upstream notices before copying or substantially deriving code from `stylized-components`.
