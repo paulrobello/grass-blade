@@ -16,7 +16,7 @@ const CAMERA_VIEW_HEIGHT = 15.5;
 const GRASS_BLADES_PER_INSTANCE = 14;
 
 interface VegetationSync {
-  syncTargets: (state: GameState) => void;
+  syncTargets: (state: GameState, simulationTimeSeconds: number) => void;
 }
 
 export interface MeadowScene {
@@ -27,6 +27,7 @@ export interface MeadowScene {
     grassBlades: number;
     flowerInstances: number;
     weedInstances: number;
+    saplingInstances: number;
     treeInstances: number;
   };
   resize: (aspect: number) => void;
@@ -107,6 +108,17 @@ export function createScene(seed: number): MeadowScene {
     scratchColor,
     yAxis,
   );
+  const saplings = addSaplings(
+    scene,
+    resources,
+    layout,
+    scratchMatrix,
+    scratchPosition,
+    scratchRotation,
+    scratchScale,
+    scratchColor,
+    yAxis,
+  );
   const trees = addTrees(
     scene,
     resources,
@@ -151,14 +163,15 @@ export function createScene(seed: number): MeadowScene {
   fillLight.position.set(-10, 8, -14);
   scene.add(fillLight);
 
-  function sync(state: GameState): void {
+  function sync(state: GameState, simulationTimeSeconds: number): void {
     playerRoot.position.set(state.player.x, 0, state.player.z);
     bladePivot.rotation.y = state.player.bladeAngleRadians;
 
-    grass.syncTargets(state);
-    flowers.syncTargets(state);
-    weeds.syncTargets(state);
-    trees.syncTargets(state);
+    grass.syncTargets(state, simulationTimeSeconds);
+    flowers.syncTargets(state, simulationTimeSeconds);
+    weeds.syncTargets(state, simulationTimeSeconds);
+    saplings.syncTargets(state, simulationTimeSeconds);
+    trees.syncTargets(state, simulationTimeSeconds);
 
     camera.position.set(
       state.player.x + CAMERA_OFFSET_X,
@@ -193,6 +206,7 @@ export function createScene(seed: number): MeadowScene {
       grassBlades: GRASS_VISUAL_COLUMNS * GRASS_VISUAL_COLUMNS * GRASS_BLADES_PER_INSTANCE,
       flowerInstances: FLOWER_VISUAL_COUNT,
       weedInstances: layout.denseWeedVisuals.length,
+      saplingInstances: layout.saplingVisuals.length,
       treeInstances: layout.matureTreeVisuals.length,
     },
     resize,
@@ -686,6 +700,171 @@ function appendDenseWeedLeaf(
   appendTriangle(positions, shoulderLeft, shoulderRight, tip);
 }
 
+function addSaplings(
+  scene: THREE.Scene,
+  resources: Array<THREE.BufferGeometry | THREE.Material>,
+  layout: MeadowLayout,
+  matrix: THREE.Matrix4,
+  position: THREE.Vector3,
+  rotation: THREE.Quaternion,
+  scale: THREE.Vector3,
+  color: THREE.Color,
+  yAxis: THREE.Vector3,
+): VegetationSync {
+  const count = layout.saplingVisuals.length;
+  const trunkGeometry = track(resources, new THREE.CylinderGeometry(0.12, 0.18, 1.76, 7));
+  const trunkMaterial = track(
+    resources,
+    new THREE.MeshStandardMaterial({
+      color: 0x9a6538,
+      roughness: 0.9,
+      flatShading: true,
+    }),
+  );
+  const crownGeometry = track(resources, new THREE.DodecahedronGeometry(1, 1));
+  const crownMaterial = track(
+    resources,
+    new THREE.MeshStandardMaterial({
+      color: 0xffffff,
+      roughness: 0.84,
+      flatShading: true,
+    }),
+  );
+  const trunks = new THREE.InstancedMesh(trunkGeometry, trunkMaterial, count);
+  const lowerCrowns = new THREE.InstancedMesh(crownGeometry, crownMaterial, count);
+  const middleCrowns = new THREE.InstancedMesh(crownGeometry, crownMaterial, count);
+  const upperCrowns = new THREE.InstancedMesh(crownGeometry, crownMaterial, count);
+  const crownLayers = [
+    {
+      mesh: lowerCrowns,
+      offsetX: -0.2,
+      offsetY: 1.72,
+      offsetZ: 0.08,
+      scaleX: 0.67,
+      scaleY: 0.5,
+      scaleZ: 0.59,
+    },
+    {
+      mesh: middleCrowns,
+      offsetX: 0.23,
+      offsetY: 2.08,
+      offsetZ: -0.09,
+      scaleX: 0.62,
+      scaleY: 0.55,
+      scaleZ: 0.64,
+    },
+    {
+      mesh: upperCrowns,
+      offsetX: -0.06,
+      offsetY: 2.48,
+      offsetZ: 0.11,
+      scaleX: 0.53,
+      scaleY: 0.58,
+      scaleZ: 0.52,
+    },
+  ] as const;
+  const crownPalettes = [
+    [0x2b8f49, 0x3ea957, 0x61c568],
+    [0x258746, 0x39a451, 0x57bd5d],
+    [0x33974d, 0x47b05b, 0x6bca6c],
+  ] as const;
+  const tiltAxis = new THREE.Vector3();
+  const tiltRotation = new THREE.Quaternion();
+  const yawRotation = new THREE.Quaternion();
+  const targetOffset =
+    layout.grassCells.length + layout.flowerTargets.length + layout.denseWeedTargets.length;
+
+  for (const visual of layout.saplingVisuals) {
+    const palette = crownPalettes[visual.colorIndex] ?? crownPalettes[0];
+    for (let layerIndex = 0; layerIndex < crownLayers.length; layerIndex += 1) {
+      color.setHex(palette[layerIndex] ?? palette[0]);
+      crownLayers[layerIndex]?.mesh.setColorAt(visual.targetIndex, color);
+    }
+  }
+
+  for (const mesh of [trunks, lowerCrowns, middleCrowns, upperCrowns]) {
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    mesh.instanceMatrix.needsUpdate = true;
+    if (mesh.instanceColor !== null) {
+      mesh.instanceColor.needsUpdate = true;
+    }
+  }
+  scene.add(trunks, lowerCrowns, middleCrowns, upperCrowns);
+
+  return {
+    syncTargets(state: GameState, simulationTimeSeconds: number): void {
+      for (const visual of layout.saplingVisuals) {
+        const target = state.targets[targetOffset + visual.targetIndex];
+        const isCut = target?.status === "cut";
+
+        if (isCut) {
+          position.set(visual.x, 0, visual.z);
+          rotation.identity();
+          scale.setScalar(0);
+          matrix.compose(position, rotation, scale);
+          trunks.setMatrixAt(visual.targetIndex, matrix);
+          for (const layer of crownLayers) {
+            layer.mesh.setMatrixAt(visual.targetIndex, matrix);
+          }
+          continue;
+        }
+
+        const isCutting = target?.status === "cutting";
+        const shudder = isCutting
+          ? Math.sin(simulationTimeSeconds * 24 + visual.targetIndex * 1.73)
+          : 0;
+        const leanAngle = isCutting ? 0.105 + shudder * 0.038 : 0;
+        const leanDirection =
+          visual.rotation +
+          (isCutting ? Math.sin(simulationTimeSeconds * 17 + visual.targetIndex * 2.1) * 0.22 : 0);
+        const leanOffsetX = Math.cos(leanDirection) * Math.sin(leanAngle);
+        const leanOffsetZ = Math.sin(leanDirection) * Math.sin(leanAngle);
+        tiltAxis.set(Math.sin(leanDirection), 0, -Math.cos(leanDirection));
+        tiltRotation.setFromAxisAngle(tiltAxis, leanAngle);
+        yawRotation.setFromAxisAngle(yAxis, visual.rotation + shudder * 0.045);
+        rotation.multiplyQuaternions(tiltRotation, yawRotation);
+
+        const trunkCenterY = 0.88 * visual.size;
+        position.set(
+          visual.x + leanOffsetX * trunkCenterY,
+          trunkCenterY,
+          visual.z + leanOffsetZ * trunkCenterY,
+        );
+        scale.setScalar(visual.size);
+        matrix.compose(position, rotation, scale);
+        trunks.setMatrixAt(visual.targetIndex, matrix);
+
+        const cosYaw = Math.cos(visual.rotation);
+        const sinYaw = Math.sin(visual.rotation);
+        for (const layer of crownLayers) {
+          const localX = (layer.offsetX * cosYaw - layer.offsetZ * sinYaw) * visual.size;
+          const localZ = (layer.offsetX * sinYaw + layer.offsetZ * cosYaw) * visual.size;
+          const layerHeight = layer.offsetY * visual.size;
+          position.set(
+            visual.x + localX + leanOffsetX * layerHeight,
+            layerHeight,
+            visual.z + localZ + leanOffsetZ * layerHeight,
+          );
+          scale.set(
+            layer.scaleX * visual.size,
+            layer.scaleY * visual.size,
+            layer.scaleZ * visual.size,
+          );
+          matrix.compose(position, rotation, scale);
+          layer.mesh.setMatrixAt(visual.targetIndex, matrix);
+        }
+      }
+
+      trunks.instanceMatrix.needsUpdate = true;
+      lowerCrowns.instanceMatrix.needsUpdate = true;
+      middleCrowns.instanceMatrix.needsUpdate = true;
+      upperCrowns.instanceMatrix.needsUpdate = true;
+    },
+  };
+}
+
 function addTrees(
   scene: THREE.Scene,
   resources: Array<THREE.BufferGeometry | THREE.Material>,
@@ -767,7 +946,10 @@ function addTrees(
   return {
     syncTargets(state: GameState): void {
       const targetOffset =
-        layout.grassCells.length + layout.flowerTargets.length + layout.denseWeedTargets.length;
+        layout.grassCells.length +
+        layout.flowerTargets.length +
+        layout.denseWeedTargets.length +
+        layout.saplingTargets.length;
       let matricesChanged = false;
 
       for (const visual of layout.matureTreeVisuals) {

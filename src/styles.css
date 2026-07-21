@@ -176,7 +176,7 @@ body {
   border-top: 0;
 }
 
-.objective-row:nth-of-type(3) {
+.objective-row:nth-of-type(4) {
   border-radius: 0 0 0.68rem 0.68rem;
 }
 
@@ -301,6 +301,40 @@ body {
   border: 0.04rem solid #7f4918;
   border-radius: 999px;
   background: #b96c22;
+  content: "";
+}
+
+.resource-icon--wood i {
+  position: absolute;
+  left: 0.23rem;
+  width: 1.24rem;
+  height: 0.42rem;
+  border: 0.06rem solid #77411f;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #d99149, #a95f2e);
+  box-shadow: 0 0.07rem 0 #62361e;
+}
+
+.resource-icon--wood i:first-child {
+  top: 0.4rem;
+  transform: rotate(18deg);
+}
+
+.resource-icon--wood i:nth-child(2) {
+  top: 0.9rem;
+  transform: rotate(-16deg);
+}
+
+.resource-icon--wood i::after {
+  position: absolute;
+  top: 50%;
+  right: -0.08rem;
+  width: 0.38rem;
+  height: 0.38rem;
+  transform: translateY(-50%);
+  border: 0.05rem solid #70401f;
+  border-radius: 50%;
+  background: radial-gradient(circle, #f1b46d 0 26%, #bf7537 30% 57%, #e0a15c 61%);
   content: "";
 }
 
