@@ -3,7 +3,7 @@ Original prompt: "i want create a threejs based game where you are a spinning bl
 # Grass Blade Progress
 
 Last updated: 2026-07-20
-Active milestone: Phase 1 — Dense weeds and active Fiber quota verified; immediate collection feedback and remaining contract accounting next
+Active milestone: Phase 1 — Tier-4 saplings and all four resource quotas verified; immediate collection feedback next
 
 ## Completed foundation intent
 
@@ -49,15 +49,17 @@ Active milestone: Phase 1 — Dense weeds and active Fiber quota verified; immed
 - [x] Added 676 stable grass targets and 16 stable flower-drift targets with authoritative `standing -> cutting -> cut` state; later recycling remains deferred.
 - [x] Promoted all eight meadow trees from decorative props to stable mature-tree targets with exact PRD work, resistance, six-Wood yield, and 75 XP.
 - [x] Added twelve deterministic pass-through dense-weed targets with exact Tier 2 work, resistance, one-Fiber yield, six XP, and recommended-level timing.
+- [x] Added five deterministic solid sapling targets with exact Tier 4 work, resistance, two-Wood yield, 30 XP, and recommended-level timing; their ten available Wood provide 166.7% of the fixed quota without mature-tree shortcuts.
 - [x] Mapped 108 broad-leaf weed instances nine-to-one onto those authoritative targets and persistently flattened each target's instances on its first `cutting` tick.
 - [x] Mapped a deterministic 104 by 104 visual lattice onto a 26 by 26 logical grass grid without per-rendered-blade gameplay objects or raycasts.
 - [x] Added a finer persistent 104 by 104 grass visual cut mask so swept contact flattens only intersected tufts instead of an entire 4 by 4 reward patch.
 - [x] Implemented swept-circle contact, aggregate RPM load, torque, recovery, and persistent cut work through a fixed 60 Hz accumulator.
-- [x] Added swept hub-versus-solid collision: unfinished mature trees stop inward motion without preventing backing away, and stop blocking on the exact authoritative cut tick.
+- [x] Added swept hub-versus-solid collision: unfinished saplings and mature trees stop inward motion without preventing backing away, and stop blocking on the exact authoritative cut tick.
 - [x] Implemented grass clumps and wildflowers with the exact PRD work, resistance, yield, and XP values.
 - [x] Awarded resources and XP atomically and exactly once on the cut tick.
 - [x] Implemented all cumulative XP thresholds and automatic levels 1-8, including multi-threshold awards.
-- [x] Added live Grass, Flower, and Fiber quota, level, RPM, elapsed-time, and XP HUD state without introducing a failure countdown.
+- [x] Added live Grass, Flower, Fiber, and Wood quota, level, RPM, elapsed-time, and XP HUD state without introducing a failure countdown.
+- [x] Rendered the five saplings with slim trunks and layered rounded foliage; sustained contact produces a deterministic lean/shudder and the full visual disappears on the authoritative cut tick.
 - [x] Replaced broad polygon clumps with 10,816 instanced fourteen-blade tufts, totaling 151,424 narrow tapered grass blades, and connected fine cut state to persistent stubble/clipping trails.
 - [x] Replaced the placeholder bar with a large four-arm silver/cyan cutter and tightened responsive portrait/desktop framing.
 - [x] Expanded `render_game_to_text` with inventory, XP, loaded RPM, target counts, cut revision, and persistent partial-work diagnostics.
@@ -75,14 +77,16 @@ Active milestone: Phase 1 — Dense weeds and active Fiber quota verified; immed
 - A headed Chrome standing-field capture at `?seed=12345` verified all 108 broad-leaf weed instances read above the fine grass canopy, the three-row objective tray showed Fiber `0/6`, and no console/page-error artifact was produced. The inspected local artifact is `output/playwright/weed-standing/shot-0.png`.
 - A deterministic headed Chrome revisit route ran for 5.05 simulated seconds, reached level 2, cut two weeds, and showed Fiber `2/6` in the same authoritative snapshot with 34 Grass, one Flower, 49 XP, and no console/page errors. The inspected local artifact is `output/playwright/weed-fiber-award/shot-0.png`.
 - A headed 430 by 860 Chrome viewport reported `errors: []`; its inspected capture shows all three objective counters, the XP track, and the broad-leaf weeds fitting the portrait composition. The local artifact is `output/playwright/weed-fiber-portrait/shot.png`.
+- `make checkall` passes formatting verification, ESLint, strict TypeScript, 24 deterministic Vitest tests, and the Vite production build after the sapling/Wood slice.
+- A deterministic headed Chrome landscape route at `?seed=12345` reached level 4 through normal mowing, stopped against `sapling-3` at `8.131/50` work with zero Wood, then cut it at 22.5 simulated seconds. The same authoritative frame removed the solid/visual target and updated Wood to `2/6`; browser errors remained empty. The inspected local artifacts are `output/playwright/sapling-wood-landscape/sapling-cutting.png` and `sapling-cut.png`.
+- The same route at 430 by 860 preserved the compact four-counter HUD and readable blade/contact composition. Its snapshots changed Wood from `0/6` to `2/6`, removed only `sapling-3`, and reported no console or page errors. The inspected local artifacts are `output/playwright/sapling-wood-portrait/sapling-cutting.png` and `sapling-cut.png`.
 
 ## Remaining Phase 1 TODOs
 
-- [ ] Activate the Wood objective/HUD and complete the remaining Phase 1 quota accounting without pulling Phase 2 results flow forward.
 - [ ] Add pooled collapse/burst/HUD-flight collection feedback, level-up presentation, and reduced-motion behavior.
 - [ ] Add deterministic coverage for RPM recovery, simultaneous aggregate load, final available quotas, and repeated contract snapshots.
 - [ ] Replace the linear target scan with the planned spatial query before discrete target counts grow beyond this bounded first slice.
-- [ ] In Phase 2, add shrubs, saplings, non-cuttable rocks, too-tough/material feedback, full Meadow Delivery completion, results, and restart/next-contract flow.
+- [ ] In Phase 2, add shrubs, final sapling art/material feedback, non-cuttable rocks, too-tough feedback, full Meadow Delivery completion, results, and restart/next-contract flow.
 
 ## Handoff rules
 
