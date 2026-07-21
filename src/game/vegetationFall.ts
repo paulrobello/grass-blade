@@ -13,6 +13,12 @@ export interface VegetationFallSample {
   visibilityScale: number;
 }
 
+export interface RootedFallPosition {
+  x: number;
+  y: number;
+  z: number;
+}
+
 export const GRASS_FALL_TIMING: VegetationFallTiming = {
   tipSeconds: 0.38,
   holdSeconds: 0.12,
@@ -24,6 +30,20 @@ export const FLOWER_FALL_TIMING: VegetationFallTiming = {
   tipSeconds: 0.46,
   holdSeconds: 0.2,
   shrinkSeconds: 0.28,
+  maxTiltRadians: 1.5,
+};
+
+export const DENSE_WEED_FALL_TIMING: VegetationFallTiming = {
+  tipSeconds: 0.34,
+  holdSeconds: 0.14,
+  shrinkSeconds: 0.28,
+  maxTiltRadians: 1.46,
+};
+
+export const WOODY_FALL_TIMING: VegetationFallTiming = {
+  tipSeconds: 0.64,
+  holdSeconds: 0.14,
+  shrinkSeconds: 0.18,
   maxTiltRadians: 1.5,
 };
 
@@ -78,6 +98,28 @@ export function sampleVegetationFall(
   output.stage = "complete";
   output.tiltRadians = timing.maxTiltRadians;
   output.visibilityScale = 0;
+}
+
+export function transformRootedFallPoint(
+  localX: number,
+  localY: number,
+  localZ: number,
+  pivotY: number,
+  directionRadians: number,
+  tiltRadians: number,
+  output: RootedFallPosition,
+): void {
+  const axisX = Math.sin(directionRadians);
+  const axisZ = -Math.cos(directionRadians);
+  const cosine = Math.cos(tiltRadians);
+  const sine = Math.sin(tiltRadians);
+  const oneMinusCosine = 1 - cosine;
+  const axisDotPoint = axisX * localX + axisZ * localZ;
+
+  output.x = localX * cosine - axisZ * localY * sine + axisX * axisDotPoint * oneMinusCosine;
+  output.y = localY * cosine + (axisZ * localX - axisX * localZ) * sine;
+  output.z = localZ * cosine + axisX * localY * sine + axisZ * axisDotPoint * oneMinusCosine;
+  output.y += pivotY;
 }
 
 function easeOutCubic(value: number): number {

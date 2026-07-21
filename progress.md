@@ -2,8 +2,8 @@ Original prompt: "i want create a threejs based game where you are a spinning bl
 
 # Grass Blade Progress
 
-Last updated: 2026-07-20
-Active milestone: Phase 1 — root-anchored grass and flower collapse verified; HUD-flight and richer weed/woody reactions next
+Last updated: 2026-07-21
+Active milestone: Phase 1 — HUD-flight collection and rooted target reactions verified; deterministic contract closeout next
 
 ## Completed foundation intent
 
@@ -50,7 +50,7 @@ Active milestone: Phase 1 — root-anchored grass and flower collapse verified; 
 - [x] Promoted all eight meadow trees from decorative props to stable mature-tree targets with exact PRD work, resistance, six-Wood yield, and 75 XP.
 - [x] Added twelve deterministic pass-through dense-weed targets with exact Tier 2 work, resistance, one-Fiber yield, six XP, and recommended-level timing.
 - [x] Added five deterministic solid sapling targets with exact Tier 4 work, resistance, two-Wood yield, 30 XP, and recommended-level timing; their ten available Wood provide 166.7% of the fixed quota without mature-tree shortcuts.
-- [x] Mapped 108 broad-leaf weed instances nine-to-one onto those authoritative targets and persistently flattened each target's instances on its first `cutting` tick.
+- [x] Mapped 108 broad-leaf weed instances nine-to-one onto those authoritative targets; partial work stays upright away from the blade, live contact bends the plant, and completion tips and settles it continuously into a low terminal state.
 - [x] Mapped a deterministic 104 by 104 visual lattice onto a 26 by 26 logical grass grid without per-rendered-blade gameplay objects or raycasts.
 - [x] Added a finer persistent 104 by 104 grass visual cut mask so swept contact flattens only intersected tufts instead of an entire 4 by 4 reward patch.
 - [x] Implemented swept-circle contact, aggregate RPM load, torque, recovery, and persistent cut work through a fixed 60 Hz accumulator.
@@ -61,7 +61,7 @@ Active milestone: Phase 1 — root-anchored grass and flower collapse verified; 
 - [x] Implemented all cumulative XP thresholds and automatic levels 1-8, including multi-threshold awards.
 - [x] Added live Grass, Flower, Fiber, and Wood quota, level, RPM, elapsed-time, and XP HUD state without introducing a failure countdown.
 - [x] Added resource-matched HUD counter pulses and a consolidated `LEVEL N` notification, with reduced-motion fallbacks that do not gate accounting or movement.
-- [x] Rendered the five saplings with slim trunks and layered rounded foliage; sustained contact produces a deterministic lean/shudder and the full visual disappears on the authoritative cut tick.
+- [x] Rendered the five saplings with slim trunks and layered rounded foliage; exact live contact produces a deterministic lean/shudder, while completion reveals a stump and topples the severed top around the cut plane without ground clipping.
 - [x] Separated transient blade-contact authority from persistent partial cut work, so released saplings immediately stop shuddering while retaining their accumulated work.
 - [x] Replaced broad polygon clumps with 10,816 instanced fourteen-blade tufts, totaling 151,424 narrow tapered grass blades, and connected fine cut state to persistent stubble/clipping trails.
 - [x] Replaced the placeholder bar with a large silver/cyan cutter that evolves from two arms at level 1, to four arms at levels 2-5, to an 18-tooth saw at levels 6-8 while preserving the same authoritative reach.
@@ -69,8 +69,11 @@ Active milestone: Phase 1 — root-anchored grass and flower collapse verified; 
 - [x] Removed the circular blade ground-blob shadow at user direction.
 - [x] Added a fixed 240-slot instanced fragment pool for deterministic grass clippings, petals, broad leaves, wood chips, and sapling/tree leaves without per-frame allocation.
 - [x] Raised, enlarged, and brightened the pooled fragments with unlit double-sided materials so completions read as visible cut bursts rather than silent disappearance.
+- [x] Added immediate live-damage wood-chip bursts for saplings and mature trees, followed by deterministic work-interval bursts; normal motion emits 18 or 24 chips respectively, reduced motion emits four, and the existing 240-slot pool remains the hard bound.
+- [x] Added a fixed 64-slot DOM collection-mote pool that consumes authoritative cut events independently, arcs resource-matched `+N` rewards toward the correct HUD row over 280-450 ms, aggregates overflow, and uses a short destination fade under reduced motion.
 - [x] Replaced immediate grass removal with a renderer-owned `fall -> settle -> shrink -> stubble` lifecycle that tips each tuft around its ground root and mats nearby cuts instead of producing a radial spoke halo.
 - [x] Kept flower clusters fully standing during partial work, then animated each coherent stem, blossom, and center from the authoritative completion frame through a staggered fall, grounded hold, shrink, and short-stem state while petals remain secondary accents.
+- [x] Added rooted weed, sapling, and mature-tree collapse lifecycles with separate stumps for woody targets, conservative crown clearance, continuous terminal transforms, and exact cut-tick presentation starts.
 - [x] Added reduced-motion vegetation timing and live fall diagnostics without per-frame allocation or new gameplay authority.
 - [x] Verified the fresh level-1 presentation as exactly two opposing blades with no saw teeth; four blades still begin only at level 2.
 - [x] Expanded `render_game_to_text` with inventory, XP, loaded RPM, target counts, live blade contacts, cut revision, persistent partial-work diagnostics, recent cut events, blade tier, orientation-cue count, and fragment-pool state.
@@ -102,10 +105,13 @@ Active milestone: Phase 1 — root-anchored grass and flower collapse verified; 
 - `make checkall` passes formatting verification, ESLint, strict TypeScript, 33 deterministic Vitest tests, and the Vite production build after the vegetation-collapse slice.
 - Exact headed Chrome regressions at 1280 by 720 and 430 by 860 verify a fresh level-1 run exposes `bladeTier: "two-arm"`, exactly two visible blades, and zero saw teeth. Grass remains present through tipping, settling, and shrinking before stubble replaces it; the inspected local artifacts are `output/playwright/vegetation-fall-landscape-tuned/grass-tipping.png`, `grass-grounded.png`, and `grass-disappearing.png` plus their portrait equivalents.
 - The same routes verify `flower-10` remains fully standing on its first partial-contact frame with no cut event, then starts coherent plant fall on the exact completion frame alongside the petal burst and cleans up after the grounded hold. The inspected local artifacts are `output/playwright/vegetation-fall-landscape-tuned/flower-partial-contact-standing.png`, `flower-fall-and-particles-start.png`, `flower-grounded.png`, and `flower-cleaned-up.png` plus their portrait equivalents; both browser error logs are empty.
+- Headed Chrome regressions at 1280 by 720 verified that Fiber and Wood collection motes consume the same authoritative cut events as the HUD, weed and sapling fall starts on the cut tick, a finished sapling leaves a stump, partial woody work persists after retreat, and the 64-slot mote and 240-slot fragment pools remain bounded. The inspected local artifacts include `output/playwright/cut-feedback-20260721/landscape-weed-cut-mote.png`, `landscape-sapling-contact-chips.png`, `landscape-sapling-falling.png`, and `landscape-sapling-stump.png`.
+- A frame-accurate mature-tree route verified that the first positive live-damage tick emits a 24-chip burst even when the Level-2 blade later stalls at `1.437/60` work, the tree remains solid, backing away clears contact, and no Wood is awarded early. The inspected local artifact is `output/playwright/cut-feedback-20260721/tree-contact-chips.png`.
+- Separate 430 by 860 portrait and reduced-motion routes verified aligned Fiber collection feedback, the complete four-row HUD, shortened destination-fade motes, and bounded reduced particle feedback. All final browser scenarios reported no console or page errors.
+- `make checkall` passes formatting verification, ESLint, strict TypeScript, 53 deterministic Vitest tests across four files, and the Vite production build after the collection-mote, rooted-reaction, and live wood-chip slice.
 
 ## Remaining Phase 1 TODOs
 
-- [ ] Add HUD-flight collection motes and richer weed/woody target collapse/contact reactions; pooled resource bursts, HUD counter pulses, grass/flower fall lifecycles, level-up presentation, and reduced-motion fallbacks are shipped.
 - [ ] Add deterministic coverage for RPM recovery, simultaneous aggregate load, final available quotas, and repeated contract snapshots.
 - [ ] Replace the linear target scan with the planned spatial query before discrete target counts grow beyond this bounded first slice.
 - [ ] In Phase 2, add shrubs, final sapling art/material feedback, non-cuttable rocks, too-tough feedback, full Meadow Delivery completion, results, and restart/next-contract flow.

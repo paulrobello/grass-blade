@@ -4,10 +4,14 @@ import { createCutEffects } from "./cutEffects";
 import type { GameState } from "./state";
 import { WORLD_HALF_EXTENT } from "./state";
 import {
+  DENSE_WEED_FALL_TIMING,
   FLOWER_FALL_TIMING,
   GRASS_FALL_TIMING,
   REDUCED_MOTION_FALL_TIMING,
+  WOODY_FALL_TIMING,
   sampleVegetationFall,
+  transformRootedFallPoint,
+  type RootedFallPosition,
   type VegetationFallSample,
 } from "./vegetationFall";
 import {
@@ -42,6 +46,9 @@ export interface MeadowPresentationDiagnostics {
   orientationCueCount: number;
   fallingGrassTufts: number;
   fallingFlowerInstances: number;
+  fallingWeedInstances: number;
+  fallingSaplingInstances: number;
+  fallingTreeInstances: number;
   activeFragments: number;
   consumedCutRevision: number;
   consumedGrassVisualCuts: number;
@@ -147,6 +154,7 @@ export function createScene(seed: number): MeadowScene {
     scratchScale,
     scratchColor,
     yAxis,
+    reducedMotion,
   );
   const saplings = addSaplings(
     scene,
@@ -158,6 +166,7 @@ export function createScene(seed: number): MeadowScene {
     scratchScale,
     scratchColor,
     yAxis,
+    reducedMotion,
   );
   const trees = addTrees(
     scene,
@@ -168,6 +177,7 @@ export function createScene(seed: number): MeadowScene {
     scratchRotation,
     scratchScale,
     scratchColor,
+    reducedMotion,
   );
   addBoundaryStones(
     scene,
@@ -191,6 +201,9 @@ export function createScene(seed: number): MeadowScene {
     orientationCueCount: blade.diagnostics.orientationCueCount,
     fallingGrassTufts: 0,
     fallingFlowerInstances: 0,
+    fallingWeedInstances: 0,
+    fallingSaplingInstances: 0,
+    fallingTreeInstances: 0,
     activeFragments: 0,
     consumedCutRevision: 0,
     consumedGrassVisualCuts: 0,
@@ -233,6 +246,9 @@ export function createScene(seed: number): MeadowScene {
     presentation.orientationCueCount = blade.diagnostics.orientationCueCount;
     presentation.fallingGrassTufts = grass.diagnostics.activeFalls;
     presentation.fallingFlowerInstances = flowers.diagnostics.activeFalls;
+    presentation.fallingWeedInstances = weeds.diagnostics.activeFalls;
+    presentation.fallingSaplingInstances = saplings.diagnostics.activeFalls;
+    presentation.fallingTreeInstances = trees.diagnostics.activeFalls;
     presentation.activeFragments = cutEffects.diagnostics.activeFragments;
     presentation.consumedCutRevision = cutEffects.diagnostics.consumedCutRevision;
     presentation.consumedGrassVisualCuts = cutEffects.diagnostics.consumedGrassVisualCuts;
@@ -760,7 +776,8 @@ function addDenseWeeds(
   scale: THREE.Vector3,
   color: THREE.Color,
   yAxis: THREE.Vector3,
-): VegetationSync {
+  reducedMotion: boolean,
+): FallingVegetationSync {
   const count = layout.denseWeedVisuals.length;
   const geometry = track(resources, createDenseWeedGeometry());
   const material = track(
@@ -781,7 +798,27 @@ function addDenseWeeds(
     { length: layout.denseWeedTargets.length },
     () => [] as number[],
   );
-  const flattenedTargets = new Uint8Array(layout.denseWeedTargets.length);
+  const fallStartTimes = new Float32Array(count);
+  const fallDirections = new Float32Array(count);
+  const fallingVisualIndices: number[] = [];
+  const queuedCutTargets = new Uint8Array(layout.denseWeedTargets.length);
+  const bentTargets = new Uint8Array(layout.denseWeedTargets.length);
+  const yawRotation = new THREE.Quaternion();
+  const fallRotation = new THREE.Quaternion();
+  const terminalPosition = new THREE.Vector3();
+  const terminalRotation = new THREE.Quaternion();
+  const terminalScale = new THREE.Vector3();
+  const fallAxis = new THREE.Vector3();
+  const fallSample: VegetationFallSample = {
+    stage: "waiting",
+    tiltRadians: 0,
+    visibilityScale: 1,
+  };
+  const fallTiming = reducedMotion ? REDUCED_MOTION_FALL_TIMING : DENSE_WEED_FALL_TIMING;
+  const diagnostics = { activeFalls: 0 };
+  const targetOffset = layout.grassCells.length + layout.flowerTargets.length;
+
+  fallStartTimes.fill(-1);
 
   for (let index = 0; index < count; index += 1) {
     const visual = layout.denseWeedVisuals[index];
@@ -809,6 +846,7 @@ function addDenseWeeds(
 
   weeds.castShadow = true;
   weeds.receiveShadow = true;
+  weeds.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
   weeds.instanceMatrix.needsUpdate = true;
   if (weeds.instanceColor !== null) {
     weeds.instanceColor.needsUpdate = true;
@@ -816,30 +854,131 @@ function addDenseWeeds(
   scene.add(weeds);
 
   return {
-    syncTargets(state: GameState): void {
-      const targetOffset = layout.grassCells.length + layout.flowerTargets.length;
+    diagnostics,
+    syncTargets(state: GameState, simulationTimeSeconds: number): void {
       let matricesChanged = false;
 
       for (let targetIndex = 0; targetIndex < layout.denseWeedTargets.length; targetIndex += 1) {
-        const isFlattened = state.targets[targetOffset + targetIndex]?.status !== "standing";
-        const nextFlattenedState = Number(isFlattened);
-        if (flattenedTargets[targetIndex] === nextFlattenedState) {
+        const target = state.targets[targetOffset + targetIndex];
+        if (queuedCutTargets[targetIndex] === 0 && target?.status === "cut") {
+          queuedCutTargets[targetIndex] = 1;
+          bentTargets[targetIndex] = 0;
+          const targetVisuals = visualsByTarget[targetIndex];
+          if (targetVisuals === undefined) {
+            continue;
+          }
+
+          for (const visualIndex of targetVisuals) {
+            const visual = layout.denseWeedVisuals[visualIndex];
+            if (visual === undefined) {
+              continue;
+            }
+            const deltaX = visual.x - state.player.x;
+            const deltaZ = visual.z - state.player.z;
+            const fallDirection =
+              Math.hypot(deltaX, deltaZ) > 0.05
+                ? Math.atan2(deltaZ, deltaX)
+                : visual.rotation + Math.PI * 0.5;
+            const directionJitter = (((visualIndex * 29) % 17) / 16 - 0.5) * 0.36;
+            const stagger = reducedMotion ? 0 : (((visualIndex * 13) % 7) / 6) * 0.04;
+            fallDirections[visualIndex] = fallDirection + directionJitter;
+            fallStartTimes[visualIndex] = simulationTimeSeconds + stagger;
+            fallingVisualIndices.push(visualIndex);
+          }
+          continue;
+        }
+        if (queuedCutTargets[targetIndex] === 1) {
           continue;
         }
 
-        flattenedTargets[targetIndex] = nextFlattenedState;
         const targetVisuals = visualsByTarget[targetIndex];
         if (targetVisuals === undefined) {
           continue;
         }
 
-        const transforms = isFlattened ? cutMatrices : standingMatrices;
+        const isInBladeContact =
+          target !== undefined && state.bladeContactTargetIds.includes(target.id);
+        const nextBentState = Number(isInBladeContact);
+        if (bentTargets[targetIndex] === nextBentState && !isInBladeContact) {
+          continue;
+        }
+        bentTargets[targetIndex] = nextBentState;
+
         for (const visualIndex of targetVisuals) {
-          readMatrix(matrix, transforms, visualIndex);
+          const visual = layout.denseWeedVisuals[visualIndex];
+          if (visual === undefined) {
+            continue;
+          }
+          if (!isInBladeContact) {
+            readMatrix(matrix, standingMatrices, visualIndex);
+            weeds.setMatrixAt(visualIndex, matrix);
+            continue;
+          }
+
+          const deltaX = visual.x - state.player.x;
+          const deltaZ = visual.z - state.player.z;
+          const leanDirection =
+            Math.hypot(deltaX, deltaZ) > 0.05
+              ? Math.atan2(deltaZ, deltaX)
+              : visual.rotation + Math.PI * 0.5;
+          const shudder = reducedMotion
+            ? 0
+            : Math.sin(simulationTimeSeconds * 22 + visualIndex * 1.37);
+          const leanAngle = 0.075 + shudder * 0.018;
+          fallAxis.set(Math.sin(leanDirection), 0, -Math.cos(leanDirection)).normalize();
+          fallRotation.setFromAxisAngle(fallAxis, leanAngle);
+          yawRotation.setFromAxisAngle(yAxis, visual.rotation);
+          rotation.copy(fallRotation).multiply(yawRotation);
+          position.set(visual.x, 0.02, visual.z);
+          scale.setScalar(visual.scale);
+          matrix.compose(position, rotation, scale);
           weeds.setMatrixAt(visualIndex, matrix);
         }
         matricesChanged = true;
       }
+
+      let activeWriteIndex = 0;
+      for (const visualIndex of fallingVisualIndices) {
+        const visual = layout.denseWeedVisuals[visualIndex];
+        if (visual === undefined) {
+          continue;
+        }
+
+        sampleVegetationFall(
+          simulationTimeSeconds - (fallStartTimes[visualIndex] ?? simulationTimeSeconds),
+          fallTiming,
+          fallSample,
+        );
+        if (fallSample.stage === "complete") {
+          readMatrix(matrix, cutMatrices, visualIndex);
+          weeds.setMatrixAt(visualIndex, matrix);
+          matricesChanged = true;
+          continue;
+        }
+
+        const fallDirection = fallDirections[visualIndex] ?? visual.rotation;
+        fallAxis.set(Math.sin(fallDirection), 0, -Math.cos(fallDirection)).normalize();
+        fallRotation.setFromAxisAngle(fallAxis, fallSample.tiltRadians);
+        yawRotation.setFromAxisAngle(yAxis, visual.rotation);
+        rotation.copy(fallRotation).multiply(yawRotation);
+        position.set(visual.x, 0.02, visual.z);
+        scale.setScalar(visual.scale);
+        if (fallSample.stage === "disappearing") {
+          readMatrix(matrix, cutMatrices, visualIndex);
+          matrix.decompose(terminalPosition, terminalRotation, terminalScale);
+          const terminalProgress = 1 - fallSample.visibilityScale;
+          position.lerp(terminalPosition, terminalProgress);
+          rotation.slerp(terminalRotation, terminalProgress);
+          scale.lerp(terminalScale, terminalProgress);
+        }
+        matrix.compose(position, rotation, scale);
+        weeds.setMatrixAt(visualIndex, matrix);
+        fallingVisualIndices[activeWriteIndex] = visualIndex;
+        activeWriteIndex += 1;
+        matricesChanged = true;
+      }
+      fallingVisualIndices.length = activeWriteIndex;
+      diagnostics.activeFalls = activeWriteIndex;
 
       if (matricesChanged) {
         weeds.instanceMatrix.needsUpdate = true;
@@ -920,7 +1059,8 @@ function addSaplings(
   scale: THREE.Vector3,
   color: THREE.Color,
   yAxis: THREE.Vector3,
-): VegetationSync {
+  reducedMotion: boolean,
+): FallingVegetationSync {
   const count = layout.saplingVisuals.length;
   const trunkGeometry = track(resources, new THREE.CylinderGeometry(0.12, 0.18, 1.76, 7));
   const trunkMaterial = track(
@@ -941,6 +1081,7 @@ function addSaplings(
     }),
   );
   const trunks = new THREE.InstancedMesh(trunkGeometry, trunkMaterial, count);
+  const stumps = new THREE.InstancedMesh(trunkGeometry, trunkMaterial, count);
   const lowerCrowns = new THREE.InstancedMesh(crownGeometry, crownMaterial, count);
   const middleCrowns = new THREE.InstancedMesh(crownGeometry, crownMaterial, count);
   const upperCrowns = new THREE.InstancedMesh(crownGeometry, crownMaterial, count);
@@ -983,6 +1124,25 @@ function addSaplings(
   const yawRotation = new THREE.Quaternion();
   const targetOffset =
     layout.grassCells.length + layout.flowerTargets.length + layout.denseWeedTargets.length;
+  const stumpMatrices = new Float32Array(count * 16);
+  const hiddenMatrices = new Float32Array(count * 16);
+  const queuedCutTargets = new Uint8Array(count);
+  const fallStartTimes = new Float32Array(count);
+  const fallDirections = new Float32Array(count);
+  const fallingTargetIndices: number[] = [];
+  const rootedPosition: RootedFallPosition = { x: 0, y: 0, z: 0 };
+  const trunkHeight = 1.76;
+  const stumpHeightScale = 0.18;
+  const severedTopHeightScale = 1 - stumpHeightScale;
+  const fallSample: VegetationFallSample = {
+    stage: "waiting",
+    tiltRadians: 0,
+    visibilityScale: 1,
+  };
+  const fallTiming = reducedMotion ? REDUCED_MOTION_FALL_TIMING : WOODY_FALL_TIMING;
+  const diagnostics = { activeFalls: 0 };
+
+  fallStartTimes.fill(-1);
 
   for (const visual of layout.saplingVisuals) {
     const palette = crownPalettes[visual.colorIndex] ?? crownPalettes[0];
@@ -990,9 +1150,22 @@ function addSaplings(
       color.setHex(palette[layerIndex] ?? palette[0]);
       crownLayers[layerIndex]?.mesh.setColorAt(visual.targetIndex, color);
     }
+
+    rotation.identity();
+    const stumpHeight = trunkHeight * stumpHeightScale * visual.size;
+    position.set(visual.x, stumpHeight / 2, visual.z);
+    scale.set(visual.size, stumpHeightScale * visual.size, visual.size);
+    matrix.compose(position, rotation, scale);
+    writeMatrix(stumpMatrices, visual.targetIndex, matrix);
+
+    position.set(visual.x, 0.02, visual.z);
+    scale.setScalar(0);
+    matrix.compose(position, rotation, scale);
+    writeMatrix(hiddenMatrices, visual.targetIndex, matrix);
+    stumps.setMatrixAt(visual.targetIndex, matrix);
   }
 
-  for (const mesh of [trunks, lowerCrowns, middleCrowns, upperCrowns]) {
+  for (const mesh of [trunks, stumps, lowerCrowns, middleCrowns, upperCrowns]) {
     mesh.castShadow = true;
     mesh.receiveShadow = true;
     mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
@@ -1001,50 +1174,50 @@ function addSaplings(
       mesh.instanceColor.needsUpdate = true;
     }
   }
-  scene.add(trunks, lowerCrowns, middleCrowns, upperCrowns);
+  scene.add(trunks, stumps, lowerCrowns, middleCrowns, upperCrowns);
 
   return {
+    diagnostics,
     syncTargets(state: GameState, simulationTimeSeconds: number): void {
       for (const visual of layout.saplingVisuals) {
         const target = state.targets[targetOffset + visual.targetIndex];
-        const isCut = target?.status === "cut";
-
-        if (isCut) {
-          position.set(visual.x, 0, visual.z);
-          rotation.identity();
-          scale.setScalar(0);
-          matrix.compose(position, rotation, scale);
-          trunks.setMatrixAt(visual.targetIndex, matrix);
-          for (const layer of crownLayers) {
-            layer.mesh.setMatrixAt(visual.targetIndex, matrix);
+        if (target?.status === "cut") {
+          if (queuedCutTargets[visual.targetIndex] === 0) {
+            queuedCutTargets[visual.targetIndex] = 1;
+            fallStartTimes[visual.targetIndex] = simulationTimeSeconds;
+            readMatrix(matrix, stumpMatrices, visual.targetIndex);
+            stumps.setMatrixAt(visual.targetIndex, matrix);
+            const deltaX = visual.x - state.player.x;
+            const deltaZ = visual.z - state.player.z;
+            fallDirections[visual.targetIndex] =
+              Math.hypot(deltaX, deltaZ) > 0.05
+                ? Math.atan2(deltaZ, deltaX)
+                : visual.rotation + Math.PI * 0.5;
+            fallingTargetIndices.push(visual.targetIndex);
           }
           continue;
         }
 
         const isInBladeContact =
           target !== undefined && state.bladeContactTargetIds.includes(target.id);
-        const shudder = isInBladeContact
-          ? Math.sin(simulationTimeSeconds * 24 + visual.targetIndex * 1.73)
-          : 0;
+        const shudder =
+          isInBladeContact && !reducedMotion
+            ? Math.sin(simulationTimeSeconds * 24 + visual.targetIndex * 1.73)
+            : 0;
         const leanAngle = isInBladeContact ? 0.105 + shudder * 0.038 : 0;
         const leanDirection =
           visual.rotation +
-          (isInBladeContact
+          (isInBladeContact && !reducedMotion
             ? Math.sin(simulationTimeSeconds * 17 + visual.targetIndex * 2.1) * 0.22
             : 0);
-        const leanOffsetX = Math.cos(leanDirection) * Math.sin(leanAngle);
-        const leanOffsetZ = Math.sin(leanDirection) * Math.sin(leanAngle);
         tiltAxis.set(Math.sin(leanDirection), 0, -Math.cos(leanDirection));
         tiltRotation.setFromAxisAngle(tiltAxis, leanAngle);
         yawRotation.setFromAxisAngle(yAxis, visual.rotation + shudder * 0.045);
         rotation.multiplyQuaternions(tiltRotation, yawRotation);
 
         const trunkCenterY = 0.88 * visual.size;
-        position.set(
-          visual.x + leanOffsetX * trunkCenterY,
-          trunkCenterY,
-          visual.z + leanOffsetZ * trunkCenterY,
-        );
+        transformRootedFallPoint(0, trunkCenterY, 0, 0, leanDirection, leanAngle, rootedPosition);
+        position.set(visual.x + rootedPosition.x, rootedPosition.y, visual.z + rootedPosition.z);
         scale.setScalar(visual.size);
         matrix.compose(position, rotation, scale);
         trunks.setMatrixAt(visual.targetIndex, matrix);
@@ -1055,11 +1228,16 @@ function addSaplings(
           const localX = (layer.offsetX * cosYaw - layer.offsetZ * sinYaw) * visual.size;
           const localZ = (layer.offsetX * sinYaw + layer.offsetZ * cosYaw) * visual.size;
           const layerHeight = layer.offsetY * visual.size;
-          position.set(
-            visual.x + localX + leanOffsetX * layerHeight,
+          transformRootedFallPoint(
+            localX,
             layerHeight,
-            visual.z + localZ + leanOffsetZ * layerHeight,
+            localZ,
+            0,
+            leanDirection,
+            leanAngle,
+            rootedPosition,
           );
+          position.set(visual.x + rootedPosition.x, rootedPosition.y, visual.z + rootedPosition.z);
           scale.set(
             layer.scaleX * visual.size,
             layer.scaleY * visual.size,
@@ -1070,7 +1248,118 @@ function addSaplings(
         }
       }
 
+      let activeWriteIndex = 0;
+      for (const targetIndex of fallingTargetIndices) {
+        const visual = layout.saplingVisuals[targetIndex];
+        if (visual === undefined) {
+          continue;
+        }
+
+        sampleVegetationFall(
+          simulationTimeSeconds - (fallStartTimes[targetIndex] ?? simulationTimeSeconds),
+          fallTiming,
+          fallSample,
+        );
+        if (fallSample.stage === "complete") {
+          readMatrix(matrix, hiddenMatrices, targetIndex);
+          trunks.setMatrixAt(targetIndex, matrix);
+          for (const layer of crownLayers) {
+            layer.mesh.setMatrixAt(targetIndex, matrix);
+          }
+          continue;
+        }
+
+        const fallDirection = fallDirections[targetIndex] ?? visual.rotation;
+        tiltAxis.set(Math.sin(fallDirection), 0, -Math.cos(fallDirection)).normalize();
+        tiltRotation.setFromAxisAngle(tiltAxis, fallSample.tiltRadians);
+        yawRotation.setFromAxisAngle(yAxis, visual.rotation);
+        rotation.multiplyQuaternions(tiltRotation, yawRotation);
+        const visibilityScale = fallSample.visibilityScale;
+        const stumpHeight = trunkHeight * stumpHeightScale * visual.size;
+        const severedTopHeight = trunkHeight * severedTopHeightScale * visual.size;
+        const cosYaw = Math.cos(visual.rotation);
+        const sinYaw = Math.sin(visual.rotation);
+        let groundLift = 0;
+
+        for (const layer of crownLayers) {
+          const localX =
+            (layer.offsetX * cosYaw - layer.offsetZ * sinYaw) * visual.size * visibilityScale;
+          const localZ =
+            (layer.offsetX * sinYaw + layer.offsetZ * cosYaw) * visual.size * visibilityScale;
+          const localY = (layer.offsetY * visual.size - stumpHeight) * visibilityScale;
+          transformRootedFallPoint(
+            localX,
+            localY,
+            localZ,
+            stumpHeight,
+            fallDirection,
+            fallSample.tiltRadians,
+            rootedPosition,
+          );
+          const crownRadius =
+            Math.max(layer.scaleX, layer.scaleY, layer.scaleZ) * visual.size * visibilityScale;
+          groundLift = Math.max(groundLift, crownRadius + 0.025 - rootedPosition.y);
+        }
+
+        transformRootedFallPoint(
+          0,
+          (severedTopHeight / 2) * visibilityScale,
+          0,
+          stumpHeight,
+          fallDirection,
+          fallSample.tiltRadians,
+          rootedPosition,
+        );
+        position.set(
+          visual.x + rootedPosition.x,
+          rootedPosition.y + groundLift,
+          visual.z + rootedPosition.z,
+        );
+        scale.set(
+          visual.size * visibilityScale,
+          severedTopHeightScale * visual.size * visibilityScale,
+          visual.size * visibilityScale,
+        );
+        matrix.compose(position, rotation, scale);
+        trunks.setMatrixAt(targetIndex, matrix);
+
+        for (const layer of crownLayers) {
+          const localX =
+            (layer.offsetX * cosYaw - layer.offsetZ * sinYaw) * visual.size * visibilityScale;
+          const localZ =
+            (layer.offsetX * sinYaw + layer.offsetZ * cosYaw) * visual.size * visibilityScale;
+          const localY = (layer.offsetY * visual.size - stumpHeight) * visibilityScale;
+          transformRootedFallPoint(
+            localX,
+            localY,
+            localZ,
+            stumpHeight,
+            fallDirection,
+            fallSample.tiltRadians,
+            rootedPosition,
+          );
+          position.set(
+            visual.x + rootedPosition.x,
+            rootedPosition.y + groundLift,
+            visual.z + rootedPosition.z,
+          );
+          scale.set(
+            layer.scaleX * visual.size * visibilityScale,
+            layer.scaleY * visual.size * visibilityScale,
+            layer.scaleZ * visual.size * visibilityScale,
+          );
+          matrix.compose(position, rotation, scale);
+          layer.mesh.setMatrixAt(targetIndex, matrix);
+        }
+
+        fallingTargetIndices[activeWriteIndex] = targetIndex;
+        activeWriteIndex += 1;
+      }
+      fallingTargetIndices.length = activeWriteIndex;
+      diagnostics.activeFalls = activeWriteIndex;
+
       trunks.instanceMatrix.needsUpdate = true;
+      stumps.instanceMatrix.needsUpdate = true;
       lowerCrowns.instanceMatrix.needsUpdate = true;
       middleCrowns.instanceMatrix.needsUpdate = true;
       upperCrowns.instanceMatrix.needsUpdate = true;
@@ -1087,7 +1376,8 @@ function addTrees(
   rotation: THREE.Quaternion,
   scale: THREE.Vector3,
   color: THREE.Color,
-): VegetationSync {
+  reducedMotion: boolean,
+): FallingVegetationSync {
   const count = layout.matureTreeVisuals.length;
   const trunkGeometry = track(resources, new THREE.CylinderGeometry(0.34, 0.5, 2.35, 7));
   const trunkMaterial = track(
@@ -1108,11 +1398,38 @@ function addTrees(
     }),
   );
   const trunks = new THREE.InstancedMesh(trunkGeometry, trunkMaterial, count);
+  const stumps = new THREE.InstancedMesh(trunkGeometry, trunkMaterial, count);
   const crowns = new THREE.InstancedMesh(crownGeometry, crownMaterial, count);
   const crownPalette = [0x2f9c55, 0x42b45f, 0x5ac56a] as const;
+  const standingTrunkMatrices = new Float32Array(count * 16);
+  const standingCrownMatrices = new Float32Array(count * 16);
   const cutTrunkMatrices = new Float32Array(count * 16);
   const cutCrownMatrices = new Float32Array(count * 16);
-  const cutTargets = new Uint8Array(count);
+  const queuedCutTargets = new Uint8Array(count);
+  const movingTargets = new Uint8Array(count);
+  const fallStartTimes = new Float32Array(count);
+  const fallDirections = new Float32Array(count);
+  const fallingTargetIndices: number[] = [];
+  const tiltAxis = new THREE.Vector3();
+  const tiltRotation = new THREE.Quaternion();
+  const rootedPosition: RootedFallPosition = { x: 0, y: 0, z: 0 };
+  const trunkHeight = 2.35;
+  const stumpHeightScale = 0.18;
+  const severedTopHeightScale = 1 - stumpHeightScale;
+  const fallSample: VegetationFallSample = {
+    stage: "waiting",
+    tiltRadians: 0,
+    visibilityScale: 1,
+  };
+  const fallTiming = reducedMotion ? REDUCED_MOTION_FALL_TIMING : WOODY_FALL_TIMING;
+  const diagnostics = { activeFalls: 0 };
+  const targetOffset =
+    layout.grassCells.length +
+    layout.flowerTargets.length +
+    layout.denseWeedTargets.length +
+    layout.saplingTargets.length;
+
+  fallStartTimes.fill(-1);
 
   rotation.identity();
   for (let index = 0; index < count; index += 1) {
@@ -1126,16 +1443,19 @@ function addTrees(
     scale.set(size, size, size);
     matrix.compose(position, rotation, scale);
     trunks.setMatrixAt(index, matrix);
+    writeMatrix(standingTrunkMatrices, index, matrix);
 
     position.y = 2.85 * size;
     scale.set(size * 1.05, size * 0.92, size * 1.05);
     matrix.compose(position, rotation, scale);
     crowns.setMatrixAt(index, matrix);
+    writeMatrix(standingCrownMatrices, index, matrix);
     color.setHex(crownPalette[index % crownPalette.length] ?? crownPalette[0]);
     crowns.setColorAt(index, color);
 
-    position.set(x, 0.2115 * size, z);
-    scale.set(size, 0.18 * size, size);
+    const stumpHeight = trunkHeight * stumpHeightScale * size;
+    position.set(x, stumpHeight / 2, z);
+    scale.set(size, stumpHeightScale * size, size);
     matrix.compose(position, rotation, scale);
     writeMatrix(cutTrunkMatrices, index, matrix);
 
@@ -1143,45 +1463,199 @@ function addTrees(
     scale.setScalar(0.001);
     matrix.compose(position, rotation, scale);
     writeMatrix(cutCrownMatrices, index, matrix);
+    stumps.setMatrixAt(index, matrix);
   }
 
-  trunks.castShadow = true;
-  trunks.receiveShadow = true;
-  crowns.castShadow = true;
-  crowns.receiveShadow = true;
-  trunks.instanceMatrix.needsUpdate = true;
-  crowns.instanceMatrix.needsUpdate = true;
-  if (crowns.instanceColor !== null) {
-    crowns.instanceColor.needsUpdate = true;
+  for (const mesh of [trunks, stumps, crowns]) {
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    mesh.instanceMatrix.needsUpdate = true;
+    if (mesh.instanceColor !== null) {
+      mesh.instanceColor.needsUpdate = true;
+    }
   }
-  scene.add(trunks, crowns);
+  scene.add(trunks, stumps, crowns);
 
   return {
-    syncTargets(state: GameState): void {
-      const targetOffset =
-        layout.grassCells.length +
-        layout.flowerTargets.length +
-        layout.denseWeedTargets.length +
-        layout.saplingTargets.length;
+    diagnostics,
+    syncTargets(state: GameState, simulationTimeSeconds: number): void {
       let matricesChanged = false;
 
       for (const visual of layout.matureTreeVisuals) {
-        const isCut = state.targets[targetOffset + visual.targetIndex]?.status === "cut";
-        const nextCutState = Number(isCut);
-        if (cutTargets[visual.targetIndex] === nextCutState) {
+        const target = state.targets[targetOffset + visual.targetIndex];
+        if (target?.status === "cut") {
+          if (queuedCutTargets[visual.targetIndex] === 0) {
+            queuedCutTargets[visual.targetIndex] = 1;
+            movingTargets[visual.targetIndex] = 0;
+            fallStartTimes[visual.targetIndex] = simulationTimeSeconds;
+            readMatrix(matrix, cutTrunkMatrices, visual.targetIndex);
+            stumps.setMatrixAt(visual.targetIndex, matrix);
+            const deltaX = visual.x - state.player.x;
+            const deltaZ = visual.z - state.player.z;
+            fallDirections[visual.targetIndex] =
+              Math.hypot(deltaX, deltaZ) > 0.05
+                ? Math.atan2(deltaZ, deltaX)
+                : visual.targetIndex * 2.399963229728653;
+            fallingTargetIndices.push(visual.targetIndex);
+          }
           continue;
         }
 
-        cutTargets[visual.targetIndex] = nextCutState;
-        readMatrix(matrix, cutTrunkMatrices, visual.targetIndex);
+        const isInBladeContact =
+          target !== undefined && state.bladeContactTargetIds.includes(target.id);
+        const nextMovingState = Number(isInBladeContact);
+        if (movingTargets[visual.targetIndex] === nextMovingState && !isInBladeContact) {
+          continue;
+        }
+        movingTargets[visual.targetIndex] = nextMovingState;
+
+        if (!isInBladeContact) {
+          readMatrix(matrix, standingTrunkMatrices, visual.targetIndex);
+          trunks.setMatrixAt(visual.targetIndex, matrix);
+          readMatrix(matrix, standingCrownMatrices, visual.targetIndex);
+          crowns.setMatrixAt(visual.targetIndex, matrix);
+          matricesChanged = true;
+          continue;
+        }
+
+        const deltaX = visual.x - state.player.x;
+        const deltaZ = visual.z - state.player.z;
+        const leanDirection =
+          Math.hypot(deltaX, deltaZ) > 0.05
+            ? Math.atan2(deltaZ, deltaX)
+            : visual.targetIndex * 2.399963229728653;
+        const shudder = reducedMotion
+          ? 0
+          : Math.sin(simulationTimeSeconds * 18 + visual.targetIndex * 1.91);
+        const leanAngle = 0.04 + shudder * 0.012;
+        tiltAxis.set(Math.sin(leanDirection), 0, -Math.cos(leanDirection)).normalize();
+        tiltRotation.setFromAxisAngle(tiltAxis, leanAngle);
+        rotation.copy(tiltRotation);
+
+        transformRootedFallPoint(
+          0,
+          1.175 * visual.size,
+          0,
+          0,
+          leanDirection,
+          leanAngle,
+          rootedPosition,
+        );
+        position.set(visual.x + rootedPosition.x, rootedPosition.y, visual.z + rootedPosition.z);
+        scale.setScalar(visual.size);
+        matrix.compose(position, rotation, scale);
         trunks.setMatrixAt(visual.targetIndex, matrix);
-        readMatrix(matrix, cutCrownMatrices, visual.targetIndex);
+
+        transformRootedFallPoint(
+          0,
+          2.85 * visual.size,
+          0,
+          0,
+          leanDirection,
+          leanAngle,
+          rootedPosition,
+        );
+        position.set(visual.x + rootedPosition.x, rootedPosition.y, visual.z + rootedPosition.z);
+        scale.set(visual.size * 1.05, visual.size * 0.92, visual.size * 1.05);
+        matrix.compose(position, rotation, scale);
         crowns.setMatrixAt(visual.targetIndex, matrix);
         matricesChanged = true;
       }
 
+      let activeWriteIndex = 0;
+      for (const targetIndex of fallingTargetIndices) {
+        const visual = layout.matureTreeVisuals[targetIndex];
+        if (visual === undefined) {
+          continue;
+        }
+
+        sampleVegetationFall(
+          simulationTimeSeconds - (fallStartTimes[targetIndex] ?? simulationTimeSeconds),
+          fallTiming,
+          fallSample,
+        );
+        if (fallSample.stage === "complete") {
+          readMatrix(matrix, cutCrownMatrices, targetIndex);
+          trunks.setMatrixAt(targetIndex, matrix);
+          crowns.setMatrixAt(targetIndex, matrix);
+          matricesChanged = true;
+          continue;
+        }
+
+        const fallDirection = fallDirections[targetIndex] ?? targetIndex * 2.399963229728653;
+        tiltAxis.set(Math.sin(fallDirection), 0, -Math.cos(fallDirection)).normalize();
+        tiltRotation.setFromAxisAngle(tiltAxis, fallSample.tiltRadians);
+        rotation.copy(tiltRotation);
+        const visibilityScale = fallSample.visibilityScale;
+        const stumpHeight = trunkHeight * stumpHeightScale * visual.size;
+        const severedTopHeight = trunkHeight * severedTopHeightScale * visual.size;
+
+        transformRootedFallPoint(
+          0,
+          (2.85 * visual.size - stumpHeight) * visibilityScale,
+          0,
+          stumpHeight,
+          fallDirection,
+          fallSample.tiltRadians,
+          rootedPosition,
+        );
+        const crownRadius = 1.2 * 1.05 * visual.size * visibilityScale;
+        const groundLift = Math.max(0, crownRadius + 0.025 - rootedPosition.y);
+
+        transformRootedFallPoint(
+          0,
+          (severedTopHeight / 2) * visibilityScale,
+          0,
+          stumpHeight,
+          fallDirection,
+          fallSample.tiltRadians,
+          rootedPosition,
+        );
+        position.set(
+          visual.x + rootedPosition.x,
+          rootedPosition.y + groundLift,
+          visual.z + rootedPosition.z,
+        );
+        scale.set(
+          visual.size * visibilityScale,
+          severedTopHeightScale * visual.size * visibilityScale,
+          visual.size * visibilityScale,
+        );
+        matrix.compose(position, rotation, scale);
+        trunks.setMatrixAt(targetIndex, matrix);
+
+        transformRootedFallPoint(
+          0,
+          (2.85 * visual.size - stumpHeight) * visibilityScale,
+          0,
+          stumpHeight,
+          fallDirection,
+          fallSample.tiltRadians,
+          rootedPosition,
+        );
+        position.set(
+          visual.x + rootedPosition.x,
+          rootedPosition.y + groundLift,
+          visual.z + rootedPosition.z,
+        );
+        scale.set(
+          visual.size * 1.05 * visibilityScale,
+          visual.size * 0.92 * visibilityScale,
+          visual.size * 1.05 * visibilityScale,
+        );
+        matrix.compose(position, rotation, scale);
+        crowns.setMatrixAt(targetIndex, matrix);
+        fallingTargetIndices[activeWriteIndex] = targetIndex;
+        activeWriteIndex += 1;
+        matricesChanged = true;
+      }
+      fallingTargetIndices.length = activeWriteIndex;
+      diagnostics.activeFalls = activeWriteIndex;
+
       if (matricesChanged) {
         trunks.instanceMatrix.needsUpdate = true;
+        stumps.instanceMatrix.needsUpdate = true;
         crowns.instanceMatrix.needsUpdate = true;
       }
     },

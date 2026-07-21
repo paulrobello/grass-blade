@@ -1,6 +1,6 @@
 import * as THREE from "three";
 
-import type { CutCompletionEvent, GameState } from "./state";
+import type { CutCompletionEvent, GameState, TargetState } from "./state";
 
 const MAX_FRAGMENT_COUNT = 240;
 const TAU = Math.PI * 2;
@@ -10,6 +10,38 @@ const GRASS_FRAGMENT = 0;
 const PETAL_FRAGMENT = 1;
 const LEAF_FRAGMENT = 2;
 const WOOD_FRAGMENT = 3;
+
+export const MAX_WOOD_CONTACT_EMISSIONS_PER_SYNC = 4;
+
+export const WOOD_CONTACT_WORK_INTERVALS = {
+  sapling: 1.25,
+  matureTree: 1.5,
+} as const;
+
+type WoodyTargetKind = keyof typeof WOOD_CONTACT_WORK_INTERVALS;
+
+export const WOOD_CONTACT_FRAGMENTS_PER_EMISSION: Record<WoodyTargetKind, number> = {
+  sapling: 18,
+  matureTree: 24,
+};
+
+export const REDUCED_MOTION_WOOD_CONTACT_FRAGMENTS_PER_EMISSION = 4;
+
+interface WoodContactEffectConfig {
+  originHeight: number;
+  spawnRadius: number;
+}
+
+const WOOD_CONTACT_EFFECT_CONFIG: Record<WoodyTargetKind, WoodContactEffectConfig> = {
+  sapling: {
+    originHeight: 0.82,
+    spawnRadius: 0.24,
+  },
+  matureTree: {
+    originHeight: 1.05,
+    spawnRadius: 0.34,
+  },
+};
 
 const GRASS_COLORS = [0x2b8c3f, 0x54bf4d, 0x9be85d] as const;
 const PETAL_COLORS = [0xffffff, 0xff78b4, 0xd08aff, 0x79d7ff, 0xffdd63] as const;
@@ -26,6 +58,42 @@ export interface CutEffects {
   diagnostics: CutEffectsDiagnostics;
   sync: (state: GameState, simulationTimeSeconds: number) => void;
   dispose: () => void;
+}
+
+export interface WoodContactChipEmissionPlan {
+  firstEmissionOrdinal: number;
+  emissionCount: number;
+  nextConsumedThresholdCount: number;
+}
+
+export function planWoodContactChipEmissions(
+  kind: TargetState["kind"],
+  accumulatedWork: number,
+  consumedThresholdCount: number,
+  inContact: boolean,
+): WoodContactChipEmissionPlan {
+  const consumed = Math.max(0, Math.floor(consumedThresholdCount));
+  if (!inContact || !isWoodyTargetKind(kind)) {
+    return {
+      firstEmissionOrdinal: consumed,
+      emissionCount: 0,
+      nextConsumedThresholdCount: consumed,
+    };
+  }
+
+  const positiveWork = Math.max(0, accumulatedWork);
+  const crossedThresholdCount =
+    positiveWork > 0 ? 1 + Math.floor(positiveWork / WOOD_CONTACT_WORK_INTERVALS[kind]) : 0;
+  const emissionCount = Math.min(
+    MAX_WOOD_CONTACT_EMISSIONS_PER_SYNC,
+    Math.max(0, crossedThresholdCount - consumed),
+  );
+
+  return {
+    firstEmissionOrdinal: consumed,
+    emissionCount,
+    nextConsumedThresholdCount: consumed + emissionCount,
+  };
 }
 
 export function createCutEffects(
@@ -70,6 +138,9 @@ export function createCutEffects(
   let activeFragmentCount = 0;
   let consumedCutEventCount = 0;
   let colorsChanged = false;
+  let trackedTargets: GameState["targets"] | null = null;
+  const woodyTargetsById = new Map<string, TargetState>();
+  const consumedWoodContactThresholds = new Map<string, number>();
 
   position.set(0, -10, 0);
   quaternion.identity();
@@ -97,6 +168,7 @@ export function createCutEffects(
     z: number,
     originHeight: number,
     simulationTimeSeconds: number,
+    spawnRadius?: number,
   ): void {
     const slot = nextSlot;
     nextSlot = (nextSlot + 1) % MAX_FRAGMENT_COUNT;
@@ -106,7 +178,8 @@ export function createCutEffects(
     }
 
     const angle = randomUnit(seed, key, 0) * TAU;
-    const radius = randomUnit(seed, key, 1) * (style === GRASS_FRAGMENT ? 0.2 : 0.48);
+    const radius =
+      randomUnit(seed, key, 1) * (spawnRadius ?? (style === GRASS_FRAGMENT ? 0.2 : 0.48));
     const speed =
       (style === WOOD_FRAGMENT ? 1.25 : style === GRASS_FRAGMENT ? 0.68 : 0.95) *
       (0.72 + randomUnit(seed, key, 2) * 0.72);
@@ -217,6 +290,57 @@ export function createCutEffects(
     }
   }
 
+  function spawnWoodContactChips(state: GameState, simulationTimeSeconds: number): void {
+    if (trackedTargets !== state.targets) {
+      trackedTargets = state.targets;
+      woodyTargetsById.clear();
+      consumedWoodContactThresholds.clear();
+      for (const target of state.targets) {
+        if (isWoodyTargetKind(target.kind)) {
+          woodyTargetsById.set(target.id, target);
+        }
+      }
+    }
+
+    for (const targetId of state.bladeContactTargetIds) {
+      const target = woodyTargetsById.get(targetId);
+      if (target === undefined || target.status === "cut" || !isWoodyTargetKind(target.kind)) {
+        continue;
+      }
+
+      const consumedThresholdCount = consumedWoodContactThresholds.get(targetId) ?? 0;
+      const plan = planWoodContactChipEmissions(
+        target.kind,
+        target.accumulatedWork,
+        consumedThresholdCount,
+        true,
+      );
+      if (plan.emissionCount === 0) {
+        continue;
+      }
+
+      consumedWoodContactThresholds.set(targetId, plan.nextConsumedThresholdCount);
+      const config = WOOD_CONTACT_EFFECT_CONFIG[target.kind];
+      const fragmentsPerEmission = reducedMotion
+        ? REDUCED_MOTION_WOOD_CONTACT_FRAGMENTS_PER_EMISSION
+        : WOOD_CONTACT_FRAGMENTS_PER_EMISSION[target.kind];
+      for (let emissionOffset = 0; emissionOffset < plan.emissionCount; emissionOffset += 1) {
+        const emissionOrdinal = plan.firstEmissionOrdinal + emissionOffset;
+        for (let fragmentIndex = 0; fragmentIndex < fragmentsPerEmission; fragmentIndex += 1) {
+          spawnFragment(
+            WOOD_FRAGMENT,
+            woodContactFragmentKey(targetId, emissionOrdinal, fragmentIndex),
+            target.x,
+            target.z,
+            config.originHeight,
+            simulationTimeSeconds,
+            config.spawnRadius,
+          );
+        }
+      }
+    }
+  }
+
   function updateFragments(simulationTimeSeconds: number): boolean {
     let matricesChanged = false;
 
@@ -283,6 +407,8 @@ export function createCutEffects(
       diagnostics.consumedCutRevision = event.revision;
     }
 
+    spawnWoodContactChips(state, simulationTimeSeconds);
+
     if (updateFragments(simulationTimeSeconds)) {
       fragments.instanceMatrix.needsUpdate = true;
     }
@@ -300,6 +426,31 @@ export function createCutEffects(
   }
 
   return { diagnostics, sync, dispose };
+}
+
+function isWoodyTargetKind(kind: TargetState["kind"]): kind is WoodyTargetKind {
+  return kind === "sapling" || kind === "matureTree";
+}
+
+function woodContactFragmentKey(
+  targetId: string,
+  emissionOrdinal: number,
+  fragmentIndex: number,
+): number {
+  return (
+    stableStringHash(targetId) ^
+    Math.imul(emissionOrdinal + 1, 0x9e3779b1) ^
+    Math.imul(fragmentIndex + 1, 0x85ebca6b)
+  );
+}
+
+function stableStringHash(value: string): number {
+  let hash = 0x811c9dc5;
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return hash >>> 0;
 }
 
 function fragmentOriginHeight(kind: CutCompletionEvent["kind"], style: number): number {

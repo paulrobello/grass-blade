@@ -1,5 +1,6 @@
 import * as THREE from "three";
 
+import { createCollectionMotes, type CollectionMotes } from "./collectionMotes";
 import { createScene, type MeadowScene } from "./createScene";
 import {
   CUMULATIVE_XP_THRESHOLDS,
@@ -42,6 +43,7 @@ export class Game {
   private readonly meadow: MeadowScene;
   private readonly state: GameState;
   private readonly hud: HudElements;
+  private readonly collectionMotes: CollectionMotes;
   private readonly input: MovementInput = {
     left: false,
     right: false,
@@ -61,6 +63,17 @@ export class Game {
     this.state = createInitialState(seed);
     this.hud = getHudElements();
     this.meadow = createScene(this.state.seed);
+    this.collectionMotes = createCollectionMotes(
+      requireAppRoot(canvas),
+      {
+        grass: this.hud.grass,
+        flowers: this.hud.flowers,
+        fiber: this.hud.fiber,
+        wood: this.hud.wood,
+      },
+      this.state.seed,
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+    );
     this.renderer = new THREE.WebGLRenderer({
       canvas,
       antialias: true,
@@ -108,6 +121,7 @@ export class Game {
     window.removeEventListener("blur", this.resetInput);
     window.removeEventListener("resize", this.resize);
     document.removeEventListener("fullscreenchange", this.resize);
+    this.collectionMotes.dispose();
     this.meadow.dispose();
     this.renderer.dispose();
     window.__grassBladeReady = false;
@@ -154,6 +168,8 @@ export class Game {
     while (this.accumulatorSeconds + Number.EPSILON >= FIXED_TIME_STEP_SECONDS) {
       stepState(this.state, this.input, FIXED_TIME_STEP_SECONDS);
       this.simulationTimeSeconds += FIXED_TIME_STEP_SECONDS;
+      this.meadow.sync(this.state, this.simulationTimeSeconds);
+      this.collectionMotes.enqueue(this.state.cutEvents, this.simulationTimeSeconds);
       this.accumulatorSeconds -= FIXED_TIME_STEP_SECONDS;
     }
   }
@@ -162,6 +178,7 @@ export class Game {
     this.updateHud();
     this.meadow.sync(this.state, this.simulationTimeSeconds);
     this.renderer.render(this.meadow.scene, this.meadow.camera);
+    this.collectionMotes.sync(this.simulationTimeSeconds, this.meadow.camera, this.canvas);
   }
 
   private updateHud(): void {
@@ -373,7 +390,10 @@ export class Game {
       seed: this.state.seed,
       elapsedSeconds: round(this.simulationTimeSeconds),
       meadow: this.meadow.density,
-      presentation: this.meadow.presentation,
+      presentation: {
+        ...this.meadow.presentation,
+        collectionMotes: this.collectionMotes.diagnostics,
+      },
       player: {
         position: { x: round(player.x), z: round(player.z) },
         velocity: { x: round(player.vx), z: round(player.vz) },
@@ -402,6 +422,14 @@ export class Game {
       },
     });
   };
+}
+
+function requireAppRoot(canvas: HTMLCanvasElement): HTMLElement {
+  const root = canvas.closest("#app");
+  if (!(root instanceof HTMLElement)) {
+    throw new Error("Grass Blade requires an #app HTMLElement around the game canvas.");
+  }
+  return root;
 }
 
 function getHudElements(): HudElements {
