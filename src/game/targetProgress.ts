@@ -41,7 +41,7 @@ export function shouldShowTargetProgress(target: TargetState): boolean {
 }
 
 export function targetProgressFraction(target: TargetState): number {
-  return clamp(target.accumulatedWork / target.requiredWork, 0, 1);
+  return clamp(1 - target.accumulatedWork / target.requiredWork, 0, 1);
 }
 
 export function targetProgressHeight(kind: TargetKind): number {

@@ -61,13 +61,13 @@ Active milestone: Phase 1 — HUD-flight collection and rooted target reactions 
 - [x] Implemented all cumulative XP thresholds and automatic levels 1-8, including multi-threshold awards.
 - [x] Added live Grass, Flower, Fiber, and Wood quota, level, RPM, elapsed-time, and XP HUD state without introducing a failure countdown.
 - [x] Added resource-matched HUD counter pulses and a consolidated `LEVEL N` notification, with reduced-motion fallbacks that do not gate accounting or movement.
-- [x] Added target-local progress bars for damaged durable targets so weeds, saplings, and mature trees show persistent work progress after first contact until they are cut.
+- [x] Added target-local progress bars for damaged durable targets so weeds, saplings, and mature trees show persistent remaining work after first contact until they are cut.
 - [x] Rendered the five saplings with slim trunks and layered rounded foliage; exact live contact produces a deterministic lean/shudder, while completion reveals a stump and topples the severed top around the cut plane without ground clipping.
 - [x] Separated transient blade-contact authority from persistent partial cut work, so released saplings immediately stop shuddering while retaining their accumulated work.
 - [x] Replaced broad polygon clumps with 10,816 instanced fourteen-blade tufts, totaling 151,424 narrow tapered grass blades, and connected fine cut state to persistent stubble/clipping trails.
 - [x] Replaced the placeholder bar with a large silver/cyan cutter that evolves from two arms at level 1, to four arms at levels 2-5, to an 18-tooth saw at levels 6-8 while preserving the same authoritative reach.
 - [x] Added one asymmetric gold orientation cue to every cutter tier so fixed-step rotation remains visually legible even when symmetric blades or saw teeth would otherwise alias between frames.
-- [x] Decoupled the visible cutter pivot from the physical RPM angle, then halved the initial visual spin again so the level-1 blade reads as continuous rotation without a fast strobe.
+- [x] Decoupled the visible cutter pivot from the physical RPM angle, then reduced the level-1 visual spin twice more so it reads as continuous rotation without a fast strobe.
 - [x] Removed the circular blade ground-blob shadow at user direction.
 - [x] Added a fixed 240-slot instanced fragment pool for deterministic grass clippings, petals, broad leaves, wood chips, and sapling/tree leaves without per-frame allocation.
 - [x] Raised, enlarged, and brightened the pooled fragments with unlit double-sided materials so completions read as visible cut bursts rather than silent disappearance.

@@ -59,9 +59,9 @@ describe("active game state", () => {
     const rawFrameAdvance = (720 / 60) * Math.PI * 2 * FIXED_TIME_STEP_SECONDS;
     const visualFrameAdvance = deriveReadableBladeAngle(rawFrameAdvance);
 
-    expect(visualFrameAdvance).toBeGreaterThan(0.15);
-    expect(visualFrameAdvance).toBeLessThan(0.25);
-    expect(visualFrameAdvance).toBeLessThan(rawFrameAdvance / 4);
+    expect(visualFrameAdvance).toBeGreaterThan(0.07);
+    expect(visualFrameAdvance).toBeLessThan(0.13);
+    expect(visualFrameAdvance).toBeLessThan(rawFrameAdvance / 8);
   });
 
   it("creates the same active contract state every time", () => {
@@ -150,7 +150,7 @@ describe("active game state", () => {
 
     expect(entries.map((entry) => entry.id)).toEqual([weed.id, sapling.id, matureTree.id]);
     expect(entries.map((entry) => entry.kind)).toEqual(["denseWeed", "sapling", "matureTree"]);
-    expect(targetProgressFraction(sapling)).toBe(0.25);
+    expect(targetProgressFraction(sapling)).toBe(0.75);
     expect(targetProgressFraction(matureTree)).toBe(0.5);
 
     sapling.status = "cut";
