@@ -26,7 +26,7 @@ const CAMERA_OFFSET_Y = 22;
 const CAMERA_OFFSET_Z = 8.5;
 const CAMERA_VIEW_HEIGHT = 15.5;
 const GRASS_BLADES_PER_INSTANCE = 14;
-const BLADE_VISUAL_SPIN_SCALE = 0.31;
+const BLADE_VISUAL_SPIN_SCALE = 0.155;
 
 interface VegetationSync {
   syncTargets: (state: GameState, simulationTimeSeconds: number) => void;
