@@ -4,6 +4,13 @@ import { createCutEffects } from "./cutEffects";
 import type { GameState } from "./state";
 import { WORLD_HALF_EXTENT } from "./state";
 import {
+  FLOWER_FALL_TIMING,
+  GRASS_FALL_TIMING,
+  REDUCED_MOTION_FALL_TIMING,
+  sampleVegetationFall,
+  type VegetationFallSample,
+} from "./vegetationFall";
+import {
   createMeadowLayout,
   FLOWER_VISUAL_COUNT,
   GRASS_VISUAL_COLUMNS,
@@ -20,6 +27,12 @@ interface VegetationSync {
   syncTargets: (state: GameState, simulationTimeSeconds: number) => void;
 }
 
+interface FallingVegetationSync extends VegetationSync {
+  diagnostics: {
+    activeFalls: number;
+  };
+}
+
 export type BladeTier = "two-arm" | "four-arm" | "saw";
 
 export interface MeadowPresentationDiagnostics {
@@ -27,6 +40,8 @@ export interface MeadowPresentationDiagnostics {
   visibleBladeCount: number;
   visibleTeeth: number;
   orientationCueCount: number;
+  fallingGrassTufts: number;
+  fallingFlowerInstances: number;
   activeFragments: number;
   consumedCutRevision: number;
   consumedGrassVisualCuts: number;
@@ -73,6 +88,7 @@ export function createScene(seed: number): MeadowScene {
   const scratchColor = new THREE.Color();
   const cameraTarget = new THREE.Vector3();
   const yAxis = new THREE.Vector3(0, 1, 0);
+  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   const groundGeometry = track(resources, new THREE.PlaneGeometry(80, 80));
   const groundMaterial = track(
@@ -107,6 +123,7 @@ export function createScene(seed: number): MeadowScene {
     scratchScale,
     scratchColor,
     yAxis,
+    reducedMotion,
   );
   const flowers = addFlowers(
     scene,
@@ -118,6 +135,7 @@ export function createScene(seed: number): MeadowScene {
     scratchScale,
     scratchColor,
     yAxis,
+    reducedMotion,
   );
   const weeds = addDenseWeeds(
     scene,
@@ -161,11 +179,7 @@ export function createScene(seed: number): MeadowScene {
     yAxis,
   );
 
-  const cutEffects = createCutEffects(
-    scene,
-    seed,
-    window.matchMedia("(prefers-reduced-motion: reduce)").matches,
-  );
+  const cutEffects = createCutEffects(scene, seed, reducedMotion);
   const playerRoot = new THREE.Group();
   const blade = addBlade(playerRoot, resources);
   scene.add(playerRoot);
@@ -175,6 +189,8 @@ export function createScene(seed: number): MeadowScene {
     visibleBladeCount: blade.diagnostics.visibleBladeCount,
     visibleTeeth: blade.diagnostics.visibleTeeth,
     orientationCueCount: blade.diagnostics.orientationCueCount,
+    fallingGrassTufts: 0,
+    fallingFlowerInstances: 0,
     activeFragments: 0,
     consumedCutRevision: 0,
     consumedGrassVisualCuts: 0,
@@ -215,6 +231,8 @@ export function createScene(seed: number): MeadowScene {
     presentation.visibleBladeCount = blade.diagnostics.visibleBladeCount;
     presentation.visibleTeeth = blade.diagnostics.visibleTeeth;
     presentation.orientationCueCount = blade.diagnostics.orientationCueCount;
+    presentation.fallingGrassTufts = grass.diagnostics.activeFalls;
+    presentation.fallingFlowerInstances = flowers.diagnostics.activeFalls;
     presentation.activeFragments = cutEffects.diagnostics.activeFragments;
     presentation.consumedCutRevision = cutEffects.diagnostics.consumedCutRevision;
     presentation.consumedGrassVisualCuts = cutEffects.diagnostics.consumedGrassVisualCuts;
@@ -304,7 +322,8 @@ function addGrass(
   scale: THREE.Vector3,
   color: THREE.Color,
   yAxis: THREE.Vector3,
-): VegetationSync {
+  reducedMotion: boolean,
+): FallingVegetationSync {
   const count = layout.grassVisuals.length;
   const geometry = track(resources, createGrassClumpGeometry());
   const material = track(
@@ -320,7 +339,22 @@ function addGrass(
   const grass = new THREE.InstancedMesh(geometry, material, count);
   const palette = [0x227a38, 0x2f9640, 0x43ad48, 0x62c94f] as const;
   const cutMatrices = new Float32Array(count * 16);
+  const fallStartTimes = new Float32Array(count);
+  const fallDirections = new Float32Array(count);
+  const fallingVisualIndices: number[] = [];
+  const yawRotation = new THREE.Quaternion();
+  const fallRotation = new THREE.Quaternion();
+  const fallAxis = new THREE.Vector3();
+  const fallSample: VegetationFallSample = {
+    stage: "waiting",
+    tiltRadians: 0,
+    visibilityScale: 1,
+  };
+  const fallTiming = reducedMotion ? REDUCED_MOTION_FALL_TIMING : GRASS_FALL_TIMING;
+  const diagnostics = { activeFalls: 0 };
   let appliedCutVisualCount = 0;
+
+  fallStartTimes.fill(-1);
 
   for (let index = 0; index < count; index += 1) {
     const visual = layout.grassVisuals[index];
@@ -352,7 +386,8 @@ function addGrass(
   scene.add(grass);
 
   return {
-    syncTargets(state: GameState): void {
+    diagnostics,
+    syncTargets(state: GameState, simulationTimeSeconds: number): void {
       let matricesChanged = false;
 
       while (appliedCutVisualCount < state.cutGrassVisualIndices.length) {
@@ -362,10 +397,62 @@ function addGrass(
           continue;
         }
 
-        readMatrix(matrix, cutMatrices, visualIndex);
+        const visual = layout.grassVisuals[visualIndex];
+        if (visual === undefined) {
+          continue;
+        }
+
+        const travelSpeed = Math.hypot(state.player.vx, state.player.vz);
+        const travelDirection =
+          travelSpeed > 0.35 ? Math.atan2(state.player.vz, state.player.vx) : visual.rotation;
+        const directionJitter = (((visualIndex * 37) % 31) / 30 - 0.5) * 0.8;
+        fallDirections[visualIndex] = travelDirection + directionJitter;
+        fallStartTimes[visualIndex] = simulationTimeSeconds;
+        fallingVisualIndices.push(visualIndex);
+      }
+
+      let activeWriteIndex = 0;
+      for (const visualIndex of fallingVisualIndices) {
+        const visual = layout.grassVisuals[visualIndex];
+        if (visual === undefined) {
+          continue;
+        }
+
+        sampleVegetationFall(
+          simulationTimeSeconds - (fallStartTimes[visualIndex] ?? simulationTimeSeconds),
+          fallTiming,
+          fallSample,
+        );
+        if (fallSample.stage === "complete") {
+          readMatrix(matrix, cutMatrices, visualIndex);
+          grass.setMatrixAt(visualIndex, matrix);
+          matricesChanged = true;
+          continue;
+        }
+
+        const fallDirection = fallDirections[visualIndex] ?? visual.rotation;
+        fallAxis.set(Math.sin(fallDirection), 0, -Math.cos(fallDirection)).normalize();
+        fallRotation.setFromAxisAngle(fallAxis, fallSample.tiltRadians);
+        yawRotation.setFromAxisAngle(yAxis, visual.rotation);
+        rotation.copy(fallRotation).multiply(yawRotation);
+
+        const stubbleProgress = 1 - fallSample.visibilityScale;
+        const tiltProgress = fallSample.tiltRadians / fallTiming.maxTiltRadians;
+        const fallenHeightScale = 1 - tiltProgress * 0.28;
+        position.set(visual.x, 0.015 + stubbleProgress * 0.003, visual.z);
+        scale.set(
+          visual.scaleX * (1 - stubbleProgress * 0.22),
+          visual.height * fallSample.visibilityScale * fallenHeightScale + 0.04 * stubbleProgress,
+          visual.scaleZ * (1 - stubbleProgress * 0.22),
+        );
+        matrix.compose(position, rotation, scale);
         grass.setMatrixAt(visualIndex, matrix);
+        fallingVisualIndices[activeWriteIndex] = visualIndex;
+        activeWriteIndex += 1;
         matricesChanged = true;
       }
+      fallingVisualIndices.length = activeWriteIndex;
+      diagnostics.activeFalls = activeWriteIndex;
 
       if (matricesChanged) {
         grass.instanceMatrix.needsUpdate = true;
@@ -442,7 +529,8 @@ function addFlowers(
   scale: THREE.Vector3,
   color: THREE.Color,
   yAxis: THREE.Vector3,
-): VegetationSync {
+  reducedMotion: boolean,
+): FallingVegetationSync {
   const count = layout.flowerVisuals.length;
   const stemGeometry = track(resources, new THREE.CylinderGeometry(0.038, 0.062, 0.82, 6));
   const stemMaterial = track(
@@ -468,14 +556,29 @@ function addFlowers(
   const heads = new THREE.InstancedMesh(headGeometry, headMaterial, count);
   const centers = new THREE.InstancedMesh(centerGeometry, centerMaterial, count);
   const palette = [0xfff7d6, 0xff6fa9, 0xc675ff, 0xffffff, 0x6ec8ff] as const;
-  const standingStemMatrices = new Float32Array(count * 16);
-  const standingHeadMatrices = new Float32Array(count * 16);
-  const standingCenterMatrices = new Float32Array(count * 16);
   const cutStemMatrices = new Float32Array(count * 16);
-  const cutHeadMatrices = new Float32Array(count * 16);
-  const cutCenterMatrices = new Float32Array(count * 16);
+  const hiddenMatrices = new Float32Array(count * 16);
+  const fallStartTimes = new Float32Array(count);
+  const fallDirections = new Float32Array(count);
+  const fallingVisualIndices: number[] = [];
+  const yawRotation = new THREE.Quaternion();
+  const fallRotation = new THREE.Quaternion();
+  const headFallRotation = new THREE.Quaternion();
+  const headRotation = new THREE.Quaternion();
+  const fallAxis = new THREE.Vector3();
+  const localOffset = new THREE.Vector3();
+  const fallSample: VegetationFallSample = {
+    stage: "waiting",
+    tiltRadians: 0,
+    visibilityScale: 1,
+  };
+  const fallTiming = reducedMotion ? REDUCED_MOTION_FALL_TIMING : FLOWER_FALL_TIMING;
+  const fallStaggerSeconds = reducedMotion ? 0 : 0.1;
+  const diagnostics = { activeFalls: 0 };
   const visualsByTarget = Array.from({ length: layout.flowerTargets.length }, () => [] as number[]);
-  const flattenedTargets = new Uint8Array(layout.flowerTargets.length);
+  const queuedCutTargets = new Uint8Array(layout.flowerTargets.length);
+
+  fallStartTimes.fill(-1);
 
   for (let index = 0; index < count; index += 1) {
     const visual = layout.flowerVisuals[index];
@@ -490,38 +593,28 @@ function addFlowers(
     scale.set(flowerScale * 0.86, flowerScale, flowerScale * 0.86);
     matrix.compose(position, rotation, scale);
     stems.setMatrixAt(index, matrix);
-    writeMatrix(standingStemMatrices, index, matrix);
 
     position.y = 0.86 * flowerScale;
     scale.set(flowerScale * 1.08, flowerScale * 1.08, flowerScale * 1.08);
     matrix.compose(position, rotation, scale);
     heads.setMatrixAt(index, matrix);
-    writeMatrix(standingHeadMatrices, index, matrix);
     color.setHex(palette[visual.colorIndex] ?? palette[0]);
     heads.setColorAt(index, color);
 
     position.y = 0.9 * flowerScale;
     matrix.compose(position, rotation, scale);
     centers.setMatrixAt(index, matrix);
-    writeMatrix(standingCenterMatrices, index, matrix);
 
     position.set(visual.x, 0.05, visual.z);
     scale.set(flowerScale * 0.58, flowerScale * 0.1, flowerScale * 0.58);
     matrix.compose(position, rotation, scale);
     writeMatrix(cutStemMatrices, index, matrix);
 
-    position.set(
-      visual.x + Math.cos(visual.rotation) * flowerScale * 0.12,
-      0.047,
-      visual.z + Math.sin(visual.rotation) * flowerScale * 0.12,
-    );
-    scale.set(flowerScale * 0.86, flowerScale * 0.86, flowerScale * 0.86);
+    position.set(visual.x, 0.02, visual.z);
+    rotation.identity();
+    scale.setScalar(0);
     matrix.compose(position, rotation, scale);
-    writeMatrix(cutHeadMatrices, index, matrix);
-
-    position.y = 0.069;
-    matrix.compose(position, rotation, scale);
-    writeMatrix(cutCenterMatrices, index, matrix);
+    writeMatrix(hiddenMatrices, index, matrix);
   }
 
   stems.instanceMatrix.needsUpdate = true;
@@ -533,36 +626,105 @@ function addFlowers(
   scene.add(stems, heads, centers);
 
   return {
-    syncTargets(state: GameState): void {
+    diagnostics,
+    syncTargets(state: GameState, simulationTimeSeconds: number): void {
       const targetOffset = layout.grassCells.length;
       let matricesChanged = false;
 
       for (let targetIndex = 0; targetIndex < layout.flowerTargets.length; targetIndex += 1) {
-        const isFlattened = state.targets[targetOffset + targetIndex]?.status !== "standing";
-        const nextFlattenedState = Number(isFlattened);
-        if (flattenedTargets[targetIndex] === nextFlattenedState) {
+        if (
+          queuedCutTargets[targetIndex] === 1 ||
+          state.targets[targetOffset + targetIndex]?.status !== "cut"
+        ) {
           continue;
         }
 
-        flattenedTargets[targetIndex] = nextFlattenedState;
+        queuedCutTargets[targetIndex] = 1;
         const targetVisuals = visualsByTarget[targetIndex];
         if (targetVisuals === undefined) {
           continue;
         }
 
-        const stemTransforms = isFlattened ? cutStemMatrices : standingStemMatrices;
-        const headTransforms = isFlattened ? cutHeadMatrices : standingHeadMatrices;
-        const centerTransforms = isFlattened ? cutCenterMatrices : standingCenterMatrices;
         for (const visualIndex of targetVisuals) {
-          readMatrix(matrix, stemTransforms, visualIndex);
-          stems.setMatrixAt(visualIndex, matrix);
-          readMatrix(matrix, headTransforms, visualIndex);
-          heads.setMatrixAt(visualIndex, matrix);
-          readMatrix(matrix, centerTransforms, visualIndex);
-          centers.setMatrixAt(visualIndex, matrix);
+          const visual = layout.flowerVisuals[visualIndex];
+          if (visual === undefined) {
+            continue;
+          }
+
+          const stagger = (((visualIndex * 17) % 11) / 10) * fallStaggerSeconds;
+          const deltaX = visual.x - state.player.x;
+          const deltaZ = visual.z - state.player.z;
+          fallDirections[visualIndex] =
+            Math.hypot(deltaX, deltaZ) > 0.05
+              ? Math.atan2(deltaZ, deltaX)
+              : visual.rotation + Math.PI * 0.5;
+          fallStartTimes[visualIndex] = simulationTimeSeconds + stagger;
+          fallingVisualIndices.push(visualIndex);
         }
+      }
+
+      let activeWriteIndex = 0;
+      for (const visualIndex of fallingVisualIndices) {
+        const visual = layout.flowerVisuals[visualIndex];
+        if (visual === undefined) {
+          continue;
+        }
+
+        sampleVegetationFall(
+          simulationTimeSeconds - (fallStartTimes[visualIndex] ?? simulationTimeSeconds),
+          fallTiming,
+          fallSample,
+        );
+        if (fallSample.stage === "complete") {
+          readMatrix(matrix, cutStemMatrices, visualIndex);
+          stems.setMatrixAt(visualIndex, matrix);
+          readMatrix(matrix, hiddenMatrices, visualIndex);
+          heads.setMatrixAt(visualIndex, matrix);
+          centers.setMatrixAt(visualIndex, matrix);
+          matricesChanged = true;
+          continue;
+        }
+
+        const fallDirection = fallDirections[visualIndex] ?? visual.rotation;
+        fallAxis.set(Math.sin(fallDirection), 0, -Math.cos(fallDirection)).normalize();
+        fallRotation.setFromAxisAngle(fallAxis, fallSample.tiltRadians);
+        headFallRotation.setFromAxisAngle(fallAxis, fallSample.tiltRadians * 0.62);
+        yawRotation.setFromAxisAngle(yAxis, visual.rotation);
+        rotation.copy(fallRotation).multiply(yawRotation);
+        headRotation.copy(headFallRotation).multiply(yawRotation);
+
+        const flowerScale = visual.scale;
+        const visibilityScale = fallSample.visibilityScale;
+        localOffset.set(0, 0.41 * flowerScale * visibilityScale, 0);
+        localOffset.applyQuaternion(fallRotation);
+        position.set(visual.x + localOffset.x, localOffset.y, visual.z + localOffset.z);
+        scale.set(
+          flowerScale * 0.86 * visibilityScale,
+          flowerScale * visibilityScale,
+          flowerScale * 0.86 * visibilityScale,
+        );
+        matrix.compose(position, rotation, scale);
+        stems.setMatrixAt(visualIndex, matrix);
+
+        localOffset.set(0, 0.86 * flowerScale * visibilityScale, 0);
+        localOffset.applyQuaternion(fallRotation);
+        position.set(visual.x + localOffset.x, localOffset.y, visual.z + localOffset.z);
+        scale.setScalar(flowerScale * 1.08 * visibilityScale);
+        matrix.compose(position, headRotation, scale);
+        heads.setMatrixAt(visualIndex, matrix);
+
+        localOffset.set(0, 0.9 * flowerScale * visibilityScale, 0);
+        localOffset.applyQuaternion(fallRotation);
+        position.set(visual.x + localOffset.x, localOffset.y, visual.z + localOffset.z);
+        matrix.compose(position, headRotation, scale);
+        centers.setMatrixAt(visualIndex, matrix);
+
+        fallingVisualIndices[activeWriteIndex] = visualIndex;
+        activeWriteIndex += 1;
         matricesChanged = true;
       }
+      fallingVisualIndices.length = activeWriteIndex;
+      diagnostics.activeFalls = activeWriteIndex;
 
       if (matricesChanged) {
         stems.instanceMatrix.needsUpdate = true;
