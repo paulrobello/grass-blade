@@ -38,12 +38,22 @@ interface HudElements {
   levelToastNumber: HTMLElement;
 }
 
+interface ResultsElements {
+  overlay: HTMLDivElement;
+  elapsed: HTMLElement;
+  cutTargets: HTMLElement;
+  highestLevel: HTMLElement;
+  restartButton: HTMLButtonElement;
+  nextButton: HTMLButtonElement;
+}
+
 export class Game {
   private readonly canvas: HTMLCanvasElement;
   private readonly renderer: THREE.WebGLRenderer;
   private readonly meadow: MeadowScene;
   private readonly state: GameState;
   private readonly hud: HudElements;
+  private readonly results: ResultsElements;
   private readonly collectionMotes: CollectionMotes;
   private readonly targetProgress: TargetProgressOverlay;
   private readonly input: MovementInput = {
@@ -64,6 +74,7 @@ export class Game {
     this.canvas = canvas;
     this.state = createInitialState(seed);
     this.hud = getHudElements();
+    this.results = createResultsElements(requireAppRoot(canvas));
     this.meadow = createScene(this.state.seed);
     this.collectionMotes = createCollectionMotes(
       requireAppRoot(canvas),
@@ -91,6 +102,11 @@ export class Game {
 
     window.render_game_to_text = this.renderGameToText;
     window.advanceTime = this.advanceTime;
+    window.restartContract = this.restartContract;
+    window.nextContract = this.nextContract;
+    if (new URLSearchParams(window.location.search).get("debug") === "1") {
+      window.completeContractForDebug = this.completeContractForDebug;
+    }
   }
 
   public start(): void {
@@ -104,6 +120,8 @@ export class Game {
     window.addEventListener("blur", this.resetInput);
     window.addEventListener("resize", this.resize);
     document.addEventListener("fullscreenchange", this.resize);
+    this.results.restartButton.addEventListener("click", this.restartContract);
+    this.results.nextButton.addEventListener("click", this.nextContract);
 
     this.resize();
     this.render();
@@ -124,6 +142,10 @@ export class Game {
     window.removeEventListener("blur", this.resetInput);
     window.removeEventListener("resize", this.resize);
     document.removeEventListener("fullscreenchange", this.resize);
+    this.results.restartButton.removeEventListener("click", this.restartContract);
+    this.results.nextButton.removeEventListener("click", this.nextContract);
+    this.results.overlay.remove();
+    delete window.completeContractForDebug;
     this.collectionMotes.dispose();
     this.targetProgress.dispose();
     this.meadow.dispose();
@@ -197,7 +219,7 @@ export class Game {
         ? 1
         : clamp((xp - previousThreshold) / (nextThreshold - previousThreshold), 0, 1);
 
-    setText(this.hud.time, formatElapsedTime(this.simulationTimeSeconds));
+    setText(this.hud.time, formatElapsedTime(this.state.elapsedSeconds));
     setText(this.hud.level, `LV ${player.level}`);
     setText(this.hud.rpm, `${Math.round(player.rpm)} RPM`);
     setText(this.hud.grass, String(objectives.grass.collected));
@@ -211,6 +233,20 @@ export class Game {
     this.hud.root.style.setProperty("--rpm-progress", `${Math.round(rpmProgress * 100)}%`);
     this.hud.xpFill.style.width = `${xpProgress * 100}%`;
     this.updateHudFeedback();
+    this.updateResults();
+  }
+
+  private updateResults(): void {
+    const result = this.state.result;
+    if (this.state.mode !== "complete" || result === null) {
+      this.results.overlay.hidden = true;
+      return;
+    }
+
+    this.results.overlay.hidden = false;
+    setText(this.results.elapsed, formatElapsedTime(result.completedAtSeconds));
+    setText(this.results.cutTargets, String(result.cutTargets));
+    setText(this.results.highestLevel, `LV ${result.highestLevel}`);
   }
 
   private updateHudFeedback(): void {
@@ -287,6 +323,18 @@ export class Game {
       return;
     }
 
+    if (this.state.mode === "complete" && event.code === "KeyR" && !event.repeat) {
+      event.preventDefault();
+      this.restartContract();
+      return;
+    }
+
+    if (this.state.mode === "complete" && event.code === "KeyN" && !event.repeat) {
+      event.preventDefault();
+      this.nextContract();
+      return;
+    }
+
     if (event.code === "Escape" && document.fullscreenElement !== null && !event.repeat) {
       event.preventDefault();
       void document.exitFullscreen();
@@ -339,6 +387,41 @@ export class Game {
     const target = parent instanceof HTMLElement ? parent : this.canvas;
     await target.requestFullscreen();
   }
+
+  private readonly restartContract = (): void => {
+    window.location.assign(`?seed=${this.state.seed}`);
+  };
+
+  private readonly nextContract = (): void => {
+    const nextSeed = (this.state.seed + 0x9e3779b9) >>> 0;
+    window.location.assign(`?seed=${nextSeed}`);
+  };
+
+  private readonly completeContractForDebug = (): void => {
+    if (this.state.mode === "complete") {
+      return;
+    }
+
+    const finalTarget = this.state.targets.find(
+      (target) => target.kind === "grass" && target.status !== "cut",
+    );
+    if (finalTarget === undefined) {
+      return;
+    }
+
+    this.state.inventory = { grass: 49, flowers: 10, fiber: 6, wood: 6 };
+    this.state.objectives.grass.collected = 49;
+    this.state.objectives.flowers.collected = 10;
+    this.state.objectives.fiber.collected = 6;
+    this.state.objectives.wood.collected = 6;
+    finalTarget.x = this.state.player.x;
+    finalTarget.z = this.state.player.z;
+    finalTarget.status = "cutting";
+    finalTarget.accumulatedWork = finalTarget.requiredWork - 0.001;
+    this.resetInput();
+    this.step(FIXED_TIME_STEP_SECONDS);
+    this.render();
+  };
 
   private readonly renderGameToText = (): string => {
     const { player, objectives } = this.state;
@@ -394,7 +477,8 @@ export class Game {
         "Ground plane is XZ with origin at meadow center and +Y up; movement is screen-relative under the fixed isometric camera.",
       mode: this.state.mode,
       seed: this.state.seed,
-      elapsedSeconds: round(this.simulationTimeSeconds),
+      elapsedSeconds: round(this.state.elapsedSeconds),
+      result: this.state.result,
       meadow: this.meadow.density,
       presentation: {
         ...this.meadow.presentation,
@@ -413,6 +497,8 @@ export class Game {
       controls: {
         movement: "WASD or arrow keys",
         fullscreen: "F toggles; Escape exits fullscreen",
+        restart: this.state.mode === "complete" ? "R restarts the current seed" : null,
+        nextContract: this.state.mode === "complete" ? "N opens the next deterministic seed" : null,
       },
       inventory: this.state.inventory,
       xp: this.state.xp,
@@ -460,6 +546,63 @@ function getHudElements(): HudElements {
     xpFill: requireElement("hud-xp-fill"),
     levelToast: requireElement("level-toast"),
     levelToastNumber: requireElement("level-toast-number"),
+  };
+}
+
+function createResultsElements(root: HTMLElement): ResultsElements {
+  const overlay = document.createElement("div");
+  const card = document.createElement("section");
+  const eyebrow = document.createElement("p");
+  const title = document.createElement("h2");
+  const summary = document.createElement("p");
+  const stats = document.createElement("dl");
+  const elapsedLabel = document.createElement("dt");
+  const elapsed = document.createElement("dd");
+  const cutTargetsLabel = document.createElement("dt");
+  const cutTargets = document.createElement("dd");
+  const highestLevelLabel = document.createElement("dt");
+  const highestLevel = document.createElement("dd");
+  const actions = document.createElement("div");
+  const restartButton = document.createElement("button");
+  const nextButton = document.createElement("button");
+
+  overlay.className = "results-overlay";
+  overlay.hidden = true;
+  overlay.setAttribute("role", "status");
+  overlay.setAttribute("aria-live", "polite");
+  overlay.setAttribute("aria-atomic", "true");
+  card.className = "results-card";
+  card.setAttribute("aria-label", "Meadow Delivery results");
+  eyebrow.className = "results-card__eyebrow";
+  eyebrow.textContent = "Contract complete";
+  title.textContent = "Meadow Delivery";
+  summary.className = "results-card__summary";
+  summary.textContent = "Every quota is packed. Take another pass through the meadow when ready.";
+  stats.className = "results-card__stats";
+  elapsedLabel.textContent = "Time";
+  cutTargetsLabel.textContent = "Targets cut";
+  highestLevelLabel.textContent = "Highest level";
+  actions.className = "results-card__actions";
+  restartButton.type = "button";
+  restartButton.className = "results-card__button";
+  restartButton.textContent = "Restart";
+  nextButton.type = "button";
+  nextButton.className = "results-card__button results-card__button--primary";
+  nextButton.textContent = "Next Contract";
+
+  stats.append(elapsedLabel, elapsed, cutTargetsLabel, cutTargets, highestLevelLabel, highestLevel);
+  actions.append(restartButton, nextButton);
+  card.append(eyebrow, title, summary, stats, actions);
+  overlay.append(card);
+  root.append(overlay);
+
+  return {
+    overlay,
+    elapsed,
+    cutTargets,
+    highestLevel,
+    restartButton,
+    nextButton,
   };
 }
 

@@ -34,13 +34,13 @@ export interface MovementInput {
 }
 
 export interface ObjectiveCounter {
-  status: "active" | "planned";
+  status: "active" | "complete" | "planned";
   collected: number;
   target: number;
 }
 
 export interface ObjectivesState {
-  status: "active";
+  status: "active" | "complete";
   grass: ObjectiveCounter;
   flowers: ObjectiveCounter;
   fiber: ObjectiveCounter;
@@ -85,12 +85,22 @@ export interface PlayerState {
   level: number;
 }
 
+export interface ContractResult {
+  completedAtSeconds: number;
+  cutTargets: number;
+  highestLevel: number;
+  finalInventory: InventoryState;
+  completionRevision: number;
+}
+
 export interface GameState {
-  mode: "active";
+  mode: "active" | "complete";
   seed: number;
+  elapsedSeconds: number;
   player: PlayerState;
   inventory: InventoryState;
   objectives: ObjectivesState;
+  result: ContractResult | null;
   xp: number;
   targets: TargetState[];
   bladeContactTargetIds: string[];
@@ -116,6 +126,7 @@ export function createInitialState(seed = MEADOW_SEED): GameState {
   return {
     mode: "active",
     seed,
+    elapsedSeconds: 0,
     player: {
       x: 0,
       z: 0,
@@ -140,6 +151,7 @@ export function createInitialState(seed = MEADOW_SEED): GameState {
       fiber: { status: "active", collected: 0, target: 6 },
       wood: { status: "active", collected: 0, target: 6 },
     },
+    result: null,
     xp: 0,
     targets: targetSeeds.map(createTargetState),
     bladeContactTargetIds: [],
@@ -157,6 +169,10 @@ export function stepState(state: GameState, input: MovementInput, deltaSeconds: 
   }
 
   const delta = Math.min(deltaSeconds, MAX_FRAME_DELTA_SECONDS);
+  if (state.mode === "complete") {
+    return state;
+  }
+  state.elapsedSeconds += delta;
   const startX = state.player.x;
   const startZ = state.player.z;
   const screenX = Number(input.right) - Number(input.left);
@@ -280,6 +296,7 @@ function stepCutting(
   }
 
   applyProgression(state);
+  updateContractCompletion(state);
 }
 
 function markCutGrassVisuals(
@@ -456,6 +473,38 @@ function applyProgression(state: GameState): void {
 
   state.player.level = level;
   state.player.targetRpm = targetRpmForLevel(level);
+}
+
+function updateContractCompletion(state: GameState): void {
+  if (state.mode === "complete") {
+    return;
+  }
+
+  const objectivesComplete =
+    state.objectives.grass.collected >= state.objectives.grass.target &&
+    state.objectives.flowers.collected >= state.objectives.flowers.target &&
+    state.objectives.fiber.collected >= state.objectives.fiber.target &&
+    state.objectives.wood.collected >= state.objectives.wood.target;
+  if (!objectivesComplete) {
+    return;
+  }
+
+  state.mode = "complete";
+  state.player.vx = 0;
+  state.player.vz = 0;
+  state.bladeContactTargetIds.length = 0;
+  state.objectives.status = "complete";
+  state.objectives.grass.status = "complete";
+  state.objectives.flowers.status = "complete";
+  state.objectives.fiber.status = "complete";
+  state.objectives.wood.status = "complete";
+  state.result = {
+    completedAtSeconds: state.elapsedSeconds,
+    cutTargets: state.targets.filter((target) => target.status === "cut").length,
+    highestLevel: state.player.level,
+    finalInventory: { ...state.inventory },
+    completionRevision: state.cutRevision,
+  };
 }
 
 function levelForXp(xp: number): number {

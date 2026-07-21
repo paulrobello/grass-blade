@@ -6,9 +6,9 @@ The detailed gameplay and engineering contract lives in [PRD.md](PRD.md).
 
 ## Current status
 
-Phase 0 is complete, and the first Phase 1 contract systems are implemented and verified. Grass cells, flower clusters, twelve dense-weed targets, five Tier-4 saplings, and eight mature trees have authoritative deterministic targets: moving the spinning blade through them applies RPM load and persistent cut work, leaves a lasting cut trail, awards resources exactly once, and automatically levels the blade. Dense weeds remain pass-through Tier-2 Fiber targets. Saplings and mature trees block the protected hub until their cut completes, then become traversable and award Wood. Live contact alone bends resistant plants and throws deterministic wood chips; released targets return to rest without losing progress. Completed grass, flowers, weeds, saplings, and mature trees now fall from their roots, settle or leave a stump as appropriate, and retire without snapping out of existence. A fixed 64-slot collection-mote pool arcs each authoritative reward toward its matching HUD counter while the counter itself still updates on the cut tick. A fresh run starts with only two opposing cutter arms at level 1; the cutter evolves to four arms at levels 2-5 and an 18-tooth saw at levels 6-8 without changing its authoritative reach. A gold orientation cue keeps rotation legible across the cutter's symmetric profiles, and the former circular ground-blob shadow has been removed. A compact HUD exposes elapsed time, RPM, level, XP progress, and all four active Grass, Flower, Fiber, and Wood quotas.
+Phase 0 is complete, and the first Phase 1 contract systems are implemented and verified. Grass cells, flower clusters, twelve dense-weed targets, eight shrubs, five Tier-4 saplings, and eight mature trees have authoritative deterministic targets: moving the spinning blade through them applies RPM load and persistent cut work, leaves a lasting cut trail, awards resources exactly once, and automatically levels the blade. Dense weeds remain pass-through Tier-2 Fiber targets. Shrubs, saplings, and mature trees block the protected hub until their cut completes, then become traversable and award Fiber or Wood. Live contact alone bends resistant plants and throws deterministic wood chips for woody targets; released targets return to rest without losing progress. Completed grass, flowers, weeds, shrubs, saplings, and mature trees now fall from their roots, settle or leave a stump as appropriate, and retire without snapping out of existence. A fixed 64-slot collection-mote pool arcs each authoritative reward toward its matching HUD counter while the counter itself still updates on the cut tick. A fresh run starts with only two opposing cutter arms at level 1; the cutter evolves to four arms at levels 2-5 and an 18-tooth saw at levels 6-8 without changing its authoritative reach. A gold orientation cue keeps rotation legible across the cutter's symmetric profiles, and the former circular ground-blob shadow has been removed. A compact HUD exposes elapsed time, RPM, level, XP progress, and all four active Grass, Flower, Fiber, and Wood quotas. Completing all quotas switches the authoritative state to `complete` on the same fixed tick as the final reward, freezes elapsed time, and shows a results card with elapsed time, targets cut, highest level, Restart, and Next Contract.
 
-**The full Meadow Delivery contract is not complete yet.** Remaining Phase 1 work is deterministic coverage for RPM recovery, aggregate load, available quotas, and repeated contract snapshots. Shrubs, final sapling art/material feedback, rocks, too-tough presentation, and the completion/results flow remain Phase 2 work under the PRD. See [progress.md](progress.md) for the exact handoff state.
+Remaining Phase 2 work is deterministic coverage for RPM recovery, aggregate load, available quotas, and repeated contract snapshots, plus final sapling art/material feedback, rocks, too-tough presentation, pause flow, and broader completion-seed validation under the PRD. See [progress.md](progress.md) for the exact handoff state.
 
 ## Requirements
 
@@ -51,13 +51,14 @@ bun run typecheck
 
 ## Controls
 
-| Input      | Action                                                       |
-| ---------- | ------------------------------------------------------------ |
-| `W A S D`  | Move relative to the screen                                  |
-| Arrow keys | Equivalent movement controls                                 |
-| `F`        | Toggle fullscreen                                            |
-| `Escape`   | Leave fullscreen; pause is planned with contracts            |
-| `R`        | Restart from the pause or results screen once contracts ship |
+| Input      | Action                                                   |
+| ---------- | -------------------------------------------------------- |
+| `W A S D`  | Move relative to the screen                              |
+| Arrow keys | Equivalent movement controls                             |
+| `F`        | Toggle fullscreen                                        |
+| `Escape`   | Leave fullscreen; pause remains planned                  |
+| `R`        | Restart the current seed from the results screen         |
+| `N`        | Open the next deterministic seed from the results screen |
 
 The blade spins automatically; there is no attack button.
 
@@ -69,8 +70,9 @@ The browser-facing automation contract lets the game be observed and driven with
 - `window.__grassBladeReady` becomes `true` when the scene is controllable.
 - `window.render_game_to_text()` returns a concise JSON snapshot of visible game state.
 - `window.advanceTime(milliseconds)` switches automation to manual time, advances exact 60 Hz ticks, and renders.
+- `?debug=1` exposes `window.completeContractForDebug()` for deterministic browser verification of the results flow; the hook completes the final quota through the normal fixed-step award path.
 
-These hooks include the current inventory, objectives, XP, RPM, target counts, live blade-contact target IDs, partially cut target work, recent authoritative cut events, blade presentation tier and orientation cue, and pooled-fragment diagnostics. See [progress.md](progress.md) for the recorded evidence.
+These hooks include the current mode, result snapshot, inventory, objectives, XP, RPM, target counts, live blade-contact target IDs, partially cut target work, recent authoritative cut events, blade presentation tier and orientation cue, and pooled-fragment diagnostics. See [progress.md](progress.md) for the recorded evidence.
 
 Example URL:
 

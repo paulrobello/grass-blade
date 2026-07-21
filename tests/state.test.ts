@@ -87,6 +87,7 @@ describe("active game state", () => {
     expect(first).toEqual(second);
     expect(first.mode).toBe("active");
     expect(first.seed).toBe(MEADOW_SEED);
+    expect(first.elapsedSeconds).toBe(0);
     expect(first.player).toMatchObject({
       x: 0,
       z: 0,
@@ -105,6 +106,7 @@ describe("active game state", () => {
       wood: { status: "active", collected: 0, target: 6 },
     });
     expect(first.xp).toBe(0);
+    expect(first.result).toBeNull();
     expect(first.cutRevision).toBe(0);
     expect(first.bladeContactTargetIds).toEqual([]);
     expect(first.targets).toHaveLength(
@@ -198,6 +200,7 @@ describe("active game state", () => {
 
     expect(state.seed).toBe(12345);
     expect(state.mode).toBe("active");
+    expect(state.elapsedSeconds).toBe(0);
     expect(state.player.level).toBe(1);
     expect(state.targets.every((target) => target.status === "standing")).toBe(true);
   });
@@ -412,6 +415,63 @@ describe("active game state", () => {
     expect(state.cutEvents.map((event) => event.revision)).toEqual([1, 2]);
     expect(state.cutRevision).toBe(2);
     expect(state.cutRevision).toBe(state.cutEvents.at(-1)?.revision);
+  });
+
+  it("completes the contract on the same tick that the final quota is awarded", () => {
+    const state = createInitialState(94);
+    const target = isolateTarget(state, "sapling");
+    prepareLevelFourBlade(state);
+    state.inventory = { grass: 50, flowers: 10, fiber: 6, wood: 4 };
+    state.objectives.grass.collected = 50;
+    state.objectives.flowers.collected = 10;
+    state.objectives.fiber.collected = 6;
+    state.objectives.wood.collected = 4;
+    target.status = "cutting";
+    target.accumulatedWork = target.requiredWork - 0.001;
+
+    stepState(state, idleInput, FIXED_TIME_STEP_SECONDS);
+
+    expect(target.status).toBe("cut");
+    expect(state.mode).toBe("complete");
+    expect(state.objectives.status).toBe("complete");
+    expect(state.objectives.wood).toMatchObject({ status: "complete", collected: 6, target: 6 });
+    expect(state.result).toEqual({
+      completedAtSeconds: FIXED_TIME_STEP_SECONDS,
+      cutTargets: 1,
+      highestLevel: 4,
+      finalInventory: { grass: 50, flowers: 10, fiber: 6, wood: 6 },
+      completionRevision: 1,
+    });
+  });
+
+  it("keeps completed contracts idempotent across later simulation ticks", () => {
+    const state = createInitialState(95);
+    const target = isolateTarget(state, "grass");
+    state.inventory = { grass: 49, flowers: 10, fiber: 6, wood: 6 };
+    state.objectives.grass.collected = 49;
+    state.objectives.flowers.collected = 10;
+    state.objectives.fiber.collected = 6;
+    state.objectives.wood.collected = 6;
+    target.status = "cutting";
+    target.accumulatedWork = target.requiredWork - 0.001;
+
+    stepState(state, idleInput, FIXED_TIME_STEP_SECONDS);
+    const resultSnapshot = state.result;
+    const inventorySnapshot = { ...state.inventory };
+    const cutRevisionSnapshot = state.cutRevision;
+    const elapsedSnapshot = state.elapsedSeconds;
+    state.player.vx = MAX_MOVE_SPEED;
+
+    for (let frame = 0; frame < 60; frame += 1) {
+      stepState(state, positiveXInput, FIXED_TIME_STEP_SECONDS);
+    }
+
+    expect(state.mode).toBe("complete");
+    expect(state.result).toEqual(resultSnapshot);
+    expect(state.inventory).toEqual(inventorySnapshot);
+    expect(state.cutRevision).toBe(cutRevisionSnapshot);
+    expect(state.elapsedSeconds).toBe(elapsedSnapshot);
+    expect(state.player.vx).toBe(MAX_MOVE_SPEED);
   });
 
   it("records XP-derived level boundaries when a cut crosses a threshold", () => {

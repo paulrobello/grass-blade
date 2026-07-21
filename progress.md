@@ -3,7 +3,7 @@ Original prompt: "i want create a threejs based game where you are a spinning bl
 # Grass Blade Progress
 
 Last updated: 2026-07-21
-Active milestone: Phase 1 — HUD-flight collection and rooted target reactions verified; deterministic contract closeout next
+Active milestone: Phase 2 — completion/results flow verified; too-tough feedback, rocks, and pause flow next
 
 ## Completed foundation intent
 
@@ -79,6 +79,9 @@ Active milestone: Phase 1 — HUD-flight collection and rooted target reactions 
 - [x] Added reduced-motion vegetation timing and live fall diagnostics without per-frame allocation or new gameplay authority.
 - [x] Verified the fresh level-1 presentation as exactly two opposing blades with no saw teeth; four blades still begin only at level 2.
 - [x] Expanded `render_game_to_text` with inventory, XP, loaded RPM, target counts, live blade contacts, cut revision, persistent partial-work diagnostics, recent cut events, blade tier, orientation-cue count, and fragment-pool state.
+- [x] Added authoritative same-tick Meadow Delivery completion when the final quota is awarded, including a stable result snapshot with elapsed time, targets cut, highest level, final inventory, and completion revision.
+- [x] Added a calm results card with elapsed time, targets cut, highest level, Restart, and Next Contract actions; `R` restarts the current seed and `N` opens the next deterministic seed from results.
+- [x] Added a query-gated `?debug=1` browser hook, `window.completeContractForDebug()`, that completes the final quota through the normal fixed-step award path for deterministic results-flow verification.
 - [x] Added deterministic tests for layout mapping, fine grass masks, grass/flower/weed/tree cuts, Tier 2 timing, solid blocking and release, persistent work, exact-once rewards, level thresholds, replay, movement, and boundaries.
 
 ## Phase 1 verification evidence
@@ -114,12 +117,16 @@ Active milestone: Phase 1 — HUD-flight collection and rooted target reactions 
 - `make checkall` passes formatting verification, ESLint, strict TypeScript, 54 deterministic Vitest tests across four files, and the Vite production build after the blade visual-spin readability fix.
 - `make checkall` passes formatting verification, ESLint, strict TypeScript, 55 deterministic Vitest tests across four files, and the Vite production build after durable target progress bars.
 - `make checkall` passes formatting verification, ESLint, strict TypeScript, 59 deterministic Vitest tests across four files, and the Vite production build after the blade visual-spin continuity fix. A Playwright idle-spin capture at `output/playwright/blade-spin-continuity/` showed the level-1 two-arm cutter progressing horizontal → diagonal → vertical, with no browser error artifacts; diagnostics confirmed the raw angle wrapped from `4.004` to `0.588` while the readable visual angle continued forward from `1.771` to `2.480`.
+- `make checkall` passes formatting verification, ESLint, strict TypeScript, 61 deterministic Vitest tests across four files, and the Vite production build after the completion/results slice.
+- The required web-game Playwright client ran against `?seed=12345` and wrote `output/playwright/results-flow-smoke/shot-0.png` without browser error artifacts.
+- A debug-gated browser verification at `?seed=12345&debug=1` called `window.completeContractForDebug()`, confirmed `mode: "complete"`, all four objectives `status: "complete"`, final inventory `50/10/6/6`, a stable result snapshot, visible Restart and Next Contract buttons, and no console/page errors. The inspected screenshot is `output/playwright/results-flow-smoke/results-card.png`.
+- Result-card button checks verified Next Contract navigates to `?seed=2654448114` and Restart returns to `?seed=12345`, with no browser errors.
 
 ## Remaining Phase 1 TODOs
 
 - [ ] Add deterministic coverage for RPM recovery, simultaneous aggregate load, final available quotas, and repeated contract snapshots.
 - [ ] Replace the linear target scan with the planned spatial query before discrete target counts grow beyond this bounded first slice.
-- [ ] In Phase 2, add shrubs, final sapling art/material feedback, non-cuttable rocks, too-tough feedback, full Meadow Delivery completion, results, and restart/next-contract flow.
+- [ ] In Phase 2, add final sapling art/material feedback, non-cuttable rocks, too-tough feedback, pause flow, and ten-seed completion validation.
 
 ## Handoff rules
 
