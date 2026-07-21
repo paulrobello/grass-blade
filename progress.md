@@ -3,7 +3,7 @@ Original prompt: "i want create a threejs based game where you are a spinning bl
 # Grass Blade Progress
 
 Last updated: 2026-07-20
-Active milestone: Phase 1 — Tier-4 saplings and all four resource quotas verified; immediate collection feedback next
+Active milestone: Phase 1 — blade evolution and pooled cut feedback verified; HUD-flight and sustained-contact polish next
 
 ## Completed foundation intent
 
@@ -57,12 +57,15 @@ Active milestone: Phase 1 — Tier-4 saplings and all four resource quotas verif
 - [x] Added swept hub-versus-solid collision: unfinished saplings and mature trees stop inward motion without preventing backing away, and stop blocking on the exact authoritative cut tick.
 - [x] Implemented grass clumps and wildflowers with the exact PRD work, resistance, yield, and XP values.
 - [x] Awarded resources and XP atomically and exactly once on the cut tick.
+- [x] Added an append-only deterministic cut-completion event stream with stable revisions, target positions, rewards, XP, and before/after level bounds.
 - [x] Implemented all cumulative XP thresholds and automatic levels 1-8, including multi-threshold awards.
 - [x] Added live Grass, Flower, Fiber, and Wood quota, level, RPM, elapsed-time, and XP HUD state without introducing a failure countdown.
+- [x] Added resource-matched HUD counter pulses and a consolidated `LEVEL N` notification, with reduced-motion fallbacks that do not gate accounting or movement.
 - [x] Rendered the five saplings with slim trunks and layered rounded foliage; sustained contact produces a deterministic lean/shudder and the full visual disappears on the authoritative cut tick.
 - [x] Replaced broad polygon clumps with 10,816 instanced fourteen-blade tufts, totaling 151,424 narrow tapered grass blades, and connected fine cut state to persistent stubble/clipping trails.
-- [x] Replaced the placeholder bar with a large four-arm silver/cyan cutter and tightened responsive portrait/desktop framing.
-- [x] Expanded `render_game_to_text` with inventory, XP, loaded RPM, target counts, cut revision, and persistent partial-work diagnostics.
+- [x] Replaced the placeholder bar with a large silver/cyan cutter that evolves from two arms at level 1, to four arms at levels 2-5, to an 18-tooth saw at levels 6-8 while preserving the same authoritative reach.
+- [x] Added a fixed 240-slot instanced fragment pool for deterministic grass clippings, petals, broad leaves, wood chips, and sapling/tree leaves without per-frame allocation.
+- [x] Expanded `render_game_to_text` with inventory, XP, loaded RPM, target counts, cut revision, persistent partial-work diagnostics, recent cut events, blade tier, and fragment-pool state.
 - [x] Added deterministic tests for layout mapping, fine grass masks, grass/flower/weed/tree cuts, Tier 2 timing, solid blocking and release, persistent work, exact-once rewards, level thresholds, replay, movement, and boundaries.
 
 ## Phase 1 verification evidence
@@ -80,10 +83,14 @@ Active milestone: Phase 1 — Tier-4 saplings and all four resource quotas verif
 - `make checkall` passes formatting verification, ESLint, strict TypeScript, 24 deterministic Vitest tests, and the Vite production build after the sapling/Wood slice.
 - A deterministic headed Chrome landscape route at `?seed=12345` reached level 4 through normal mowing, stopped against `sapling-3` at `8.131/50` work with zero Wood, then cut it at 22.5 simulated seconds. The same authoritative frame removed the solid/visual target and updated Wood to `2/6`; browser errors remained empty. The inspected local artifacts are `output/playwright/sapling-wood-landscape/sapling-cutting.png` and `sapling-cut.png`.
 - The same route at 430 by 860 preserved the compact four-counter HUD and readable blade/contact composition. Its snapshots changed Wood from `0/6` to `2/6`, removed only `sapling-3`, and reported no console or page errors. The inspected local artifacts are `output/playwright/sapling-wood-portrait/sapling-cutting.png` and `sapling-cut.png`.
+- `make checkall` passes formatting verification, ESLint, strict TypeScript, 28 deterministic Vitest tests, and the Vite production build after the cut-event and presentation slices.
+- A headed landscape route at `?seed=12345` progressed through normal cutting from the level-1 two-arm cutter, to the level-2 four-arm cutter, and to the level-6 18-tooth saw. Its level-6 snapshot reported 340 XP, 18 visible teeth, cut revision 301, 4,392 consumed fine-grass visual cuts, 70 active pooled fragments, and no console or page errors. The inspected local artifacts are `output/playwright/cutting-feedback-landscape/level-1.png`, `level-2.png`, and `level-6-saw.png`.
+- The same landscape route stopped on `sapling-3`, showed its deterministic sustained-contact shudder, then removed it and updated Wood to `2/6` on cut revision 146. The inspected `sapling-cut-burst.png` shows the Wood counter pulse and resource-specific chips beside the blade; `errors.json` is empty.
+- A headed 430 by 860 route preserved the complete HUD and readable cutter profiles. Its level-2 capture visibly shows the consolidated `LEVEL 2` notification; the sapling cut snapshot reports Wood `2/6`, four visible blades, 18 active fragments, consumed cut revision 145, and an empty browser error log. The inspected local artifacts are `output/playwright/cutting-feedback-portrait/level-2.png` and `sapling-cut-burst.png`.
 
 ## Remaining Phase 1 TODOs
 
-- [ ] Add pooled collapse/burst/HUD-flight collection feedback, level-up presentation, and reduced-motion behavior.
+- [ ] Add HUD-flight collection motes and richer target collapse/contact reactions; pooled resource bursts, HUD counter pulses, level-up presentation, and reduced-motion fallbacks are shipped.
 - [ ] Add deterministic coverage for RPM recovery, simultaneous aggregate load, final available quotas, and repeated contract snapshots.
 - [ ] Replace the linear target scan with the planned spatial query before discrete target counts grow beyond this bounded first slice.
 - [ ] In Phase 2, add shrubs, final sapling art/material feedback, non-cuttable rocks, too-tough feedback, full Meadow Delivery completion, results, and restart/next-contract flow.
