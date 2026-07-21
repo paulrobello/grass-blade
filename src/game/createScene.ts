@@ -327,6 +327,15 @@ export function deriveReadableBladeAngle(angleRadians: number): number {
   return (angleRadians * BLADE_VISUAL_SPIN_SCALE) % (Math.PI * 2);
 }
 
+export function accumulateReadableBladeAngle(
+  previousRawAngleRadians: number,
+  currentRawAngleRadians: number,
+  previousVisualAngleRadians: number,
+): number {
+  const rawDelta = (currentRawAngleRadians - previousRawAngleRadians + Math.PI * 2) % (Math.PI * 2);
+  return (previousVisualAngleRadians + deriveReadableBladeAngle(rawDelta)) % (Math.PI * 2);
+}
+
 function addGroundPatches(
   scene: THREE.Scene,
   resources: Array<THREE.BufferGeometry | THREE.Material>,
@@ -2077,9 +2086,17 @@ function addBlade(
     visualBladeAngleRadians: 0,
   };
   let appliedTier: BladeTier | null = null;
+  let previousRawAngleRadians = 0;
+  let accumulatedVisualAngleRadians = 0;
 
   function sync(level: number, angleRadians: number): void {
-    const visualBladeAngleRadians = deriveReadableBladeAngle(angleRadians);
+    accumulatedVisualAngleRadians = accumulateReadableBladeAngle(
+      previousRawAngleRadians,
+      angleRadians,
+      accumulatedVisualAngleRadians,
+    );
+    previousRawAngleRadians = angleRadians;
+    const visualBladeAngleRadians = accumulatedVisualAngleRadians;
     bladePivot.rotation.y = visualBladeAngleRadians;
     diagnostics.visualBladeAngleRadians = visualBladeAngleRadians;
     const tier: BladeTier = level >= 6 ? "saw" : level >= 2 ? "four-arm" : "two-arm";

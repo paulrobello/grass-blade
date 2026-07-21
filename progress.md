@@ -113,6 +113,7 @@ Active milestone: Phase 1 — HUD-flight collection and rooted target reactions 
 - `make checkall` passes formatting verification, ESLint, strict TypeScript, 53 deterministic Vitest tests across four files, and the Vite production build after the collection-mote, rooted-reaction, and live wood-chip slice.
 - `make checkall` passes formatting verification, ESLint, strict TypeScript, 54 deterministic Vitest tests across four files, and the Vite production build after the blade visual-spin readability fix.
 - `make checkall` passes formatting verification, ESLint, strict TypeScript, 55 deterministic Vitest tests across four files, and the Vite production build after durable target progress bars.
+- `make checkall` passes formatting verification, ESLint, strict TypeScript, 59 deterministic Vitest tests across four files, and the Vite production build after the blade visual-spin continuity fix. A Playwright idle-spin capture at `output/playwright/blade-spin-continuity/` showed the level-1 two-arm cutter progressing horizontal → diagonal → vertical, with no browser error artifacts; diagnostics confirmed the raw angle wrapped from `4.004` to `0.588` while the readable visual angle continued forward from `1.771` to `2.480`.
 
 ## Remaining Phase 1 TODOs
 

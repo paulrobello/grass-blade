@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { deriveReadableBladeAngle } from "../src/game/createScene";
+import { accumulateReadableBladeAngle, deriveReadableBladeAngle } from "../src/game/createScene";
 import {
   FIXED_TIME_STEP_SECONDS,
   MAX_MOVE_SPEED,
@@ -64,6 +64,20 @@ describe("active game state", () => {
     expect(visualFrameAdvance).toBeGreaterThan(0.07);
     expect(visualFrameAdvance).toBeLessThan(0.13);
     expect(visualFrameAdvance).toBeLessThan(rawFrameAdvance / 8);
+  });
+
+  it("keeps readable blade rotation continuous across raw angle wraparound", () => {
+    const previousRawAngle = Math.PI * 2 - 0.05;
+    const currentRawAngle = 0.1;
+    const previousVisualAngle = 1.2;
+    const nextVisualAngle = accumulateReadableBladeAngle(
+      previousRawAngle,
+      currentRawAngle,
+      previousVisualAngle,
+    );
+
+    expect(nextVisualAngle).toBeGreaterThan(previousVisualAngle);
+    expect(nextVisualAngle - previousVisualAngle).toBeCloseTo(deriveReadableBladeAngle(0.15));
   });
 
   it("creates the same active contract state every time", () => {
