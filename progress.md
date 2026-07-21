@@ -66,6 +66,7 @@ Active milestone: Phase 1 — HUD-flight collection and rooted target reactions 
 - [x] Replaced broad polygon clumps with 10,816 instanced fourteen-blade tufts, totaling 151,424 narrow tapered grass blades, and connected fine cut state to persistent stubble/clipping trails.
 - [x] Replaced the placeholder bar with a large silver/cyan cutter that evolves from two arms at level 1, to four arms at levels 2-5, to an 18-tooth saw at levels 6-8 while preserving the same authoritative reach.
 - [x] Added one asymmetric gold orientation cue to every cutter tier so fixed-step rotation remains visually legible even when symmetric blades or saw teeth would otherwise alias between frames.
+- [x] Decoupled the visible cutter pivot from the physical RPM angle so high-RPM play still reads as continuous rotation instead of a stalled or strobing symmetric silhouette.
 - [x] Removed the circular blade ground-blob shadow at user direction.
 - [x] Added a fixed 240-slot instanced fragment pool for deterministic grass clippings, petals, broad leaves, wood chips, and sapling/tree leaves without per-frame allocation.
 - [x] Raised, enlarged, and brightened the pooled fragments with unlit double-sided materials so completions read as visible cut bursts rather than silent disappearance.
@@ -109,6 +110,7 @@ Active milestone: Phase 1 — HUD-flight collection and rooted target reactions 
 - A frame-accurate mature-tree route verified that the first positive live-damage tick emits a 24-chip burst even when the Level-2 blade later stalls at `1.437/60` work, the tree remains solid, backing away clears contact, and no Wood is awarded early. The inspected local artifact is `output/playwright/cut-feedback-20260721/tree-contact-chips.png`.
 - Separate 430 by 860 portrait and reduced-motion routes verified aligned Fiber collection feedback, the complete four-row HUD, shortened destination-fade motes, and bounded reduced particle feedback. All final browser scenarios reported no console or page errors.
 - `make checkall` passes formatting verification, ESLint, strict TypeScript, 53 deterministic Vitest tests across four files, and the Vite production build after the collection-mote, rooted-reaction, and live wood-chip slice.
+- `make checkall` passes formatting verification, ESLint, strict TypeScript, 54 deterministic Vitest tests across four files, and the Vite production build after the blade visual-spin readability fix.
 
 ## Remaining Phase 1 TODOs
 

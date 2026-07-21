@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { deriveReadableBladeAngle } from "../src/game/createScene";
 import {
   FIXED_TIME_STEP_SECONDS,
   MAX_MOVE_SPEED,
@@ -49,6 +50,15 @@ const negativeXInput: MovementInput = {
 };
 
 describe("active game state", () => {
+  it("derives a slower visible blade angle to avoid high-rpm strobing", () => {
+    const rawFrameAdvance = (720 / 60) * Math.PI * 2 * FIXED_TIME_STEP_SECONDS;
+    const visualFrameAdvance = deriveReadableBladeAngle(rawFrameAdvance);
+
+    expect(visualFrameAdvance).toBeGreaterThan(0.3);
+    expect(visualFrameAdvance).toBeLessThan(0.45);
+    expect(visualFrameAdvance).toBeLessThan(rawFrameAdvance / 2);
+  });
+
   it("creates the same active contract state every time", () => {
     const first = createInitialState();
     const second = createInitialState();

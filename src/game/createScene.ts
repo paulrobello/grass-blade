@@ -26,6 +26,7 @@ const CAMERA_OFFSET_Y = 22;
 const CAMERA_OFFSET_Z = 8.5;
 const CAMERA_VIEW_HEIGHT = 15.5;
 const GRASS_BLADES_PER_INSTANCE = 14;
+const BLADE_VISUAL_SPIN_SCALE = 0.31;
 
 interface VegetationSync {
   syncTargets: (state: GameState, simulationTimeSeconds: number) => void;
@@ -44,6 +45,7 @@ export interface MeadowPresentationDiagnostics {
   visibleBladeCount: number;
   visibleTeeth: number;
   orientationCueCount: number;
+  visualBladeAngleRadians: number;
   fallingGrassTufts: number;
   fallingFlowerInstances: number;
   fallingWeedInstances: number;
@@ -57,7 +59,11 @@ export interface MeadowPresentationDiagnostics {
 interface BladeVisual {
   diagnostics: Pick<
     MeadowPresentationDiagnostics,
-    "bladeTier" | "visibleBladeCount" | "visibleTeeth" | "orientationCueCount"
+    | "bladeTier"
+    | "visibleBladeCount"
+    | "visibleTeeth"
+    | "orientationCueCount"
+    | "visualBladeAngleRadians"
   >;
   sync: (level: number, angleRadians: number) => void;
 }
@@ -199,6 +205,7 @@ export function createScene(seed: number): MeadowScene {
     visibleBladeCount: blade.diagnostics.visibleBladeCount,
     visibleTeeth: blade.diagnostics.visibleTeeth,
     orientationCueCount: blade.diagnostics.orientationCueCount,
+    visualBladeAngleRadians: blade.diagnostics.visualBladeAngleRadians,
     fallingGrassTufts: 0,
     fallingFlowerInstances: 0,
     fallingWeedInstances: 0,
@@ -244,6 +251,7 @@ export function createScene(seed: number): MeadowScene {
     presentation.visibleBladeCount = blade.diagnostics.visibleBladeCount;
     presentation.visibleTeeth = blade.diagnostics.visibleTeeth;
     presentation.orientationCueCount = blade.diagnostics.orientationCueCount;
+    presentation.visualBladeAngleRadians = blade.diagnostics.visualBladeAngleRadians;
     presentation.fallingGrassTufts = grass.diagnostics.activeFalls;
     presentation.fallingFlowerInstances = flowers.diagnostics.activeFalls;
     presentation.fallingWeedInstances = weeds.diagnostics.activeFalls;
@@ -295,6 +303,10 @@ export function createScene(seed: number): MeadowScene {
     sync,
     dispose,
   };
+}
+
+export function deriveReadableBladeAngle(angleRadians: number): number {
+  return (angleRadians * BLADE_VISUAL_SPIN_SCALE) % (Math.PI * 2);
 }
 
 function addGroundPatches(
@@ -1854,11 +1866,14 @@ function addBlade(
     visibleBladeCount: 2,
     visibleTeeth: 0,
     orientationCueCount: 1,
+    visualBladeAngleRadians: 0,
   };
   let appliedTier: BladeTier | null = null;
 
   function sync(level: number, angleRadians: number): void {
-    bladePivot.rotation.y = angleRadians;
+    const visualBladeAngleRadians = deriveReadableBladeAngle(angleRadians);
+    bladePivot.rotation.y = visualBladeAngleRadians;
+    diagnostics.visualBladeAngleRadians = visualBladeAngleRadians;
     const tier: BladeTier = level >= 6 ? "saw" : level >= 2 ? "four-arm" : "two-arm";
     if (tier === appliedTier) {
       return;
