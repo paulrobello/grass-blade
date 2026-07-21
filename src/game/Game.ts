@@ -11,6 +11,7 @@ import {
   type GameState,
   type MovementInput,
 } from "./state";
+import { createTargetProgressOverlay, type TargetProgressOverlay } from "./targetProgress";
 
 const MILLISECONDS_PER_SECOND = 1000;
 const MAX_PIXEL_RATIO = 2;
@@ -44,6 +45,7 @@ export class Game {
   private readonly state: GameState;
   private readonly hud: HudElements;
   private readonly collectionMotes: CollectionMotes;
+  private readonly targetProgress: TargetProgressOverlay;
   private readonly input: MovementInput = {
     left: false,
     right: false,
@@ -74,6 +76,7 @@ export class Game {
       this.state.seed,
       window.matchMedia("(prefers-reduced-motion: reduce)").matches,
     );
+    this.targetProgress = createTargetProgressOverlay(requireAppRoot(canvas));
     this.renderer = new THREE.WebGLRenderer({
       canvas,
       antialias: true,
@@ -122,6 +125,7 @@ export class Game {
     window.removeEventListener("resize", this.resize);
     document.removeEventListener("fullscreenchange", this.resize);
     this.collectionMotes.dispose();
+    this.targetProgress.dispose();
     this.meadow.dispose();
     this.renderer.dispose();
     window.__grassBladeReady = false;
@@ -178,6 +182,7 @@ export class Game {
     this.updateHud();
     this.meadow.sync(this.state, this.simulationTimeSeconds);
     this.renderer.render(this.meadow.scene, this.meadow.camera);
+    this.targetProgress.sync(this.state.targets, this.meadow.camera, this.canvas);
     this.collectionMotes.sync(this.simulationTimeSeconds, this.meadow.camera, this.canvas);
   }
 
@@ -393,6 +398,7 @@ export class Game {
       presentation: {
         ...this.meadow.presentation,
         collectionMotes: this.collectionMotes.diagnostics,
+        targetProgress: this.targetProgress.diagnostics,
       },
       player: {
         position: { x: round(player.x), z: round(player.z) },

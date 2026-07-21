@@ -15,6 +15,11 @@ import {
   type TargetState,
 } from "../src/game/state";
 import {
+  collectTargetProgressEntries,
+  shouldShowTargetProgress,
+  targetProgressFraction,
+} from "../src/game/targetProgress";
+import {
   DENSE_WEED_COUNT,
   DENSE_WEED_VISUAL_COUNT,
   DENSE_WEED_VISUALS_PER_TARGET,
@@ -114,6 +119,42 @@ describe("active game state", () => {
     expect(first.grassVisualCutMask).toBeInstanceOf(Uint8Array);
     expect(first.cutGrassVisualIndices).toEqual([]);
     expect(first.cutEvents).toEqual([]);
+  });
+
+  it("shows progress only after durable targets take initial damage", () => {
+    const state = createInitialState();
+    const grass = requireTarget(state, "grass");
+    const flower = requireTarget(state, "flower");
+    const weed = requireTarget(state, "denseWeed");
+    const sapling = requireTarget(state, "sapling");
+    const matureTree = requireTarget(state, "matureTree");
+
+    expect(shouldShowTargetProgress(grass)).toBe(false);
+    expect(shouldShowTargetProgress(flower)).toBe(false);
+    expect(shouldShowTargetProgress(weed)).toBe(false);
+    expect(shouldShowTargetProgress(sapling)).toBe(false);
+    expect(shouldShowTargetProgress(matureTree)).toBe(false);
+
+    grass.status = "cutting";
+    grass.accumulatedWork = 0.75;
+    flower.status = "cutting";
+    flower.accumulatedWork = 2;
+    weed.status = "cutting";
+    weed.accumulatedWork = 3;
+    sapling.status = "cutting";
+    sapling.accumulatedWork = 12.5;
+    matureTree.status = "cutting";
+    matureTree.accumulatedWork = 30;
+
+    const entries = collectTargetProgressEntries(state.targets);
+
+    expect(entries.map((entry) => entry.id)).toEqual([weed.id, sapling.id, matureTree.id]);
+    expect(entries.map((entry) => entry.kind)).toEqual(["denseWeed", "sapling", "matureTree"]);
+    expect(targetProgressFraction(sapling)).toBe(0.25);
+    expect(targetProgressFraction(matureTree)).toBe(0.5);
+
+    sapling.status = "cut";
+    expect(shouldShowTargetProgress(sapling)).toBe(false);
   });
 
   it("uses an explicit seed without changing the active contract", () => {

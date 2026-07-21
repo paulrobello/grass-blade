@@ -61,6 +61,7 @@ Active milestone: Phase 1 — HUD-flight collection and rooted target reactions 
 - [x] Implemented all cumulative XP thresholds and automatic levels 1-8, including multi-threshold awards.
 - [x] Added live Grass, Flower, Fiber, and Wood quota, level, RPM, elapsed-time, and XP HUD state without introducing a failure countdown.
 - [x] Added resource-matched HUD counter pulses and a consolidated `LEVEL N` notification, with reduced-motion fallbacks that do not gate accounting or movement.
+- [x] Added target-local progress bars for damaged durable targets so weeds, saplings, and mature trees show persistent work progress after first contact until they are cut.
 - [x] Rendered the five saplings with slim trunks and layered rounded foliage; exact live contact produces a deterministic lean/shudder, while completion reveals a stump and topples the severed top around the cut plane without ground clipping.
 - [x] Separated transient blade-contact authority from persistent partial cut work, so released saplings immediately stop shuddering while retaining their accumulated work.
 - [x] Replaced broad polygon clumps with 10,816 instanced fourteen-blade tufts, totaling 151,424 narrow tapered grass blades, and connected fine cut state to persistent stubble/clipping trails.
@@ -111,6 +112,7 @@ Active milestone: Phase 1 — HUD-flight collection and rooted target reactions 
 - Separate 430 by 860 portrait and reduced-motion routes verified aligned Fiber collection feedback, the complete four-row HUD, shortened destination-fade motes, and bounded reduced particle feedback. All final browser scenarios reported no console or page errors.
 - `make checkall` passes formatting verification, ESLint, strict TypeScript, 53 deterministic Vitest tests across four files, and the Vite production build after the collection-mote, rooted-reaction, and live wood-chip slice.
 - `make checkall` passes formatting verification, ESLint, strict TypeScript, 54 deterministic Vitest tests across four files, and the Vite production build after the blade visual-spin readability fix.
+- `make checkall` passes formatting verification, ESLint, strict TypeScript, 55 deterministic Vitest tests across four files, and the Vite production build after durable target progress bars.
 
 ## Remaining Phase 1 TODOs
 
