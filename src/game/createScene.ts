@@ -1,5 +1,6 @@
 import * as THREE from "three";
 
+import { createCutEffects } from "./cutEffects";
 import type { GameState } from "./state";
 import { WORLD_HALF_EXTENT } from "./state";
 import {
@@ -19,6 +20,25 @@ interface VegetationSync {
   syncTargets: (state: GameState, simulationTimeSeconds: number) => void;
 }
 
+export type BladeTier = "two-arm" | "four-arm" | "saw";
+
+export interface MeadowPresentationDiagnostics {
+  bladeTier: BladeTier;
+  visibleBladeCount: number;
+  visibleTeeth: number;
+  activeFragments: number;
+  consumedCutRevision: number;
+  consumedGrassVisualCuts: number;
+}
+
+interface BladeVisual {
+  diagnostics: Pick<
+    MeadowPresentationDiagnostics,
+    "bladeTier" | "visibleBladeCount" | "visibleTeeth"
+  >;
+  sync: (level: number, angleRadians: number) => void;
+}
+
 export interface MeadowScene {
   scene: THREE.Scene;
   camera: THREE.OrthographicCamera;
@@ -30,6 +50,7 @@ export interface MeadowScene {
     saplingInstances: number;
     treeInstances: number;
   };
+  presentation: MeadowPresentationDiagnostics;
   resize: (aspect: number) => void;
   sync: (state: GameState, simulationTimeSeconds: number) => void;
   dispose: () => void;
@@ -139,9 +160,23 @@ export function createScene(seed: number): MeadowScene {
     yAxis,
   );
 
+  const cutEffects = createCutEffects(
+    scene,
+    seed,
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+  );
   const playerRoot = new THREE.Group();
-  const bladePivot = addBlade(playerRoot, resources);
+  const blade = addBlade(playerRoot, resources);
   scene.add(playerRoot);
+
+  const presentation: MeadowPresentationDiagnostics = {
+    bladeTier: blade.diagnostics.bladeTier,
+    visibleBladeCount: blade.diagnostics.visibleBladeCount,
+    visibleTeeth: blade.diagnostics.visibleTeeth,
+    activeFragments: 0,
+    consumedCutRevision: 0,
+    consumedGrassVisualCuts: 0,
+  };
 
   const hemisphere = new THREE.HemisphereLight(0xeafcff, 0x4f8a3f, 2.4);
   scene.add(hemisphere);
@@ -165,13 +200,21 @@ export function createScene(seed: number): MeadowScene {
 
   function sync(state: GameState, simulationTimeSeconds: number): void {
     playerRoot.position.set(state.player.x, 0, state.player.z);
-    bladePivot.rotation.y = state.player.bladeAngleRadians;
+    blade.sync(state.player.level, state.player.bladeAngleRadians);
 
     grass.syncTargets(state, simulationTimeSeconds);
     flowers.syncTargets(state, simulationTimeSeconds);
     weeds.syncTargets(state, simulationTimeSeconds);
     saplings.syncTargets(state, simulationTimeSeconds);
     trees.syncTargets(state, simulationTimeSeconds);
+    cutEffects.sync(state, simulationTimeSeconds);
+
+    presentation.bladeTier = blade.diagnostics.bladeTier;
+    presentation.visibleBladeCount = blade.diagnostics.visibleBladeCount;
+    presentation.visibleTeeth = blade.diagnostics.visibleTeeth;
+    presentation.activeFragments = cutEffects.diagnostics.activeFragments;
+    presentation.consumedCutRevision = cutEffects.diagnostics.consumedCutRevision;
+    presentation.consumedGrassVisualCuts = cutEffects.diagnostics.consumedGrassVisualCuts;
 
     camera.position.set(
       state.player.x + CAMERA_OFFSET_X,
@@ -193,6 +236,7 @@ export function createScene(seed: number): MeadowScene {
   }
 
   function dispose(): void {
+    cutEffects.dispose();
     for (const resource of resources) {
       resource.dispose();
     }
@@ -209,6 +253,7 @@ export function createScene(seed: number): MeadowScene {
       saplingInstances: layout.saplingVisuals.length,
       treeInstances: layout.matureTreeVisuals.length,
     },
+    presentation,
     resize,
     sync,
     dispose,
@@ -1022,7 +1067,7 @@ function addBoundaryStones(
 function addBlade(
   playerRoot: THREE.Group,
   resources: Array<THREE.BufferGeometry | THREE.Material>,
-): THREE.Group {
+): BladeVisual {
   const shadowGeometry = track(resources, new THREE.CircleGeometry(2.05, 40));
   const shadowMaterial = track(
     resources,
@@ -1072,12 +1117,44 @@ function addBlade(
     }),
   );
 
+  const curvedBlades: THREE.Mesh[] = [];
   for (let index = 0; index < 4; index += 1) {
     const blade = new THREE.Mesh(bladeGeometry, bladeMaterial);
     blade.rotation.y = index * (Math.PI / 2);
     blade.castShadow = true;
+    curvedBlades.push(blade);
     bladePivot.add(blade);
   }
+
+  const sawGroup = new THREE.Group();
+  const sawRingGeometry = track(resources, new THREE.TorusGeometry(1.22, 0.24, 8, 36));
+  sawRingGeometry.rotateX(Math.PI / 2);
+  const sawRingMaterial = track(
+    resources,
+    new THREE.MeshStandardMaterial({
+      color: 0x75dcff,
+      roughness: 0.2,
+      metalness: 0.78,
+      emissive: 0x0a658a,
+      emissiveIntensity: 0.16,
+      flatShading: true,
+    }),
+  );
+  const sawRing = new THREE.Mesh(sawRingGeometry, sawRingMaterial);
+  sawRing.position.y = 0.03;
+  sawRing.castShadow = true;
+  sawGroup.add(sawRing);
+
+  const sawToothCount = 18;
+  const sawToothGeometry = track(resources, createSawToothGeometry());
+  for (let index = 0; index < sawToothCount; index += 1) {
+    const tooth = new THREE.Mesh(sawToothGeometry, bladeMaterial);
+    tooth.rotation.y = (index / sawToothCount) * Math.PI * 2;
+    tooth.castShadow = true;
+    sawGroup.add(tooth);
+  }
+  sawGroup.visible = false;
+  bladePivot.add(sawGroup);
 
   const outerRingGeometry = track(resources, new THREE.CylinderGeometry(0.76, 0.82, 0.24, 28));
   const outerRingMaterial = track(
@@ -1127,7 +1204,43 @@ function addBlade(
   cap.castShadow = true;
   bladePivot.add(cap);
 
-  return bladePivot;
+  const diagnostics: BladeVisual["diagnostics"] = {
+    bladeTier: "two-arm",
+    visibleBladeCount: 2,
+    visibleTeeth: 0,
+  };
+  let appliedTier: BladeTier | null = null;
+
+  function sync(level: number, angleRadians: number): void {
+    bladePivot.rotation.y = angleRadians;
+    const tier: BladeTier = level >= 6 ? "saw" : level >= 2 ? "four-arm" : "two-arm";
+    if (tier === appliedTier) {
+      return;
+    }
+
+    appliedTier = tier;
+    const visibleBladeCount = tier === "two-arm" ? 2 : tier === "four-arm" ? 4 : 0;
+    for (let index = 0; index < curvedBlades.length; index += 1) {
+      const blade = curvedBlades[index];
+      if (blade === undefined) {
+        continue;
+      }
+      blade.visible = index < visibleBladeCount;
+      if (visibleBladeCount > 0) {
+        blade.rotation.y = (index / visibleBladeCount) * Math.PI * 2;
+      }
+    }
+    sawGroup.visible = tier === "saw";
+    outerRingMaterial.color.setHex(
+      tier === "saw" ? 0x52d8ff : tier === "four-arm" ? 0x38c5ff : 0x35c9f4,
+    );
+    diagnostics.bladeTier = tier;
+    diagnostics.visibleBladeCount = visibleBladeCount;
+    diagnostics.visibleTeeth = tier === "saw" ? sawToothCount : 0;
+  }
+
+  sync(1, 0);
+  return { diagnostics, sync };
 }
 
 function createCurvedBladeGeometry(): THREE.ExtrudeGeometry {
@@ -1149,6 +1262,29 @@ function createCurvedBladeGeometry(): THREE.ExtrudeGeometry {
   });
   geometry.rotateX(Math.PI / 2);
   geometry.translate(0, 0.05, 0);
+  geometry.computeBoundingBox();
+  geometry.computeBoundingSphere();
+  return geometry;
+}
+
+function createSawToothGeometry(): THREE.ExtrudeGeometry {
+  const toothShape = new THREE.Shape();
+  toothShape.moveTo(1.13, -0.13);
+  toothShape.lineTo(2.12, 0);
+  toothShape.lineTo(1.13, 0.13);
+  toothShape.closePath();
+
+  const geometry = new THREE.ExtrudeGeometry(toothShape, {
+    depth: 0.08,
+    bevelEnabled: true,
+    bevelSegments: 1,
+    bevelSize: 0.018,
+    bevelThickness: 0.018,
+    curveSegments: 1,
+    steps: 1,
+  });
+  geometry.rotateX(Math.PI / 2);
+  geometry.translate(0, 0.04, 0);
   geometry.computeBoundingBox();
   geometry.computeBoundingSphere();
   return geometry;

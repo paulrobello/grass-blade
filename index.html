@@ -25,28 +25,28 @@
 
         <div class="objective-tray" aria-live="polite">
           <p class="objective-tray__title">MEADOW DELIVERY</p>
-          <div class="objective-row">
+          <div id="hud-row-grass" class="objective-row">
             <span class="resource-icon resource-icon--grass" aria-hidden="true">
               <i></i><i></i><i></i>
             </span>
             <span class="objective-row__name">Grass</span>
             <strong><span id="hud-grass">0</span>/<span id="hud-grass-target">50</span></strong>
           </div>
-          <div class="objective-row">
+          <div id="hud-row-flower" class="objective-row">
             <span class="resource-icon resource-icon--flower" aria-hidden="true">
               <i></i><i></i><i></i><i></i><i></i>
             </span>
             <span class="objective-row__name">Flowers</span>
             <strong><span id="hud-flowers">0</span>/<span id="hud-flowers-target">10</span></strong>
           </div>
-          <div class="objective-row">
+          <div id="hud-row-fiber" class="objective-row">
             <span class="resource-icon resource-icon--fiber" aria-hidden="true">
               <i></i><i></i><i></i>
             </span>
             <span class="objective-row__name">Fiber</span>
             <strong><span id="hud-fiber">0</span>/<span id="hud-fiber-target">6</span></strong>
           </div>
-          <div class="objective-row">
+          <div id="hud-row-wood" class="objective-row">
             <span class="resource-icon resource-icon--wood" aria-hidden="true">
               <i></i><i></i>
             </span>
@@ -58,6 +58,11 @@
           </div>
         </div>
       </section>
+
+      <div id="level-toast" class="level-toast" role="status" aria-live="polite" aria-atomic="true">
+        <span class="level-toast__ring" aria-hidden="true"></span>
+        <span class="level-toast__label">LEVEL <strong id="level-toast-number">1</strong></span>
+      </div>
 
       <p class="controls-hint">WASD / arrows to move <span>·</span> F fullscreen</p>
     </main>

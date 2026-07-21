@@ -27,7 +27,13 @@ interface HudElements {
   fiberTarget: HTMLElement;
   wood: HTMLElement;
   woodTarget: HTMLElement;
+  grassRow: HTMLElement;
+  flowerRow: HTMLElement;
+  fiberRow: HTMLElement;
+  woodRow: HTMLElement;
   xpFill: HTMLElement;
+  levelToast: HTMLElement;
+  levelToastNumber: HTMLElement;
 }
 
 export class Game {
@@ -46,6 +52,7 @@ export class Game {
   private simulationTimeSeconds = 0;
   private accumulatorSeconds = 0;
   private lastFrameTimeMs: number | null = null;
+  private processedHudCutEvents = 0;
   private manualTime = false;
   private started = false;
 
@@ -181,6 +188,59 @@ export class Game {
     setText(this.hud.woodTarget, String(objectives.wood.target));
     this.hud.root.style.setProperty("--rpm-progress", `${Math.round(rpmProgress * 100)}%`);
     this.hud.xpFill.style.width = `${xpProgress * 100}%`;
+    this.updateHudFeedback();
+  }
+
+  private updateHudFeedback(): void {
+    let grassAwarded = false;
+    let flowerAwarded = false;
+    let fiberAwarded = false;
+    let woodAwarded = false;
+    let consolidatedLevel = 0;
+
+    while (this.processedHudCutEvents < this.state.cutEvents.length) {
+      const event = this.state.cutEvents[this.processedHudCutEvents];
+      this.processedHudCutEvents += 1;
+      if (event === undefined) {
+        continue;
+      }
+
+      switch (event.kind) {
+        case "grass":
+          grassAwarded = true;
+          break;
+        case "flower":
+          flowerAwarded = true;
+          break;
+        case "denseWeed":
+          fiberAwarded = true;
+          break;
+        case "sapling":
+        case "matureTree":
+          woodAwarded = true;
+          break;
+      }
+      if (event.levelAfter > event.levelBefore) {
+        consolidatedLevel = Math.max(consolidatedLevel, event.levelAfter);
+      }
+    }
+
+    if (grassAwarded) {
+      restartCssAnimation(this.hud.grassRow, "objective-row--awarded");
+    }
+    if (flowerAwarded) {
+      restartCssAnimation(this.hud.flowerRow, "objective-row--awarded");
+    }
+    if (fiberAwarded) {
+      restartCssAnimation(this.hud.fiberRow, "objective-row--awarded");
+    }
+    if (woodAwarded) {
+      restartCssAnimation(this.hud.woodRow, "objective-row--awarded");
+    }
+    if (consolidatedLevel > 0) {
+      setText(this.hud.levelToastNumber, String(consolidatedLevel));
+      restartCssAnimation(this.hud.levelToast, "level-toast--active");
+    }
   }
 
   private readonly resize = (): void => {
@@ -308,6 +368,7 @@ export class Game {
       seed: this.state.seed,
       elapsedSeconds: round(this.simulationTimeSeconds),
       meadow: this.meadow.density,
+      presentation: this.meadow.presentation,
       player: {
         position: { x: round(player.x), z: round(player.z) },
         velocity: { x: round(player.vx), z: round(player.vz) },
@@ -331,6 +392,7 @@ export class Game {
         solids: solidTargets,
         visuallyCutGrassTufts: this.state.cutGrassVisualIndices.length,
         cutRevision: this.state.cutRevision,
+        recentCutEvents: this.state.cutEvents.slice(-8),
       },
     });
   };
@@ -350,7 +412,13 @@ function getHudElements(): HudElements {
     fiberTarget: requireElement("hud-fiber-target"),
     wood: requireElement("hud-wood"),
     woodTarget: requireElement("hud-wood-target"),
+    grassRow: requireElement("hud-row-grass"),
+    flowerRow: requireElement("hud-row-flower"),
+    fiberRow: requireElement("hud-row-fiber"),
+    woodRow: requireElement("hud-row-wood"),
     xpFill: requireElement("hud-xp-fill"),
+    levelToast: requireElement("level-toast"),
+    levelToastNumber: requireElement("level-toast-number"),
   };
 }
 
@@ -366,6 +434,12 @@ function setText(element: HTMLElement, value: string): void {
   if (element.textContent !== value) {
     element.textContent = value;
   }
+}
+
+function restartCssAnimation(element: HTMLElement, className: string): void {
+  element.classList.remove(className);
+  void element.offsetWidth;
+  element.classList.add(className);
 }
 
 function formatElapsedTime(seconds: number): string {
