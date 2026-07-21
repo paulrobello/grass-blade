@@ -3,7 +3,7 @@ Original prompt: "i want create a threejs based game where you are a spinning bl
 # Grass Blade Progress
 
 Last updated: 2026-07-20
-Active milestone: Phase 1 — blade evolution and pooled cut feedback verified; HUD-flight and sustained-contact polish next
+Active milestone: Phase 1 — live contact authority and clearer cut feedback verified; HUD-flight and richer collapse reactions next
 
 ## Completed foundation intent
 
@@ -62,10 +62,14 @@ Active milestone: Phase 1 — blade evolution and pooled cut feedback verified; 
 - [x] Added live Grass, Flower, Fiber, and Wood quota, level, RPM, elapsed-time, and XP HUD state without introducing a failure countdown.
 - [x] Added resource-matched HUD counter pulses and a consolidated `LEVEL N` notification, with reduced-motion fallbacks that do not gate accounting or movement.
 - [x] Rendered the five saplings with slim trunks and layered rounded foliage; sustained contact produces a deterministic lean/shudder and the full visual disappears on the authoritative cut tick.
+- [x] Separated transient blade-contact authority from persistent partial cut work, so released saplings immediately stop shuddering while retaining their accumulated work.
 - [x] Replaced broad polygon clumps with 10,816 instanced fourteen-blade tufts, totaling 151,424 narrow tapered grass blades, and connected fine cut state to persistent stubble/clipping trails.
 - [x] Replaced the placeholder bar with a large silver/cyan cutter that evolves from two arms at level 1, to four arms at levels 2-5, to an 18-tooth saw at levels 6-8 while preserving the same authoritative reach.
+- [x] Added one asymmetric gold orientation cue to every cutter tier so fixed-step rotation remains visually legible even when symmetric blades or saw teeth would otherwise alias between frames.
+- [x] Removed the circular blade ground-blob shadow at user direction.
 - [x] Added a fixed 240-slot instanced fragment pool for deterministic grass clippings, petals, broad leaves, wood chips, and sapling/tree leaves without per-frame allocation.
-- [x] Expanded `render_game_to_text` with inventory, XP, loaded RPM, target counts, cut revision, persistent partial-work diagnostics, recent cut events, blade tier, and fragment-pool state.
+- [x] Raised, enlarged, and brightened the pooled fragments with unlit double-sided materials so completions read as visible cut bursts rather than silent disappearance.
+- [x] Expanded `render_game_to_text` with inventory, XP, loaded RPM, target counts, live blade contacts, cut revision, persistent partial-work diagnostics, recent cut events, blade tier, orientation-cue count, and fragment-pool state.
 - [x] Added deterministic tests for layout mapping, fine grass masks, grass/flower/weed/tree cuts, Tier 2 timing, solid blocking and release, persistent work, exact-once rewards, level thresholds, replay, movement, and boundaries.
 
 ## Phase 1 verification evidence
@@ -74,7 +78,7 @@ Active milestone: Phase 1 — blade evolution and pooled cut feedback verified; 
 - A headed Chrome landscape route at `?seed=12345` ran for 7.333 simulated seconds without console errors and confirmed 95 exact-once cuts, 17 persistent partial cuts, 92 Grass, 3 Flowers, and blade level 3.
 - A headed Chrome portrait route at 430 by 860 ran for 4.917 simulated seconds without console or page errors and confirmed 63 exact-once cuts, 10 persistent partial cuts, 61 Grass, 2 Flowers, and blade level 3.
 - The visually inspected portrait captures are `output/playwright/phase1-portrait/initial.png` and `cut-path.png`; they show continuous standing coverage, clustered flowers, a large readable cutter, a persistent cut route, a compact top HUD, and no camera-visible void at the world edge. These local artifacts remain ignored.
-- A headed Chrome shadow/cut-sync regression route ran for 1.883 simulated seconds without console errors. Its inspected capture shows the blob shadow above ground patches and cut stubble, while all 16 partially worked `cutting` targets are visually flattened before the 25 completed targets award resources. The local artifact is `output/playwright/fix-shadow-cut-sync/shot-0.png`.
+- A prior headed Chrome shadow/cut-sync regression route verified cut-state timing, but its inspected blob-shadow presentation is superseded by the later shadow-removal regression below.
 - A headed Chrome fine-grass capture at `?seed=12345` verified 151,424 narrow blades and a rounded 95-tuft opening cut footprint while no logical target had completed. The inspected local artifact is `output/playwright/fine-grass-final/shot-0.png`.
 - A headed Chrome tree-contact replay ran for 4.6 simulated seconds without console errors. Holding forward stopped the hub at `(-14.691, -14.691)` with zero velocity, 158 RPM, and the first mature tree still present at `1.607/60` work with zero Wood awarded. The inspected local artifact is `output/playwright/tree-block/shot-0.png`.
 - A headed Chrome standing-field capture at `?seed=12345` verified all 108 broad-leaf weed instances read above the fine grass canopy, the three-row objective tray showed Fiber `0/6`, and no console/page-error artifact was produced. The inspected local artifact is `output/playwright/weed-standing/shot-0.png`.
@@ -87,6 +91,10 @@ Active milestone: Phase 1 — blade evolution and pooled cut feedback verified; 
 - A headed landscape route at `?seed=12345` progressed through normal cutting from the level-1 two-arm cutter, to the level-2 four-arm cutter, and to the level-6 18-tooth saw. Its level-6 snapshot reported 340 XP, 18 visible teeth, cut revision 301, 4,392 consumed fine-grass visual cuts, 70 active pooled fragments, and no console or page errors. The inspected local artifacts are `output/playwright/cutting-feedback-landscape/level-1.png`, `level-2.png`, and `level-6-saw.png`.
 - The same landscape route stopped on `sapling-3`, showed its deterministic sustained-contact shudder, then removed it and updated Wood to `2/6` on cut revision 146. The inspected `sapling-cut-burst.png` shows the Wood counter pulse and resource-specific chips beside the blade; `errors.json` is empty.
 - A headed 430 by 860 route preserved the complete HUD and readable cutter profiles. Its level-2 capture visibly shows the consolidated `LEVEL 2` notification; the sapling cut snapshot reports Wood `2/6`, four visible blades, 18 active fragments, consumed cut revision 145, and an empty browser error log. The inspected local artifacts are `output/playwright/cutting-feedback-portrait/level-2.png` and `sapling-cut-burst.png`.
+- `make checkall` passes formatting verification, ESLint, strict TypeScript, 29 deterministic Vitest tests, and the Vite production build after the motion and cut-feedback regression fixes.
+- Deterministic headed Chrome routes at 1280 by 720 and 430 by 860 showed a partially worked sapling leave live contact, remain at exactly the same work across 60 idle fixed steps, and render upright in both inspected resting frames. The snapshots report an empty `bladeContacts` array and `inBladeContact: false` while preserving `status: cutting`; both browser error logs are empty.
+- The same two routes finished the sapling on cut revision 162, updated Wood to `2/6`, removed its solid and visual on that frame, and rendered 18 active leaf/wood fragments. The inspected local artifacts are `output/playwright/motion-regression/sapling-cut-burst.png` and `output/playwright/motion-regression-portrait/sapling-cut-burst.png`.
+- Both level-8 regressions reported 18 visible saw teeth and one orientation cue. Consecutive fixed-step landscape snapshots advanced the angle from `2.706` to `4.447` radians, and the inspected gold cue visibly changed position without reintroducing the circular blade shadow. The local artifacts are `output/playwright/motion-regression/level-8-cue-a.png` and `level-8-cue-b.png` plus their portrait equivalents.
 
 ## Remaining Phase 1 TODOs
 
