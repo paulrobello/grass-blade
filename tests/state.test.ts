@@ -22,6 +22,7 @@ import {
   GRASS_LOGICAL_COLUMNS,
   GRASS_VISUAL_COLUMNS,
   MATURE_TREE_COUNT,
+  SAPLING_COUNT,
   createMeadowLayout,
   type TargetKind,
 } from "../src/game/world";
@@ -70,7 +71,7 @@ describe("active game state", () => {
       grass: { status: "active", collected: 0, target: 50 },
       flowers: { status: "active", collected: 0, target: 10 },
       fiber: { status: "active", collected: 0, target: 6 },
-      wood: { status: "planned", collected: 0, target: 6 },
+      wood: { status: "active", collected: 0, target: 6 },
     });
     expect(first.xp).toBe(0);
     expect(first.cutRevision).toBe(0);
@@ -78,11 +79,13 @@ describe("active game state", () => {
       GRASS_LOGICAL_COLUMNS * GRASS_LOGICAL_COLUMNS +
         FLOWER_CLUSTER_COUNT +
         DENSE_WEED_COUNT +
+        SAPLING_COUNT +
         MATURE_TREE_COUNT,
     );
     const grassEnd = GRASS_LOGICAL_COLUMNS * GRASS_LOGICAL_COLUMNS;
     const flowersEnd = grassEnd + FLOWER_CLUSTER_COUNT;
     const denseWeedsEnd = flowersEnd + DENSE_WEED_COUNT;
+    const saplingsEnd = denseWeedsEnd + SAPLING_COUNT;
     expect(first.targets.slice(0, grassEnd).every((target) => target.kind === "grass")).toBe(true);
     expect(
       first.targets.slice(grassEnd, flowersEnd).every((target) => target.kind === "flower"),
@@ -90,7 +93,10 @@ describe("active game state", () => {
     expect(
       first.targets.slice(flowersEnd, denseWeedsEnd).every((target) => target.kind === "denseWeed"),
     ).toBe(true);
-    expect(first.targets.slice(denseWeedsEnd).every((target) => target.kind === "matureTree")).toBe(
+    expect(
+      first.targets.slice(denseWeedsEnd, saplingsEnd).every((target) => target.kind === "sapling"),
+    ).toBe(true);
+    expect(first.targets.slice(saplingsEnd).every((target) => target.kind === "matureTree")).toBe(
       true,
     );
     expect(first.grassVisualPositions).toBeInstanceOf(Float32Array);
@@ -119,11 +125,17 @@ describe("active game state", () => {
     expect(first.flowerVisuals).toHaveLength(FLOWER_VISUAL_COUNT);
     expect(first.denseWeedTargets).toHaveLength(DENSE_WEED_COUNT);
     expect(first.denseWeedVisuals).toHaveLength(DENSE_WEED_VISUAL_COUNT);
+    expect(first.saplingTargets).toHaveLength(SAPLING_COUNT);
+    expect(first.saplingVisuals).toHaveLength(SAPLING_COUNT);
     expect(first.matureTreeTargets).toHaveLength(MATURE_TREE_COUNT);
     expect(first.denseWeedTargets.map((target) => target.id)).toEqual(
       interleaved.denseWeedTargets.map((target) => target.id),
     );
     expect(first.denseWeedTargets).not.toEqual(interleaved.denseWeedTargets);
+    expect(first.saplingTargets.map((target) => target.id)).toEqual(
+      interleaved.saplingTargets.map((target) => target.id),
+    );
+    expect(first.saplingTargets).not.toEqual(interleaved.saplingTargets);
     expect(first.matureTreeVisuals).toEqual([
       { x: -16, z: -15, size: 1.05, targetIndex: 0 },
       { x: -8, z: -18, size: 0.85, targetIndex: 1 },
@@ -165,6 +177,19 @@ describe("active game state", () => {
     expect(first.flowerTargets.every(hasFlowerTierValues)).toBe(true);
     expect(first.denseWeedTargets.every(hasDenseWeedTierValues)).toBe(true);
     expect(first.denseWeedTargets.some((target) => Math.hypot(target.x, target.z) < 6)).toBe(true);
+    expect(first.saplingTargets.every(hasSaplingTierValues)).toBe(true);
+    expect(
+      first.saplingTargets.reduce((sum, target) => sum + target.yield, 0),
+    ).toBeGreaterThanOrEqual(9);
+    for (const visual of first.saplingVisuals) {
+      const target = first.saplingTargets[visual.targetIndex];
+      expect(target).toMatchObject({
+        x: visual.x,
+        z: visual.z,
+        radius: visual.size * 0.34,
+        solidRadius: visual.size * 0.34,
+      });
+    }
     expect(first.matureTreeTargets.every(hasMatureTreeTierValues)).toBe(true);
     for (const visual of first.matureTreeVisuals) {
       const target = first.matureTreeTargets[visual.targetIndex];
@@ -325,6 +350,120 @@ describe("active game state", () => {
       stepState(replay, idleInput, FIXED_TIME_STEP_SECONDS);
     }
 
+    expect(replay).toEqual(first);
+  });
+
+  it("cuts an isolated sapling within its recommended-level timing range", () => {
+    const state = createInitialState(252);
+    const target = isolateTarget(state, "sapling");
+    prepareLevelFourBlade(state);
+
+    const cutTicks = cutCurrentTarget(state, target);
+    const cutSeconds = cutTicks * FIXED_TIME_STEP_SECONDS;
+
+    expect(cutSeconds).toBeGreaterThanOrEqual(4);
+    expect(cutSeconds).toBeLessThanOrEqual(6);
+  });
+
+  it("blocks movement while an authoritative sapling is standing", () => {
+    const state = createInitialState(262);
+    const target = isolateTarget(state, "sapling");
+    placeTargetAtPositiveXContact(state, target);
+
+    stepState(state, positiveXInput, FIXED_TIME_STEP_SECONDS);
+
+    expect(state.player.x).toBeCloseTo(0, 8);
+    expect(state.player.z).toBeCloseTo(0, 8);
+    expect(target.status).toBe("cutting");
+    expect(target.accumulatedWork).toBeGreaterThan(0);
+    expect(state.inventory.wood).toBe(0);
+  });
+
+  it("releases a cut sapling and awards Wood plus XP exactly once on the cut tick", () => {
+    const state = createInitialState(272);
+    const target = isolateTarget(state, "sapling");
+    prepareLevelFourBlade(state);
+    placeTargetAtPositiveXContact(state, target);
+    target.status = "cutting";
+    target.accumulatedWork = target.requiredWork - 0.001;
+
+    const unblockedControl = createInitialState(272);
+    prepareLevelFourBlade(unblockedControl);
+    unblockedControl.targets = [];
+
+    stepState(state, positiveXInput, FIXED_TIME_STEP_SECONDS);
+    stepState(unblockedControl, positiveXInput, FIXED_TIME_STEP_SECONDS);
+
+    expect(target.status).toBe("cut");
+    expect(state.player.x).toBeCloseTo(unblockedControl.player.x, 10);
+    expect(state.player.z).toBeCloseTo(unblockedControl.player.z, 10);
+    expect(state.inventory.wood).toBe(2);
+    expect(state.objectives.wood.collected).toBe(2);
+    expect(state.xp).toBe(140);
+    expect(state.cutRevision).toBe(1);
+
+    for (let frame = 0; frame < 120; frame += 1) {
+      stepState(state, idleInput, FIXED_TIME_STEP_SECONDS);
+    }
+
+    expect(state.inventory.wood).toBe(2);
+    expect(state.objectives.wood.collected).toBe(2);
+    expect(state.xp).toBe(140);
+    expect(state.cutRevision).toBe(1);
+  });
+
+  it("allows sapling Wood to overcollect beyond the contract quota", () => {
+    const state = createInitialState(282);
+    const saplings = state.targets
+      .filter((target) => target.kind === "sapling")
+      .slice(0, 4)
+      .map((target) => ({ ...target }));
+    prepareLevelFourBlade(state);
+
+    for (const source of saplings) {
+      const target: TargetState = {
+        ...source,
+        x: state.player.x,
+        z: state.player.z,
+        status: "cutting",
+        accumulatedWork: source.requiredWork - 0.001,
+      };
+      state.targets = [target];
+      stepState(state, idleInput, FIXED_TIME_STEP_SECONDS);
+      expect(target.status).toBe("cut");
+    }
+
+    expect(state.inventory.wood).toBe(8);
+    expect(state.objectives.wood.collected).toBe(8);
+    expect(state.objectives.wood.collected).toBeGreaterThan(state.objectives.wood.target);
+    expect(state.xp).toBe(230);
+    expect(state.cutRevision).toBe(4);
+  });
+
+  it("replays seeded sapling cutting identically", () => {
+    const first = createInitialState(292);
+    const replay = createInitialState(292);
+    const firstTarget = first.targets.find((target) => target.kind === "sapling");
+    const replayTarget = replay.targets.find((target) => target.kind === "sapling");
+    if (firstTarget === undefined || replayTarget === undefined) {
+      throw new Error("Missing seeded sapling");
+    }
+
+    first.targets = [firstTarget];
+    replay.targets = [replayTarget];
+    first.player.x = firstTarget.x;
+    first.player.z = firstTarget.z;
+    replay.player.x = replayTarget.x;
+    replay.player.z = replayTarget.z;
+    prepareLevelFourBlade(first);
+    prepareLevelFourBlade(replay);
+
+    for (let frame = 0; frame < 300; frame += 1) {
+      stepState(first, idleInput, FIXED_TIME_STEP_SECONDS);
+      stepState(replay, idleInput, FIXED_TIME_STEP_SECONDS);
+    }
+
+    expect(firstTarget.status).toBe("cut");
     expect(replay).toEqual(first);
   });
 
@@ -532,7 +671,7 @@ function placeTargetAtPositiveXContact(state: GameState, target: TargetState): v
 
 function cutCurrentTarget(state: GameState, target: TargetState): number {
   let cutTicks = 0;
-  for (; cutTicks < 120 && target.status !== "cut"; cutTicks += 1) {
+  for (; cutTicks < 600 && target.status !== "cut"; cutTicks += 1) {
     stepState(state, idleInput, FIXED_TIME_STEP_SECONDS);
   }
   expect(target.status).toBe("cut");
@@ -544,6 +683,13 @@ function prepareLevelTwoBlade(state: GameState): void {
   state.player.level = 2;
   state.player.rpm = 760;
   state.player.targetRpm = 760;
+}
+
+function prepareLevelFourBlade(state: GameState): void {
+  state.xp = 110;
+  state.player.level = 4;
+  state.player.rpm = 840;
+  state.player.targetRpm = 840;
 }
 
 function hasGrassTierValues(target: {
@@ -603,6 +749,26 @@ function hasDenseWeedTierValues(target: {
     target.resistance === 0.25 &&
     target.yield === 1 &&
     target.xp === 6
+  );
+}
+
+function hasSaplingTierValues(target: {
+  kind: TargetKind;
+  solidRadius: number;
+  recommendedLevel: number;
+  requiredWork: number;
+  resistance: number;
+  yield: number;
+  xp: number;
+}): boolean {
+  return (
+    target.kind === "sapling" &&
+    target.solidRadius > 0 &&
+    target.recommendedLevel === 4 &&
+    target.requiredWork === 50 &&
+    target.resistance === 0.9 &&
+    target.yield === 2 &&
+    target.xp === 30
   );
 }
 

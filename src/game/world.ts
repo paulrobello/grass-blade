@@ -3,6 +3,7 @@ const GRASS_COLOR_COUNT = 4;
 const FLOWER_COLOR_COUNT = 5;
 const FLOWER_CLUSTER_COLUMNS = 4;
 const DENSE_WEED_COLOR_COUNT = 3;
+const SAPLING_COLOR_COUNT = 3;
 
 export const GRASS_VISUAL_COLUMNS = 104;
 export const GRASS_LOGICAL_COLUMNS = 26;
@@ -12,6 +13,7 @@ export const FLOWER_VISUAL_COUNT = 420;
 export const DENSE_WEED_COUNT = 12;
 export const DENSE_WEED_VISUALS_PER_TARGET = 9;
 export const DENSE_WEED_VISUAL_COUNT = DENSE_WEED_COUNT * DENSE_WEED_VISUALS_PER_TARGET;
+export const SAPLING_COUNT = 5;
 export const MATURE_TREE_COUNT = 8;
 
 const DENSE_WEED_CLUSTER_CENTERS = [
@@ -19,6 +21,14 @@ const DENSE_WEED_CLUSTER_CENTERS = [
   [4.5, -4.2],
   [-4.2, 4.8],
   [5.5, 3.8],
+] as const;
+
+const SAPLING_PLACEMENT_ANCHORS = [
+  [-8.5, -7],
+  [8.5, -6.5],
+  [-7.5, 8.5],
+  [8, 9],
+  [1.5, 11.5],
 ] as const;
 
 const MATURE_TREE_PLACEMENTS = [
@@ -61,6 +71,15 @@ export interface DenseWeedVisual {
   colorIndex: number;
 }
 
+export interface SaplingVisual {
+  x: number;
+  z: number;
+  size: number;
+  rotation: number;
+  targetIndex: number;
+  colorIndex: number;
+}
+
 export interface MatureTreeVisual {
   x: number;
   z: number;
@@ -68,7 +87,7 @@ export interface MatureTreeVisual {
   targetIndex: number;
 }
 
-export type TargetKind = "grass" | "flower" | "denseWeed" | "matureTree";
+export type TargetKind = "grass" | "flower" | "denseWeed" | "sapling" | "matureTree";
 
 export interface TargetSeed {
   id: string;
@@ -91,6 +110,8 @@ export interface MeadowLayout {
   flowerVisuals: FlowerVisual[];
   denseWeedTargets: TargetSeed[];
   denseWeedVisuals: DenseWeedVisual[];
+  saplingTargets: TargetSeed[];
+  saplingVisuals: SaplingVisual[];
   matureTreeTargets: TargetSeed[];
   matureTreeVisuals: MatureTreeVisual[];
 }
@@ -105,6 +126,11 @@ export function createMeadowLayout(seed: number): MeadowLayout {
     denseWeedTargets,
     createSeededRandom(seed ^ 0x03707344),
   );
+  const saplingTargets = createSaplingTargets(createSeededRandom(seed ^ 0xa4093822));
+  const saplingVisuals = createSaplingVisuals(
+    saplingTargets,
+    createSeededRandom(seed ^ 0x299f31d0),
+  );
   const matureTreeTargets = createMatureTreeTargets();
   const matureTreeVisuals = createMatureTreeVisuals();
 
@@ -115,6 +141,8 @@ export function createMeadowLayout(seed: number): MeadowLayout {
     flowerVisuals,
     denseWeedTargets,
     denseWeedVisuals,
+    saplingTargets,
+    saplingVisuals,
     matureTreeTargets,
     matureTreeVisuals,
   };
@@ -282,6 +310,37 @@ function createDenseWeedVisuals(targets: TargetSeed[], random: () => number): De
   }
 
   return visuals;
+}
+
+function createSaplingTargets(random: () => number): TargetSeed[] {
+  return SAPLING_PLACEMENT_ANCHORS.map(([anchorX, anchorZ], index) => {
+    const size = 0.82 + random() * 0.28;
+    const trunkRadius = size * 0.34;
+    return {
+      id: `sapling-${index}`,
+      kind: "sapling",
+      x: anchorX + randomRange(random, -0.7, 0.7),
+      z: anchorZ + randomRange(random, -0.7, 0.7),
+      radius: trunkRadius,
+      solidRadius: trunkRadius,
+      recommendedLevel: 4,
+      requiredWork: 50,
+      resistance: 0.9,
+      yield: 2,
+      xp: 30,
+    };
+  });
+}
+
+function createSaplingVisuals(targets: TargetSeed[], random: () => number): SaplingVisual[] {
+  return targets.map((target, targetIndex) => ({
+    x: target.x,
+    z: target.z,
+    size: target.solidRadius / 0.34,
+    rotation: random() * TAU,
+    targetIndex,
+    colorIndex: Math.floor(random() * SAPLING_COLOR_COUNT),
+  }));
 }
 
 function createMatureTreeTargets(): TargetSeed[] {
