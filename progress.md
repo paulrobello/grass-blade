@@ -3,7 +3,7 @@ Original prompt: "i want create a threejs based game where you are a spinning bl
 # Grass Blade Progress
 
 Last updated: 2026-07-20
-Active milestone: Phase 1 — live contact authority and clearer cut feedback verified; HUD-flight and richer collapse reactions next
+Active milestone: Phase 1 — root-anchored grass and flower collapse verified; HUD-flight and richer weed/woody reactions next
 
 ## Completed foundation intent
 
@@ -69,6 +69,10 @@ Active milestone: Phase 1 — live contact authority and clearer cut feedback ve
 - [x] Removed the circular blade ground-blob shadow at user direction.
 - [x] Added a fixed 240-slot instanced fragment pool for deterministic grass clippings, petals, broad leaves, wood chips, and sapling/tree leaves without per-frame allocation.
 - [x] Raised, enlarged, and brightened the pooled fragments with unlit double-sided materials so completions read as visible cut bursts rather than silent disappearance.
+- [x] Replaced immediate grass removal with a renderer-owned `fall -> settle -> shrink -> stubble` lifecycle that tips each tuft around its ground root and mats nearby cuts instead of producing a radial spoke halo.
+- [x] Kept flower clusters fully standing during partial work, then animated each coherent stem, blossom, and center from the authoritative completion frame through a staggered fall, grounded hold, shrink, and short-stem state while petals remain secondary accents.
+- [x] Added reduced-motion vegetation timing and live fall diagnostics without per-frame allocation or new gameplay authority.
+- [x] Verified the fresh level-1 presentation as exactly two opposing blades with no saw teeth; four blades still begin only at level 2.
 - [x] Expanded `render_game_to_text` with inventory, XP, loaded RPM, target counts, live blade contacts, cut revision, persistent partial-work diagnostics, recent cut events, blade tier, orientation-cue count, and fragment-pool state.
 - [x] Added deterministic tests for layout mapping, fine grass masks, grass/flower/weed/tree cuts, Tier 2 timing, solid blocking and release, persistent work, exact-once rewards, level thresholds, replay, movement, and boundaries.
 
@@ -95,10 +99,13 @@ Active milestone: Phase 1 — live contact authority and clearer cut feedback ve
 - Deterministic headed Chrome routes at 1280 by 720 and 430 by 860 showed a partially worked sapling leave live contact, remain at exactly the same work across 60 idle fixed steps, and render upright in both inspected resting frames. The snapshots report an empty `bladeContacts` array and `inBladeContact: false` while preserving `status: cutting`; both browser error logs are empty.
 - The same two routes finished the sapling on cut revision 162, updated Wood to `2/6`, removed its solid and visual on that frame, and rendered 18 active leaf/wood fragments. The inspected local artifacts are `output/playwright/motion-regression/sapling-cut-burst.png` and `output/playwright/motion-regression-portrait/sapling-cut-burst.png`.
 - Both level-8 regressions reported 18 visible saw teeth and one orientation cue. Consecutive fixed-step landscape snapshots advanced the angle from `2.706` to `4.447` radians, and the inspected gold cue visibly changed position without reintroducing the circular blade shadow. The local artifacts are `output/playwright/motion-regression/level-8-cue-a.png` and `level-8-cue-b.png` plus their portrait equivalents.
+- `make checkall` passes formatting verification, ESLint, strict TypeScript, 33 deterministic Vitest tests, and the Vite production build after the vegetation-collapse slice.
+- Exact headed Chrome regressions at 1280 by 720 and 430 by 860 verify a fresh level-1 run exposes `bladeTier: "two-arm"`, exactly two visible blades, and zero saw teeth. Grass remains present through tipping, settling, and shrinking before stubble replaces it; the inspected local artifacts are `output/playwright/vegetation-fall-landscape-tuned/grass-tipping.png`, `grass-grounded.png`, and `grass-disappearing.png` plus their portrait equivalents.
+- The same routes verify `flower-10` remains fully standing on its first partial-contact frame with no cut event, then starts coherent plant fall on the exact completion frame alongside the petal burst and cleans up after the grounded hold. The inspected local artifacts are `output/playwright/vegetation-fall-landscape-tuned/flower-partial-contact-standing.png`, `flower-fall-and-particles-start.png`, `flower-grounded.png`, and `flower-cleaned-up.png` plus their portrait equivalents; both browser error logs are empty.
 
 ## Remaining Phase 1 TODOs
 
-- [ ] Add HUD-flight collection motes and richer target collapse/contact reactions; pooled resource bursts, HUD counter pulses, level-up presentation, and reduced-motion fallbacks are shipped.
+- [ ] Add HUD-flight collection motes and richer weed/woody target collapse/contact reactions; pooled resource bursts, HUD counter pulses, grass/flower fall lifecycles, level-up presentation, and reduced-motion fallbacks are shipped.
 - [ ] Add deterministic coverage for RPM recovery, simultaneous aggregate load, final available quotas, and repeated contract snapshots.
 - [ ] Replace the linear target scan with the planned spatial query before discrete target counts grow beyond this bounded first slice.
 - [ ] In Phase 2, add shrubs, final sapling art/material feedback, non-cuttable rocks, too-tough feedback, full Meadow Delivery completion, results, and restart/next-contract flow.
