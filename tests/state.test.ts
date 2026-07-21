@@ -29,6 +29,8 @@ import {
   GRASS_VISUAL_COLUMNS,
   MATURE_TREE_COUNT,
   SAPLING_COUNT,
+  SHRUB_COUNT,
+  SHRUB_VISUAL_COUNT,
   createMeadowLayout,
   type TargetKind,
 } from "../src/game/world";
@@ -95,13 +97,15 @@ describe("active game state", () => {
       GRASS_LOGICAL_COLUMNS * GRASS_LOGICAL_COLUMNS +
         FLOWER_CLUSTER_COUNT +
         DENSE_WEED_COUNT +
+        SHRUB_COUNT +
         SAPLING_COUNT +
         MATURE_TREE_COUNT,
     );
     const grassEnd = GRASS_LOGICAL_COLUMNS * GRASS_LOGICAL_COLUMNS;
     const flowersEnd = grassEnd + FLOWER_CLUSTER_COUNT;
     const denseWeedsEnd = flowersEnd + DENSE_WEED_COUNT;
-    const saplingsEnd = denseWeedsEnd + SAPLING_COUNT;
+    const shrubsEnd = denseWeedsEnd + SHRUB_COUNT;
+    const saplingsEnd = shrubsEnd + SAPLING_COUNT;
     expect(first.targets.slice(0, grassEnd).every((target) => target.kind === "grass")).toBe(true);
     expect(
       first.targets.slice(grassEnd, flowersEnd).every((target) => target.kind === "flower"),
@@ -110,7 +114,10 @@ describe("active game state", () => {
       first.targets.slice(flowersEnd, denseWeedsEnd).every((target) => target.kind === "denseWeed"),
     ).toBe(true);
     expect(
-      first.targets.slice(denseWeedsEnd, saplingsEnd).every((target) => target.kind === "sapling"),
+      first.targets.slice(denseWeedsEnd, shrubsEnd).every((target) => target.kind === "shrub"),
+    ).toBe(true);
+    expect(
+      first.targets.slice(shrubsEnd, saplingsEnd).every((target) => target.kind === "sapling"),
     ).toBe(true);
     expect(first.targets.slice(saplingsEnd).every((target) => target.kind === "matureTree")).toBe(
       true,
@@ -126,12 +133,14 @@ describe("active game state", () => {
     const grass = requireTarget(state, "grass");
     const flower = requireTarget(state, "flower");
     const weed = requireTarget(state, "denseWeed");
+    const shrub = requireTarget(state, "shrub");
     const sapling = requireTarget(state, "sapling");
     const matureTree = requireTarget(state, "matureTree");
 
     expect(shouldShowTargetProgress(grass)).toBe(false);
     expect(shouldShowTargetProgress(flower)).toBe(false);
     expect(shouldShowTargetProgress(weed)).toBe(false);
+    expect(shouldShowTargetProgress(shrub)).toBe(false);
     expect(shouldShowTargetProgress(sapling)).toBe(false);
     expect(shouldShowTargetProgress(matureTree)).toBe(false);
 
@@ -141,6 +150,8 @@ describe("active game state", () => {
     flower.accumulatedWork = 2;
     weed.status = "cutting";
     weed.accumulatedWork = 3;
+    shrub.status = "cutting";
+    shrub.accumulatedWork = 15;
     sapling.status = "cutting";
     sapling.accumulatedWork = 12.5;
     matureTree.status = "cutting";
@@ -148,8 +159,19 @@ describe("active game state", () => {
 
     const entries = collectTargetProgressEntries(state.targets);
 
-    expect(entries.map((entry) => entry.id)).toEqual([weed.id, sapling.id, matureTree.id]);
-    expect(entries.map((entry) => entry.kind)).toEqual(["denseWeed", "sapling", "matureTree"]);
+    expect(entries.map((entry) => entry.id)).toEqual([
+      weed.id,
+      shrub.id,
+      sapling.id,
+      matureTree.id,
+    ]);
+    expect(entries.map((entry) => entry.kind)).toEqual([
+      "denseWeed",
+      "shrub",
+      "sapling",
+      "matureTree",
+    ]);
+    expect(targetProgressFraction(shrub)).toBe(0.5);
     expect(targetProgressFraction(sapling)).toBe(0.75);
     expect(targetProgressFraction(matureTree)).toBe(0.5);
 
@@ -178,6 +200,8 @@ describe("active game state", () => {
     expect(first.flowerVisuals).toHaveLength(FLOWER_VISUAL_COUNT);
     expect(first.denseWeedTargets).toHaveLength(DENSE_WEED_COUNT);
     expect(first.denseWeedVisuals).toHaveLength(DENSE_WEED_VISUAL_COUNT);
+    expect(first.shrubTargets).toHaveLength(SHRUB_COUNT);
+    expect(first.shrubVisuals).toHaveLength(SHRUB_VISUAL_COUNT);
     expect(first.saplingTargets).toHaveLength(SAPLING_COUNT);
     expect(first.saplingVisuals).toHaveLength(SAPLING_COUNT);
     expect(first.matureTreeTargets).toHaveLength(MATURE_TREE_COUNT);
@@ -189,6 +213,10 @@ describe("active game state", () => {
       interleaved.saplingTargets.map((target) => target.id),
     );
     expect(first.saplingTargets).not.toEqual(interleaved.saplingTargets);
+    expect(first.shrubTargets.map((target) => target.id)).toEqual(
+      interleaved.shrubTargets.map((target) => target.id),
+    );
+    expect(first.shrubTargets).not.toEqual(interleaved.shrubTargets);
     expect(first.matureTreeVisuals).toEqual([
       { x: -16, z: -15, size: 1.05, targetIndex: 0 },
       { x: -8, z: -18, size: 0.85, targetIndex: 1 },
@@ -230,6 +258,15 @@ describe("active game state", () => {
     expect(first.flowerTargets.every(hasFlowerTierValues)).toBe(true);
     expect(first.denseWeedTargets.every(hasDenseWeedTierValues)).toBe(true);
     expect(first.denseWeedTargets.some((target) => Math.hypot(target.x, target.z) < 6)).toBe(true);
+    expect(first.shrubTargets.every(hasShrubTierValues)).toBe(true);
+    for (const visual of first.shrubVisuals) {
+      const target = first.shrubTargets[visual.targetIndex];
+      expect(target).toMatchObject({
+        x: visual.x,
+        z: visual.z,
+        radius: visual.size,
+      });
+    }
     expect(first.saplingTargets.every(hasSaplingTierValues)).toBe(true);
     expect(
       first.saplingTargets.reduce((sum, target) => sum + target.yield, 0),
@@ -302,6 +339,7 @@ describe("active game state", () => {
       { kind: "grass", yield: 1, xp: 1, levelAfter: 1 },
       { kind: "flower", yield: 1, xp: 3, levelAfter: 1 },
       { kind: "denseWeed", yield: 1, xp: 6, levelAfter: 1 },
+      { kind: "shrub", yield: 2, xp: 14, levelAfter: 1 },
       { kind: "sapling", yield: 2, xp: 30, levelAfter: 2 },
       { kind: "matureTree", yield: 6, xp: 75, levelAfter: 3 },
     ];
@@ -510,6 +548,58 @@ describe("active game state", () => {
     }
 
     expect(replay).toEqual(first);
+  });
+
+  it("cuts an isolated shrub within its recommended-level timing range", () => {
+    const state = createInitialState(247);
+    const target = isolateTarget(state, "shrub");
+    prepareLevelThreeBlade(state);
+
+    const cutTicks = cutCurrentTarget(state, target);
+    const cutSeconds = cutTicks * FIXED_TIME_STEP_SECONDS;
+
+    expect(cutSeconds).toBeGreaterThanOrEqual(1.8);
+    expect(cutSeconds).toBeLessThanOrEqual(3);
+  });
+
+  it("blocks movement while an authoritative shrub is standing", () => {
+    const state = createInitialState(248);
+    const target = isolateTarget(state, "shrub");
+    prepareLevelThreeBlade(state);
+    placeTargetAtPositiveXContact(state, target);
+
+    stepState(state, positiveXInput, FIXED_TIME_STEP_SECONDS);
+
+    expect(state.player.x).toBeCloseTo(0, 8);
+    expect(state.player.z).toBeCloseTo(0, 8);
+    expect(target.status).toBe("cutting");
+    expect(target.accumulatedWork).toBeGreaterThan(0);
+    expect(state.inventory.fiber).toBe(0);
+  });
+
+  it("awards two Fiber and fourteen XP exactly once on the shrub cut tick", () => {
+    const state = createInitialState(249);
+    const target = isolateTarget(state, "shrub");
+    prepareLevelThreeBlade(state);
+    target.status = "cutting";
+    target.accumulatedWork = target.requiredWork - 0.001;
+
+    stepState(state, idleInput, FIXED_TIME_STEP_SECONDS);
+
+    expect(target.status).toBe("cut");
+    expect(state.inventory.fiber).toBe(2);
+    expect(state.objectives.fiber.collected).toBe(2);
+    expect(state.xp).toBe(69);
+    expect(state.cutRevision).toBe(1);
+
+    for (let frame = 0; frame < 120; frame += 1) {
+      stepState(state, idleInput, FIXED_TIME_STEP_SECONDS);
+    }
+
+    expect(state.inventory.fiber).toBe(2);
+    expect(state.objectives.fiber.collected).toBe(2);
+    expect(state.xp).toBe(69);
+    expect(state.cutRevision).toBe(1);
   });
 
   it("cuts an isolated sapling within its recommended-level timing range", () => {
@@ -875,6 +965,13 @@ function prepareLevelTwoBlade(state: GameState): void {
   state.player.targetRpm = 760;
 }
 
+function prepareLevelThreeBlade(state: GameState): void {
+  state.xp = 55;
+  state.player.level = 3;
+  state.player.rpm = 800;
+  state.player.targetRpm = 800;
+}
+
 function prepareLevelFourBlade(state: GameState): void {
   state.xp = 110;
   state.player.level = 4;
@@ -939,6 +1036,26 @@ function hasDenseWeedTierValues(target: {
     target.resistance === 0.25 &&
     target.yield === 1 &&
     target.xp === 6
+  );
+}
+
+function hasShrubTierValues(target: {
+  kind: TargetKind;
+  solidRadius: number;
+  recommendedLevel: number;
+  requiredWork: number;
+  resistance: number;
+  yield: number;
+  xp: number;
+}): boolean {
+  return (
+    target.kind === "shrub" &&
+    target.solidRadius > 0 &&
+    target.recommendedLevel === 3 &&
+    target.requiredWork === 30 &&
+    target.resistance === 0.55 &&
+    target.yield === 2 &&
+    target.xp === 14
   );
 }
 

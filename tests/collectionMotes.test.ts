@@ -44,6 +44,7 @@ describe("collection motes", () => {
     expect(collectionResourceForKind("grass")).toBe("grass");
     expect(collectionResourceForKind("flower")).toBe("flowers");
     expect(collectionResourceForKind("denseWeed")).toBe("fiber");
+    expect(collectionResourceForKind("shrub")).toBe("fiber");
     expect(collectionResourceForKind("sapling")).toBe("wood");
     expect(collectionResourceForKind("matureTree")).toBe("wood");
   });

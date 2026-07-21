@@ -3,6 +3,7 @@ const GRASS_COLOR_COUNT = 4;
 const FLOWER_COLOR_COUNT = 5;
 const FLOWER_CLUSTER_COLUMNS = 4;
 const DENSE_WEED_COLOR_COUNT = 3;
+const SHRUB_COLOR_COUNT = 3;
 const SAPLING_COLOR_COUNT = 3;
 
 export const GRASS_VISUAL_COLUMNS = 104;
@@ -13,6 +14,8 @@ export const FLOWER_VISUAL_COUNT = 420;
 export const DENSE_WEED_COUNT = 12;
 export const DENSE_WEED_VISUALS_PER_TARGET = 9;
 export const DENSE_WEED_VISUAL_COUNT = DENSE_WEED_COUNT * DENSE_WEED_VISUALS_PER_TARGET;
+export const SHRUB_COUNT = 8;
+export const SHRUB_VISUAL_COUNT = SHRUB_COUNT;
 export const SAPLING_COUNT = 5;
 export const MATURE_TREE_COUNT = 8;
 
@@ -29,6 +32,17 @@ const SAPLING_PLACEMENT_ANCHORS = [
   [-7.5, 8.5],
   [8, 9],
   [1.5, 11.5],
+] as const;
+
+const SHRUB_PLACEMENT_ANCHORS = [
+  [6.2, -6.2],
+  [-6.4, -6.2],
+  [-6.1, 6.1],
+  [6.5, 6],
+  [11.2, -2.4],
+  [-11.4, 2.7],
+  [2.8, 11.3],
+  [-2.8, -11.2],
 ] as const;
 
 const MATURE_TREE_PLACEMENTS = [
@@ -71,6 +85,15 @@ export interface DenseWeedVisual {
   colorIndex: number;
 }
 
+export interface ShrubVisual {
+  x: number;
+  z: number;
+  size: number;
+  rotation: number;
+  targetIndex: number;
+  colorIndex: number;
+}
+
 export interface SaplingVisual {
   x: number;
   z: number;
@@ -87,7 +110,7 @@ export interface MatureTreeVisual {
   targetIndex: number;
 }
 
-export type TargetKind = "grass" | "flower" | "denseWeed" | "sapling" | "matureTree";
+export type TargetKind = "grass" | "flower" | "denseWeed" | "shrub" | "sapling" | "matureTree";
 
 export interface TargetSeed {
   id: string;
@@ -110,6 +133,8 @@ export interface MeadowLayout {
   flowerVisuals: FlowerVisual[];
   denseWeedTargets: TargetSeed[];
   denseWeedVisuals: DenseWeedVisual[];
+  shrubTargets: TargetSeed[];
+  shrubVisuals: ShrubVisual[];
   saplingTargets: TargetSeed[];
   saplingVisuals: SaplingVisual[];
   matureTreeTargets: TargetSeed[];
@@ -126,6 +151,8 @@ export function createMeadowLayout(seed: number): MeadowLayout {
     denseWeedTargets,
     createSeededRandom(seed ^ 0x03707344),
   );
+  const shrubTargets = createShrubTargets(createSeededRandom(seed ^ 0x452821e6));
+  const shrubVisuals = createShrubVisuals(shrubTargets, createSeededRandom(seed ^ 0x38d01377));
   const saplingTargets = createSaplingTargets(createSeededRandom(seed ^ 0xa4093822));
   const saplingVisuals = createSaplingVisuals(
     saplingTargets,
@@ -141,6 +168,8 @@ export function createMeadowLayout(seed: number): MeadowLayout {
     flowerVisuals,
     denseWeedTargets,
     denseWeedVisuals,
+    shrubTargets,
+    shrubVisuals,
     saplingTargets,
     saplingVisuals,
     matureTreeTargets,
@@ -310,6 +339,37 @@ function createDenseWeedVisuals(targets: TargetSeed[], random: () => number): De
   }
 
   return visuals;
+}
+
+function createShrubTargets(random: () => number): TargetSeed[] {
+  return SHRUB_PLACEMENT_ANCHORS.map(([anchorX, anchorZ], index) => {
+    const size = 0.84 + random() * 0.24;
+    const solidRadius = size * 0.54;
+    return {
+      id: `shrub-${index}`,
+      kind: "shrub",
+      x: anchorX + randomRange(random, -0.55, 0.55),
+      z: anchorZ + randomRange(random, -0.55, 0.55),
+      radius: size * 0.96,
+      solidRadius,
+      recommendedLevel: 3,
+      requiredWork: 30,
+      resistance: 0.55,
+      yield: 2,
+      xp: 14,
+    };
+  });
+}
+
+function createShrubVisuals(targets: TargetSeed[], random: () => number): ShrubVisual[] {
+  return targets.map((target, targetIndex) => ({
+    x: target.x,
+    z: target.z,
+    size: target.radius,
+    rotation: random() * TAU,
+    targetIndex,
+    colorIndex: Math.floor(random() * SHRUB_COLOR_COUNT),
+  }));
 }
 
 function createSaplingTargets(random: () => number): TargetSeed[] {

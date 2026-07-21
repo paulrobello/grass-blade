@@ -262,6 +262,10 @@ export function createCutEffects(
         count = reducedMotion ? 4 : 13;
         primaryStyle = LEAF_FRAGMENT;
         break;
+      case "shrub":
+        count = reducedMotion ? 5 : 16;
+        primaryStyle = LEAF_FRAGMENT;
+        break;
       case "sapling":
         count = reducedMotion ? 5 : 18;
         includesWood = true;
@@ -459,6 +463,8 @@ function fragmentOriginHeight(kind: CutCompletionEvent["kind"], style: number): 
       return 0.72;
     case "denseWeed":
       return 0.8;
+    case "shrub":
+      return 1.05;
     case "sapling":
       return style === WOOD_FRAGMENT ? 0.82 : 1.65;
     case "matureTree":

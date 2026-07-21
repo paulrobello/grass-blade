@@ -235,6 +235,7 @@ export class Game {
           flowerAwarded = true;
           break;
         case "denseWeed":
+        case "shrub":
           fiberAwarded = true;
           break;
         case "sapling":
