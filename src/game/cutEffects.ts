@@ -11,7 +11,7 @@ const PETAL_FRAGMENT = 1;
 const LEAF_FRAGMENT = 2;
 const WOOD_FRAGMENT = 3;
 
-const GRASS_COLORS = [0x2b8c3f, 0x43ad48, 0x71cf50] as const;
+const GRASS_COLORS = [0x2b8c3f, 0x54bf4d, 0x9be85d] as const;
 const PETAL_COLORS = [0xffffff, 0xff78b4, 0xd08aff, 0x79d7ff, 0xffdd63] as const;
 const LEAF_COLORS = [0x287f3b, 0x45a94b, 0x75c84e, 0xa6d74d] as const;
 const WOOD_COLORS = [0x8f512b, 0xb76b33, 0xd9964f, 0xf0bd72] as const;
@@ -34,12 +34,10 @@ export function createCutEffects(
   reducedMotion: boolean,
 ): CutEffects {
   const geometry = new THREE.PlaneGeometry(1, 1);
-  const material = new THREE.MeshStandardMaterial({
+  const material = new THREE.MeshBasicMaterial({
     color: 0xffffff,
-    roughness: 0.72,
-    metalness: 0,
-    flatShading: true,
     side: THREE.DoubleSide,
+    toneMapped: false,
   });
   const fragments = new THREE.InstancedMesh(geometry, material, MAX_FRAGMENT_COUNT);
   const matrix = new THREE.Matrix4();
@@ -97,6 +95,7 @@ export function createCutEffects(
     key: number,
     x: number,
     z: number,
+    originHeight: number,
     simulationTimeSeconds: number,
   ): void {
     const slot = nextSlot;
@@ -120,34 +119,34 @@ export function createCutEffects(
       (reducedMotion ? 0.24 : style === GRASS_FRAGMENT ? 0.58 : 0.88) +
       randomUnit(seed, key, 4) * (reducedMotion ? 0.12 : 0.32);
     originX[slot] = x + Math.cos(angle) * radius;
-    originY[slot] = style === GRASS_FRAGMENT ? 0.16 : style === WOOD_FRAGMENT ? 0.42 : 0.3;
+    originY[slot] = originHeight;
     originZ[slot] = z + Math.sin(angle) * radius;
     velocityX[slot] = Math.cos(angle) * speed;
     velocityY[slot] = lift;
     velocityZ[slot] = Math.sin(angle) * speed;
-    baseTilt[slot] = randomUnit(seed, key, 5) * TAU;
+    baseTilt[slot] = -Math.PI / 2 + (randomUnit(seed, key, 5) * 2 - 1) * 0.32;
     baseYaw[slot] = randomUnit(seed, key, 6) * TAU;
     spinRate[slot] = (randomUnit(seed, key, 7) * 2 - 1) * (style === WOOD_FRAGMENT ? 9 : 13);
 
     switch (style) {
       case PETAL_FRAGMENT:
-        width[slot] = 0.16 + randomUnit(seed, key, 8) * 0.09;
-        height[slot] = 0.09 + randomUnit(seed, key, 9) * 0.06;
+        width[slot] = 0.24 + randomUnit(seed, key, 8) * 0.12;
+        height[slot] = 0.14 + randomUnit(seed, key, 9) * 0.08;
         color.setHex(paletteColor(PETAL_COLORS, seed, key, 10));
         break;
       case LEAF_FRAGMENT:
-        width[slot] = 0.2 + randomUnit(seed, key, 8) * 0.12;
-        height[slot] = 0.065 + randomUnit(seed, key, 9) * 0.045;
+        width[slot] = 0.28 + randomUnit(seed, key, 8) * 0.16;
+        height[slot] = 0.11 + randomUnit(seed, key, 9) * 0.07;
         color.setHex(paletteColor(LEAF_COLORS, seed, key, 10));
         break;
       case WOOD_FRAGMENT:
-        width[slot] = 0.17 + randomUnit(seed, key, 8) * 0.13;
-        height[slot] = 0.055 + randomUnit(seed, key, 9) * 0.05;
+        width[slot] = 0.24 + randomUnit(seed, key, 8) * 0.16;
+        height[slot] = 0.09 + randomUnit(seed, key, 9) * 0.06;
         color.setHex(paletteColor(WOOD_COLORS, seed, key, 10));
         break;
       default:
-        width[slot] = 0.1 + randomUnit(seed, key, 8) * 0.08;
-        height[slot] = 0.035 + randomUnit(seed, key, 9) * 0.025;
+        width[slot] = 0.16 + randomUnit(seed, key, 8) * 0.1;
+        height[slot] = 0.055 + randomUnit(seed, key, 9) * 0.035;
         color.setHex(paletteColor(GRASS_COLORS, seed, key, 10));
         break;
     }
@@ -173,7 +172,7 @@ export function createCutEffects(
       return;
     }
 
-    spawnFragment(GRASS_FRAGMENT, visualIndex * 17 + 3, x, z, simulationTimeSeconds);
+    spawnFragment(GRASS_FRAGMENT, visualIndex * 17 + 3, x, z, 0.28, simulationTimeSeconds);
   }
 
   function spawnCompletionBurst(event: CutCompletionEvent, simulationTimeSeconds: number): void {
@@ -204,12 +203,17 @@ export function createCutEffects(
 
     for (let index = 0; index < count; index += 1) {
       const style = includesWood
-        ? index % (event.kind === "matureTree" ? 3 : 2) === 0
-          ? LEAF_FRAGMENT
-          : WOOD_FRAGMENT
+        ? event.kind === "matureTree"
+          ? index % 3 === 0
+            ? WOOD_FRAGMENT
+            : LEAF_FRAGMENT
+          : index % 2 === 0
+            ? LEAF_FRAGMENT
+            : WOOD_FRAGMENT
         : primaryStyle;
       const key = event.revision * 131 + index * 19 + 7;
-      spawnFragment(style, key, event.x, event.z, simulationTimeSeconds);
+      const originHeight = fragmentOriginHeight(event.kind, style);
+      spawnFragment(style, key, event.x, event.z, originHeight, simulationTimeSeconds);
     }
   }
 
@@ -245,7 +249,11 @@ export function createCutEffects(
       const z = (originZ[index] ?? 0) + (velocityZ[index] ?? 0) * age;
       const spin = (spinRate[index] ?? 0) * age;
       position.set(x, y, z);
-      rotation.set((baseTilt[index] ?? 0) + spin, (baseYaw[index] ?? 0) + spin * 0.37, spin * 0.61);
+      rotation.set(
+        (baseTilt[index] ?? 0) + Math.sin(spin) * 0.2,
+        (baseYaw[index] ?? 0) + spin,
+        Math.cos(spin * 0.61) * 0.14,
+      );
       quaternion.setFromEuler(rotation);
       scale.set((width[index] ?? 0) * fade, (height[index] ?? 0) * fade, 1);
       matrix.compose(position, quaternion, scale);
@@ -292,6 +300,21 @@ export function createCutEffects(
   }
 
   return { diagnostics, sync, dispose };
+}
+
+function fragmentOriginHeight(kind: CutCompletionEvent["kind"], style: number): number {
+  switch (kind) {
+    case "flower":
+      return 0.72;
+    case "denseWeed":
+      return 0.8;
+    case "sapling":
+      return style === WOOD_FRAGMENT ? 0.82 : 1.65;
+    case "matureTree":
+      return style === WOOD_FRAGMENT ? 1.05 : 2.25;
+    case "grass":
+      return 0.28;
+  }
 }
 
 function paletteColor(palette: readonly number[], seed: number, key: number, lane: number): number {

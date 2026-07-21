@@ -75,6 +75,7 @@ describe("active game state", () => {
     });
     expect(first.xp).toBe(0);
     expect(first.cutRevision).toBe(0);
+    expect(first.bladeContactTargetIds).toEqual([]);
     expect(first.targets).toHaveLength(
       GRASS_LOGICAL_COLUMNS * GRASS_LOGICAL_COLUMNS +
         FLOWER_CLUSTER_COUNT +
@@ -484,6 +485,30 @@ describe("active game state", () => {
     expect(target.status).toBe("cutting");
     expect(target.accumulatedWork).toBeGreaterThan(0);
     expect(state.inventory.wood).toBe(0);
+  });
+
+  it("clears live sapling contact while preserving partial cut work", () => {
+    const state = createInitialState(263);
+    const target = isolateTarget(state, "sapling");
+    prepareLevelFourBlade(state);
+
+    stepState(state, idleInput, FIXED_TIME_STEP_SECONDS);
+    const partialWork = target.accumulatedWork;
+
+    expect(state.bladeContactTargetIds).toEqual([target.id]);
+    expect(target.status).toBe("cutting");
+    expect(partialWork).toBeGreaterThan(0);
+    expect(partialWork).toBeLessThan(target.requiredWork);
+
+    state.player.x = WORLD_HALF_EXTENT - state.player.radius;
+    state.player.z = WORLD_HALF_EXTENT - state.player.radius;
+    state.player.vx = 0;
+    state.player.vz = 0;
+    stepState(state, idleInput, FIXED_TIME_STEP_SECONDS);
+
+    expect(state.bladeContactTargetIds).toEqual([]);
+    expect(target.status).toBe("cutting");
+    expect(target.accumulatedWork).toBe(partialWork);
   });
 
   it("releases a cut sapling and awards Wood plus XP exactly once on the cut tick", () => {

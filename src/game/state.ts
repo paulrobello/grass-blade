@@ -93,6 +93,7 @@ export interface GameState {
   objectives: ObjectivesState;
   xp: number;
   targets: TargetState[];
+  bladeContactTargetIds: string[];
   grassVisualPositions: Float32Array;
   grassVisualCutMask: Uint8Array;
   cutGrassVisualIndices: number[];
@@ -140,6 +141,7 @@ export function createInitialState(seed = MEADOW_SEED): GameState {
     },
     xp: 0,
     targets: targetSeeds.map(createTargetState),
+    bladeContactTargetIds: [],
     grassVisualPositions,
     grassVisualCutMask: new Uint8Array(layout.grassVisuals.length),
     cutGrassVisualIndices: [],
@@ -231,6 +233,10 @@ function stepCutting(
     endZ,
     state.player.radius,
   );
+  state.bladeContactTargetIds.length = 0;
+  for (const contact of contacts) {
+    state.bladeContactTargetIds.push(contact.target.id);
+  }
   const totalLoad = contacts.reduce(
     (sum, contact) => sum + contact.target.resistance * contact.contactFraction,
     0,

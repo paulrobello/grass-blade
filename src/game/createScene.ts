@@ -26,6 +26,7 @@ export interface MeadowPresentationDiagnostics {
   bladeTier: BladeTier;
   visibleBladeCount: number;
   visibleTeeth: number;
+  orientationCueCount: number;
   activeFragments: number;
   consumedCutRevision: number;
   consumedGrassVisualCuts: number;
@@ -34,7 +35,7 @@ export interface MeadowPresentationDiagnostics {
 interface BladeVisual {
   diagnostics: Pick<
     MeadowPresentationDiagnostics,
-    "bladeTier" | "visibleBladeCount" | "visibleTeeth"
+    "bladeTier" | "visibleBladeCount" | "visibleTeeth" | "orientationCueCount"
   >;
   sync: (level: number, angleRadians: number) => void;
 }
@@ -173,6 +174,7 @@ export function createScene(seed: number): MeadowScene {
     bladeTier: blade.diagnostics.bladeTier,
     visibleBladeCount: blade.diagnostics.visibleBladeCount,
     visibleTeeth: blade.diagnostics.visibleTeeth,
+    orientationCueCount: blade.diagnostics.orientationCueCount,
     activeFragments: 0,
     consumedCutRevision: 0,
     consumedGrassVisualCuts: 0,
@@ -212,6 +214,7 @@ export function createScene(seed: number): MeadowScene {
     presentation.bladeTier = blade.diagnostics.bladeTier;
     presentation.visibleBladeCount = blade.diagnostics.visibleBladeCount;
     presentation.visibleTeeth = blade.diagnostics.visibleTeeth;
+    presentation.orientationCueCount = blade.diagnostics.orientationCueCount;
     presentation.activeFragments = cutEffects.diagnostics.activeFragments;
     presentation.consumedCutRevision = cutEffects.diagnostics.consumedCutRevision;
     presentation.consumedGrassVisualCuts = cutEffects.diagnostics.consumedGrassVisualCuts;
@@ -856,14 +859,17 @@ function addSaplings(
           continue;
         }
 
-        const isCutting = target?.status === "cutting";
-        const shudder = isCutting
+        const isInBladeContact =
+          target !== undefined && state.bladeContactTargetIds.includes(target.id);
+        const shudder = isInBladeContact
           ? Math.sin(simulationTimeSeconds * 24 + visual.targetIndex * 1.73)
           : 0;
-        const leanAngle = isCutting ? 0.105 + shudder * 0.038 : 0;
+        const leanAngle = isInBladeContact ? 0.105 + shudder * 0.038 : 0;
         const leanDirection =
           visual.rotation +
-          (isCutting ? Math.sin(simulationTimeSeconds * 17 + visual.targetIndex * 2.1) * 0.22 : 0);
+          (isInBladeContact
+            ? Math.sin(simulationTimeSeconds * 17 + visual.targetIndex * 2.1) * 0.22
+            : 0);
         const leanOffsetX = Math.cos(leanDirection) * Math.sin(leanAngle);
         const leanOffsetZ = Math.sin(leanDirection) * Math.sin(leanAngle);
         tiltAxis.set(Math.sin(leanDirection), 0, -Math.cos(leanDirection));
@@ -1068,22 +1074,6 @@ function addBlade(
   playerRoot: THREE.Group,
   resources: Array<THREE.BufferGeometry | THREE.Material>,
 ): BladeVisual {
-  const shadowGeometry = track(resources, new THREE.CircleGeometry(2.05, 40));
-  const shadowMaterial = track(
-    resources,
-    new THREE.MeshBasicMaterial({
-      color: 0x123e2a,
-      transparent: true,
-      opacity: 0.2,
-      depthWrite: false,
-    }),
-  );
-  const shadow = new THREE.Mesh(shadowGeometry, shadowMaterial);
-  shadow.rotation.x = -Math.PI / 2;
-  // Keep the blob above ground patches and cut stubble while standing vegetation still occludes it.
-  shadow.position.y = 0.13;
-  playerRoot.add(shadow);
-
   const baseGeometry = track(resources, new THREE.CylinderGeometry(0.7, 0.82, 0.48, 24));
   const baseMaterial = track(
     resources,
@@ -1204,10 +1194,30 @@ function addBlade(
   cap.castShadow = true;
   bladePivot.add(cap);
 
+  const orientationCueGeometry = track(
+    resources,
+    new THREE.CylinderGeometry(0.115, 0.115, 0.11, 12),
+  );
+  const orientationCueMaterial = track(
+    resources,
+    new THREE.MeshStandardMaterial({
+      color: 0xffc94d,
+      roughness: 0.25,
+      metalness: 0.68,
+      emissive: 0x8a4a00,
+      emissiveIntensity: 0.16,
+    }),
+  );
+  const orientationCue = new THREE.Mesh(orientationCueGeometry, orientationCueMaterial);
+  orientationCue.position.set(1.22, 0.235, 0);
+  orientationCue.castShadow = true;
+  bladePivot.add(orientationCue);
+
   const diagnostics: BladeVisual["diagnostics"] = {
     bladeTier: "two-arm",
     visibleBladeCount: 2,
     visibleTeeth: 0,
+    orientationCueCount: 1,
   };
   let appliedTier: BladeTier | null = null;
 

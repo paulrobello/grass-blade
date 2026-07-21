@@ -326,6 +326,7 @@ export class Game {
       status: string;
       work: number;
       requiredWork: number;
+      inBladeContact: boolean;
     }> = [];
     const solidTargets: Array<{
       id: string;
@@ -335,10 +336,12 @@ export class Game {
       status: string;
       work: number;
       requiredWork: number;
+      inBladeContact: boolean;
     }> = [];
 
     for (const target of this.state.targets) {
       targetCounts[target.status] += 1;
+      const inBladeContact = this.state.bladeContactTargetIds.includes(target.id);
       if (target.status === "cutting" && activeTargets.length < 12) {
         activeTargets.push({
           id: target.id,
@@ -346,6 +349,7 @@ export class Game {
           status: target.status,
           work: round(target.accumulatedWork),
           requiredWork: target.requiredWork,
+          inBladeContact,
         });
       }
       if (target.solidRadius > 0 && target.status !== "cut") {
@@ -357,6 +361,7 @@ export class Game {
           status: target.status,
           work: round(target.accumulatedWork),
           requiredWork: target.requiredWork,
+          inBladeContact,
         });
       }
     }
@@ -389,6 +394,7 @@ export class Game {
         total: this.state.targets.length,
         ...targetCounts,
         active: activeTargets,
+        bladeContacts: this.state.bladeContactTargetIds,
         solids: solidTargets,
         visuallyCutGrassTufts: this.state.cutGrassVisualIndices.length,
         cutRevision: this.state.cutRevision,
