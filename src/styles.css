@@ -332,7 +332,8 @@ body {
   transition: width 90ms linear;
 }
 
-.target-progress[data-kind="denseWeed"] .target-progress__fill {
+.target-progress[data-kind="denseWeed"] .target-progress__fill,
+.target-progress[data-kind="shrub"] .target-progress__fill {
   background: linear-gradient(90deg, #e2a536, #ffe06a);
 }
 

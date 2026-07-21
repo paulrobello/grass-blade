@@ -49,6 +49,7 @@ export interface MeadowPresentationDiagnostics {
   fallingGrassTufts: number;
   fallingFlowerInstances: number;
   fallingWeedInstances: number;
+  fallingShrubInstances: number;
   fallingSaplingInstances: number;
   fallingTreeInstances: number;
   activeFragments: number;
@@ -76,6 +77,7 @@ export interface MeadowScene {
     grassBlades: number;
     flowerInstances: number;
     weedInstances: number;
+    shrubInstances: number;
     saplingInstances: number;
     treeInstances: number;
   };
@@ -162,6 +164,18 @@ export function createScene(seed: number): MeadowScene {
     yAxis,
     reducedMotion,
   );
+  const shrubs = addShrubs(
+    scene,
+    resources,
+    layout,
+    scratchMatrix,
+    scratchPosition,
+    scratchRotation,
+    scratchScale,
+    scratchColor,
+    yAxis,
+    reducedMotion,
+  );
   const saplings = addSaplings(
     scene,
     resources,
@@ -209,6 +223,7 @@ export function createScene(seed: number): MeadowScene {
     fallingGrassTufts: 0,
     fallingFlowerInstances: 0,
     fallingWeedInstances: 0,
+    fallingShrubInstances: 0,
     fallingSaplingInstances: 0,
     fallingTreeInstances: 0,
     activeFragments: 0,
@@ -243,6 +258,7 @@ export function createScene(seed: number): MeadowScene {
     grass.syncTargets(state, simulationTimeSeconds);
     flowers.syncTargets(state, simulationTimeSeconds);
     weeds.syncTargets(state, simulationTimeSeconds);
+    shrubs.syncTargets(state, simulationTimeSeconds);
     saplings.syncTargets(state, simulationTimeSeconds);
     trees.syncTargets(state, simulationTimeSeconds);
     cutEffects.sync(state, simulationTimeSeconds);
@@ -255,6 +271,7 @@ export function createScene(seed: number): MeadowScene {
     presentation.fallingGrassTufts = grass.diagnostics.activeFalls;
     presentation.fallingFlowerInstances = flowers.diagnostics.activeFalls;
     presentation.fallingWeedInstances = weeds.diagnostics.activeFalls;
+    presentation.fallingShrubInstances = shrubs.diagnostics.activeFalls;
     presentation.fallingSaplingInstances = saplings.diagnostics.activeFalls;
     presentation.fallingTreeInstances = trees.diagnostics.activeFalls;
     presentation.activeFragments = cutEffects.diagnostics.activeFragments;
@@ -295,6 +312,7 @@ export function createScene(seed: number): MeadowScene {
       grassBlades: GRASS_VISUAL_COLUMNS * GRASS_VISUAL_COLUMNS * GRASS_BLADES_PER_INSTANCE,
       flowerInstances: FLOWER_VISUAL_COUNT,
       weedInstances: layout.denseWeedVisuals.length,
+      shrubInstances: layout.shrubVisuals.length,
       saplingInstances: layout.saplingVisuals.length,
       treeInstances: layout.matureTreeVisuals.length,
     },
@@ -1061,6 +1079,192 @@ function appendDenseWeedLeaf(
   appendTriangle(positions, shoulderLeft, shoulderRight, tip);
 }
 
+function addShrubs(
+  scene: THREE.Scene,
+  resources: Array<THREE.BufferGeometry | THREE.Material>,
+  layout: MeadowLayout,
+  matrix: THREE.Matrix4,
+  position: THREE.Vector3,
+  rotation: THREE.Quaternion,
+  scale: THREE.Vector3,
+  color: THREE.Color,
+  yAxis: THREE.Vector3,
+  reducedMotion: boolean,
+): FallingVegetationSync {
+  const count = layout.shrubVisuals.length;
+  const geometry = track(resources, new THREE.DodecahedronGeometry(1, 1));
+  const material = track(
+    resources,
+    new THREE.MeshStandardMaterial({
+      color: 0xffffff,
+      roughness: 0.84,
+      metalness: 0,
+      flatShading: true,
+    }),
+  );
+  const shrubs = new THREE.InstancedMesh(geometry, material, count);
+  const palette = [0x2f9b45, 0x46b756, 0x6bcb61] as const;
+  const standingMatrices = new Float32Array(count * 16);
+  const flattenedMatrices = new Float32Array(count * 16);
+  const queuedCutTargets = new Uint8Array(count);
+  const movingTargets = new Uint8Array(count);
+  const fallStartTimes = new Float32Array(count);
+  const fallDirections = new Float32Array(count);
+  const fallingTargetIndices: number[] = [];
+  const yawRotation = new THREE.Quaternion();
+  const fallRotation = new THREE.Quaternion();
+  const fallAxis = new THREE.Vector3();
+  const terminalPosition = new THREE.Vector3();
+  const terminalRotation = new THREE.Quaternion();
+  const terminalScale = new THREE.Vector3();
+  const fallSample: VegetationFallSample = {
+    stage: "waiting",
+    tiltRadians: 0,
+    visibilityScale: 1,
+  };
+  const fallTiming = reducedMotion ? REDUCED_MOTION_FALL_TIMING : DENSE_WEED_FALL_TIMING;
+  const diagnostics = { activeFalls: 0 };
+  const targetOffset =
+    layout.grassCells.length + layout.flowerTargets.length + layout.denseWeedTargets.length;
+
+  fallStartTimes.fill(-1);
+
+  for (const visual of layout.shrubVisuals) {
+    position.set(visual.x, 0.58 * visual.size, visual.z);
+    rotation.setFromAxisAngle(yAxis, visual.rotation);
+    scale.set(visual.size * 0.98, visual.size * 0.62, visual.size * 0.9);
+    matrix.compose(position, rotation, scale);
+    shrubs.setMatrixAt(visual.targetIndex, matrix);
+    writeMatrix(standingMatrices, visual.targetIndex, matrix);
+
+    position.set(visual.x, 0.12, visual.z);
+    rotation.setFromAxisAngle(yAxis, visual.rotation + 0.32);
+    scale.set(visual.size * 1.08, visual.size * 0.12, visual.size * 0.98);
+    matrix.compose(position, rotation, scale);
+    writeMatrix(flattenedMatrices, visual.targetIndex, matrix);
+
+    color.setHex(palette[visual.colorIndex] ?? palette[0]);
+    shrubs.setColorAt(visual.targetIndex, color);
+  }
+
+  shrubs.castShadow = true;
+  shrubs.receiveShadow = true;
+  shrubs.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+  shrubs.instanceMatrix.needsUpdate = true;
+  if (shrubs.instanceColor !== null) {
+    shrubs.instanceColor.needsUpdate = true;
+  }
+  scene.add(shrubs);
+
+  return {
+    diagnostics,
+    syncTargets(state: GameState, simulationTimeSeconds: number): void {
+      let matricesChanged = false;
+
+      for (const visual of layout.shrubVisuals) {
+        const target = state.targets[targetOffset + visual.targetIndex];
+        if (target?.status === "cut") {
+          if (queuedCutTargets[visual.targetIndex] === 0) {
+            queuedCutTargets[visual.targetIndex] = 1;
+            movingTargets[visual.targetIndex] = 0;
+            fallStartTimes[visual.targetIndex] = simulationTimeSeconds;
+            const deltaX = visual.x - state.player.x;
+            const deltaZ = visual.z - state.player.z;
+            fallDirections[visual.targetIndex] =
+              Math.hypot(deltaX, deltaZ) > 0.05
+                ? Math.atan2(deltaZ, deltaX)
+                : visual.rotation + Math.PI * 0.5;
+            fallingTargetIndices.push(visual.targetIndex);
+          }
+          continue;
+        }
+
+        const isInBladeContact =
+          target !== undefined && state.bladeContactTargetIds.includes(target.id);
+        const nextMovingState = Number(isInBladeContact);
+        if (movingTargets[visual.targetIndex] === nextMovingState && !isInBladeContact) {
+          continue;
+        }
+        movingTargets[visual.targetIndex] = nextMovingState;
+
+        if (!isInBladeContact) {
+          readMatrix(matrix, standingMatrices, visual.targetIndex);
+          shrubs.setMatrixAt(visual.targetIndex, matrix);
+          matricesChanged = true;
+          continue;
+        }
+
+        const deltaX = visual.x - state.player.x;
+        const deltaZ = visual.z - state.player.z;
+        const leanDirection =
+          Math.hypot(deltaX, deltaZ) > 0.05
+            ? Math.atan2(deltaZ, deltaX)
+            : visual.rotation + Math.PI * 0.5;
+        const shudder = reducedMotion
+          ? 0
+          : Math.sin(simulationTimeSeconds * 23 + visual.targetIndex * 1.61);
+        const leanAngle = 0.06 + shudder * 0.018;
+        fallAxis.set(Math.sin(leanDirection), 0, -Math.cos(leanDirection)).normalize();
+        fallRotation.setFromAxisAngle(fallAxis, leanAngle);
+        yawRotation.setFromAxisAngle(yAxis, visual.rotation + shudder * 0.035);
+        rotation.copy(fallRotation).multiply(yawRotation);
+        position.set(visual.x, 0.58 * visual.size, visual.z);
+        scale.set(visual.size * 0.98, visual.size * 0.62, visual.size * 0.9);
+        matrix.compose(position, rotation, scale);
+        shrubs.setMatrixAt(visual.targetIndex, matrix);
+        matricesChanged = true;
+      }
+
+      let activeWriteIndex = 0;
+      for (const targetIndex of fallingTargetIndices) {
+        const visual = layout.shrubVisuals[targetIndex];
+        if (visual === undefined) {
+          continue;
+        }
+
+        sampleVegetationFall(
+          simulationTimeSeconds - (fallStartTimes[targetIndex] ?? simulationTimeSeconds),
+          fallTiming,
+          fallSample,
+        );
+        if (fallSample.stage === "complete") {
+          readMatrix(matrix, flattenedMatrices, targetIndex);
+          shrubs.setMatrixAt(targetIndex, matrix);
+          matricesChanged = true;
+          continue;
+        }
+
+        const fallDirection = fallDirections[targetIndex] ?? visual.rotation;
+        fallAxis.set(Math.sin(fallDirection), 0, -Math.cos(fallDirection)).normalize();
+        fallRotation.setFromAxisAngle(fallAxis, fallSample.tiltRadians);
+        yawRotation.setFromAxisAngle(yAxis, visual.rotation);
+        rotation.copy(fallRotation).multiply(yawRotation);
+        position.set(visual.x, 0.58 * visual.size, visual.z);
+        scale.set(visual.size * 0.98, visual.size * 0.62, visual.size * 0.9);
+        if (fallSample.stage === "disappearing") {
+          readMatrix(matrix, flattenedMatrices, targetIndex);
+          matrix.decompose(terminalPosition, terminalRotation, terminalScale);
+          const terminalProgress = 1 - fallSample.visibilityScale;
+          position.lerp(terminalPosition, terminalProgress);
+          rotation.slerp(terminalRotation, terminalProgress);
+          scale.lerp(terminalScale, terminalProgress);
+        }
+        matrix.compose(position, rotation, scale);
+        shrubs.setMatrixAt(targetIndex, matrix);
+        fallingTargetIndices[activeWriteIndex] = targetIndex;
+        activeWriteIndex += 1;
+        matricesChanged = true;
+      }
+      fallingTargetIndices.length = activeWriteIndex;
+      diagnostics.activeFalls = activeWriteIndex;
+
+      if (matricesChanged) {
+        shrubs.instanceMatrix.needsUpdate = true;
+      }
+    },
+  };
+}
+
 function addSaplings(
   scene: THREE.Scene,
   resources: Array<THREE.BufferGeometry | THREE.Material>,
@@ -1135,7 +1339,10 @@ function addSaplings(
   const tiltRotation = new THREE.Quaternion();
   const yawRotation = new THREE.Quaternion();
   const targetOffset =
-    layout.grassCells.length + layout.flowerTargets.length + layout.denseWeedTargets.length;
+    layout.grassCells.length +
+    layout.flowerTargets.length +
+    layout.denseWeedTargets.length +
+    layout.shrubTargets.length;
   const stumpMatrices = new Float32Array(count * 16);
   const hiddenMatrices = new Float32Array(count * 16);
   const queuedCutTargets = new Uint8Array(count);
@@ -1439,6 +1646,7 @@ function addTrees(
     layout.grassCells.length +
     layout.flowerTargets.length +
     layout.denseWeedTargets.length +
+    layout.shrubTargets.length +
     layout.saplingTargets.length;
 
   fallStartTimes.fill(-1);
