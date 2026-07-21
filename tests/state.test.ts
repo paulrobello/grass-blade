@@ -102,6 +102,7 @@ describe("active game state", () => {
     expect(first.grassVisualPositions).toBeInstanceOf(Float32Array);
     expect(first.grassVisualCutMask).toBeInstanceOf(Uint8Array);
     expect(first.cutGrassVisualIndices).toEqual([]);
+    expect(first.cutEvents).toEqual([]);
   });
 
   it("uses an explicit seed without changing the active contract", () => {
@@ -237,6 +238,112 @@ describe("active game state", () => {
     const appendOnlySnapshot = [...first.cutGrassVisualIndices];
     stepState(first, idleInput, FIXED_TIME_STEP_SECONDS);
     expect(first.cutGrassVisualIndices).toEqual(appendOnlySnapshot);
+  });
+
+  it("records complete cut-event fields for every authoritative target kind", () => {
+    const cases: Array<{
+      kind: TargetKind;
+      yield: number;
+      xp: number;
+      levelAfter: number;
+    }> = [
+      { kind: "grass", yield: 1, xp: 1, levelAfter: 1 },
+      { kind: "flower", yield: 1, xp: 3, levelAfter: 1 },
+      { kind: "denseWeed", yield: 1, xp: 6, levelAfter: 1 },
+      { kind: "sapling", yield: 2, xp: 30, levelAfter: 2 },
+      { kind: "matureTree", yield: 6, xp: 75, levelAfter: 3 },
+    ];
+
+    for (const expected of cases) {
+      const state = createInitialState(90);
+      const target = isolateTarget(state, expected.kind);
+      target.id = `event-${expected.kind}`;
+      target.x = 0.25;
+      target.z = -0.5;
+      target.status = "cutting";
+      target.accumulatedWork = target.requiredWork - 0.001;
+      state.player.x = target.x;
+      state.player.z = target.z;
+
+      stepState(state, idleInput, FIXED_TIME_STEP_SECONDS);
+
+      expect(state.cutEvents).toEqual([
+        {
+          revision: 1,
+          targetId: target.id,
+          kind: expected.kind,
+          x: target.x,
+          z: target.z,
+          yield: expected.yield,
+          xp: expected.xp,
+          levelBefore: 1,
+          levelAfter: expected.levelAfter,
+        },
+      ]);
+      expect(state.cutRevision).toBe(state.cutEvents[0]?.revision);
+    }
+  });
+
+  it("records simultaneous completions in stable target order with sequential revisions", () => {
+    const state = createInitialState(91);
+    const flower = requireTarget(state, "flower");
+    const grass = requireTarget(state, "grass");
+    flower.id = "z-first-by-iteration";
+    grass.id = "a-second-by-iteration";
+
+    for (const target of [flower, grass]) {
+      target.x = state.player.x;
+      target.z = state.player.z;
+      target.status = "cutting";
+      target.accumulatedWork = target.requiredWork - 0.001;
+    }
+    state.targets = [flower, grass];
+
+    stepState(state, idleInput, FIXED_TIME_STEP_SECONDS);
+
+    expect(state.cutEvents.map((event) => event.targetId)).toEqual([
+      "z-first-by-iteration",
+      "a-second-by-iteration",
+    ]);
+    expect(state.cutEvents.map((event) => event.revision)).toEqual([1, 2]);
+    expect(state.cutRevision).toBe(2);
+    expect(state.cutRevision).toBe(state.cutEvents.at(-1)?.revision);
+  });
+
+  it("records XP-derived level boundaries when a cut crosses a threshold", () => {
+    const state = createInitialState(92);
+    state.xp = 19;
+    const target = isolateTarget(state, "grass");
+    target.status = "cutting";
+    target.accumulatedWork = target.requiredWork - 0.001;
+
+    stepState(state, idleInput, FIXED_TIME_STEP_SECONDS);
+
+    expect(state.cutEvents).toHaveLength(1);
+    expect(state.cutEvents[0]).toMatchObject({
+      xp: 1,
+      levelBefore: 1,
+      levelAfter: 2,
+    });
+    expect(state.xp).toBe(20);
+    expect(state.player.level).toBe(2);
+  });
+
+  it("replays cut-completion events deterministically", () => {
+    const first = createInitialState(93);
+    const replay = createInitialState(93);
+    const firstTarget = isolateTarget(first, "flower");
+    const replayTarget = isolateTarget(replay, "flower");
+    firstTarget.status = "cutting";
+    replayTarget.status = "cutting";
+    firstTarget.accumulatedWork = firstTarget.requiredWork - 0.001;
+    replayTarget.accumulatedWork = replayTarget.requiredWork - 0.001;
+
+    stepState(first, idleInput, FIXED_TIME_STEP_SECONDS);
+    stepState(replay, idleInput, FIXED_TIME_STEP_SECONDS);
+
+    expect(replay.cutEvents).toEqual(first.cutEvents);
+    expect(replay).toEqual(first);
   });
 
   it("cuts a grass cell and awards grass plus XP on the cut tick", () => {
@@ -560,6 +667,7 @@ describe("active game state", () => {
       xp: state.xp,
       cutRevision: state.cutRevision,
     };
+    const eventSnapshot = [...state.cutEvents];
 
     for (let frame = 0; frame < 120; frame += 1) {
       stepState(state, idleInput, FIXED_TIME_STEP_SECONDS);
@@ -570,6 +678,7 @@ describe("active game state", () => {
       xp: state.xp,
       cutRevision: state.cutRevision,
     }).toEqual(rewardedSnapshot);
+    expect(state.cutEvents).toEqual(eventSnapshot);
   });
 
   it("auto-levels at exact cumulative XP thresholds and updates target RPM", () => {
@@ -643,10 +752,7 @@ describe("active game state", () => {
 });
 
 function isolateTarget(state: GameState, kind: TargetKind): TargetState {
-  const source = state.targets.find((target) => target.kind === kind);
-  if (source === undefined) {
-    throw new Error(`Missing ${kind} target`);
-  }
+  const source = requireTarget(state, kind);
 
   const target: TargetState = {
     ...source,
@@ -657,6 +763,14 @@ function isolateTarget(state: GameState, kind: TargetKind): TargetState {
     accumulatedWork: 0,
   };
   state.targets = [target];
+  return target;
+}
+
+function requireTarget(state: GameState, kind: TargetKind): TargetState {
+  const target = state.targets.find((candidate) => candidate.kind === kind);
+  if (target === undefined) {
+    throw new Error(`Missing ${kind} target`);
+  }
   return target;
 }
 

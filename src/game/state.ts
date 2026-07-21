@@ -61,6 +61,18 @@ export interface TargetState extends TargetSeed {
   accumulatedWork: number;
 }
 
+export interface CutCompletionEvent {
+  revision: number;
+  targetId: string;
+  kind: TargetSeed["kind"];
+  x: number;
+  z: number;
+  yield: number;
+  xp: number;
+  levelBefore: number;
+  levelAfter: number;
+}
+
 export interface PlayerState {
   x: number;
   z: number;
@@ -84,6 +96,7 @@ export interface GameState {
   grassVisualPositions: Float32Array;
   grassVisualCutMask: Uint8Array;
   cutGrassVisualIndices: number[];
+  cutEvents: CutCompletionEvent[];
   cutRevision: number;
 }
 
@@ -130,6 +143,7 @@ export function createInitialState(seed = MEADOW_SEED): GameState {
     grassVisualPositions,
     grassVisualCutMask: new Uint8Array(layout.grassVisuals.length),
     cutGrassVisualIndices: [],
+    cutEvents: [],
     cutRevision: 0,
   };
 }
@@ -382,6 +396,8 @@ function distanceToSegment(
 }
 
 function awardTarget(state: GameState, target: TargetState): void {
+  const levelBefore = levelForXp(state.xp);
+
   switch (target.kind) {
     case "grass":
       state.inventory.grass += target.yield;
@@ -408,7 +424,19 @@ function awardTarget(state: GameState, target: TargetState): void {
   }
 
   state.xp += target.xp;
-  state.cutRevision += 1;
+  const revision = state.cutEvents.length + 1;
+  state.cutEvents.push({
+    revision,
+    targetId: target.id,
+    kind: target.kind,
+    x: target.x,
+    z: target.z,
+    yield: target.yield,
+    xp: target.xp,
+    levelBefore,
+    levelAfter: levelForXp(state.xp),
+  });
+  state.cutRevision = revision;
 }
 
 function assertNever(value: never): never {
@@ -416,17 +444,23 @@ function assertNever(value: never): never {
 }
 
 function applyProgression(state: GameState): void {
+  const level = levelForXp(state.xp);
+
+  state.player.level = level;
+  state.player.targetRpm = targetRpmForLevel(level);
+}
+
+function levelForXp(xp: number): number {
   let level = 1;
 
   for (const threshold of CUMULATIVE_XP_THRESHOLDS) {
-    if (state.xp < threshold || level >= MAX_BLADE_LEVEL) {
+    if (xp < threshold || level >= MAX_BLADE_LEVEL) {
       break;
     }
     level += 1;
   }
 
-  state.player.level = level;
-  state.player.targetRpm = targetRpmForLevel(level);
+  return level;
 }
 
 function targetRpmForLevel(level: number): number {
