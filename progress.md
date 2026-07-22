@@ -3,7 +3,7 @@ Original prompt: "i want create a threejs based game where you are a spinning bl
 # Grass Blade Progress
 
 Last updated: 2026-07-21
-Active milestone: Phase 3 — denser flower drifts and deterministic meadow density diagnostics
+Active milestone: Phase 3 — density and frame diagnostics before renderer chunking
 
 ## Completed foundation intent
 
@@ -92,6 +92,7 @@ Active milestone: Phase 3 — denser flower drifts and deterministic meadow dens
 - [x] Added a query-gated `?debug=1` `window.cutTargetForDebug(kind)` browser hook so specific target visuals can be cut through the normal fixed-step reward path during deterministic visual verification.
 - [x] Replaced direct target contact/collision scans with a deterministic uniform-grid candidate query that preserves target iteration order, keeps solid blocking on the same swept path, and rebuilds automatically when debug/test code changes the target array or authored target positions.
 - [x] Increased authored wildflower drifts from 420 to 880 decorative blossoms, widened their coherent drift radius, and exposed a deterministic meadow density report through `render_game_to_text()` for Phase 3 grass/flower density thresholds.
+- [x] Added a fixed-size frame diagnostics tracker, clamped renderer pixel ratio to 1.5, and exposed recent frame timing, accumulator, pixel-ratio, and canvas-size diagnostics through `render_game_to_text()` for Phase 3 performance work.
 
 ## Phase 1 verification evidence
 
@@ -151,6 +152,8 @@ Active milestone: Phase 3 — denser flower drifts and deterministic meadow dens
 - `make checkall` passes formatting verification, ESLint, strict TypeScript, 75 deterministic Vitest tests across four files, and the Vite production build after the flower-density diagnostic slice.
 - The added density regression validates ten authored seeds against 100% current grass coverage, 90+ decorative grass blades per world unit squared, 20-30% authored flower-drift coverage, and 2-4 decorative blossoms per drift world unit squared.
 - The required web-game Playwright client ran against `?seed=12345` after the flower-density build and wrote `output/playwright/flower-density-smoke/shot-0.png` plus `state-0.json` without browser error artifacts; the inspected screenshot shows visibly fuller flower clusters embedded in the dense grass canopy, and the state reports 880 flower instances with all density-threshold flags true.
+- `make checkall` passes formatting verification, ESLint, strict TypeScript, 77 deterministic Vitest tests across five files, and the Vite production build after the initial frame-diagnostics slice.
+- The required web-game Playwright client ran against `?seed=12345` after the frame-diagnostics build and wrote `output/playwright/frame-diagnostics-smoke/shot-0.png` plus `state-0.json` without browser error artifacts; the inspected state includes the new fixed-size frame diagnostics, reported pixel ratio, canvas size, and accumulator, and the screenshot keeps dense flowers, cut trails, HUD, progress bars, and too-tough feedback readable.
 
 ## Remaining TODOs
 

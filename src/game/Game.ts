@@ -2,6 +2,7 @@ import * as THREE from "three";
 
 import { createCollectionMotes, type CollectionMotes } from "./collectionMotes";
 import { createScene, type MeadowScene } from "./createScene";
+import { createFrameDiagnosticsTracker, type FrameDiagnosticsTracker } from "./frameDiagnostics";
 import {
   CUMULATIVE_XP_THRESHOLDS,
   FIXED_TIME_STEP_SECONDS,
@@ -15,7 +16,7 @@ import {
 import { createTargetProgressOverlay, type TargetProgressOverlay } from "./targetProgress";
 
 const MILLISECONDS_PER_SECOND = 1000;
-const MAX_PIXEL_RATIO = 2;
+const MAX_PIXEL_RATIO = 1.5;
 
 interface HudElements {
   root: HTMLElement;
@@ -64,6 +65,7 @@ export class Game {
   private readonly pause: PauseElements;
   private readonly collectionMotes: CollectionMotes;
   private readonly targetProgress: TargetProgressOverlay;
+  private readonly frameDiagnostics: FrameDiagnosticsTracker = createFrameDiagnosticsTracker();
   private readonly input: MovementInput = {
     left: false,
     right: false,
@@ -186,6 +188,7 @@ export class Game {
       MAX_FRAME_DELTA_SECONDS,
     );
     this.lastFrameTimeMs = timeMs;
+    this.frameDiagnostics.recordFrameDelta(deltaSeconds);
     this.step(deltaSeconds);
     this.render();
   };
@@ -575,6 +578,12 @@ export class Game {
         collectionMotes: this.collectionMotes.diagnostics,
         targetProgress: this.targetProgress.diagnostics,
       },
+      performance: this.frameDiagnostics.snapshot({
+        accumulatorSeconds: this.accumulatorSeconds,
+        pixelRatio: this.renderer.getPixelRatio(),
+        canvasWidth: this.canvas.width,
+        canvasHeight: this.canvas.height,
+      }),
       player: {
         position: { x: round(player.x), z: round(player.z) },
         velocity: { x: round(player.vx), z: round(player.vz) },
