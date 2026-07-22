@@ -19,6 +19,40 @@ describe("playable root sizing", () => {
     });
   });
 
+  it("falls back to a phone aspect when browser chrome makes screen metrics match the visible viewport", () => {
+    const rootSize = derivePlayableRootSize({
+      viewportWidth: 592,
+      viewportHeight: 981,
+      screenWidth: 592,
+      screenHeight: 981,
+      screenAvailableWidth: 592,
+      screenAvailableHeight: 981,
+      allowConstrain: true,
+    });
+
+    expect(rootSize).toEqual({
+      width: 454,
+      height: 981,
+      constrained: true,
+    });
+  });
+
+  it("keeps touch tablets full width instead of forcing a narrow phone layout", () => {
+    const rootSize = derivePlayableRootSize({
+      viewportWidth: 768,
+      viewportHeight: 1024,
+      screenWidth: 768,
+      screenHeight: 1024,
+      allowConstrain: true,
+    });
+
+    expect(rootSize).toEqual({
+      width: 768,
+      height: 1024,
+      constrained: false,
+    });
+  });
+
   it("keeps fullscreen phone play areas full width", () => {
     const rootSize = derivePlayableRootSize({
       viewportWidth: 592,
