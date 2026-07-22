@@ -505,6 +505,29 @@ describe("active game state", () => {
     expect(state.cutRevision).toBe(state.cutEvents.at(-1)?.revision);
   });
 
+  it("rebuilds the target spatial query after an authored target position changes", () => {
+    const state = createInitialState(92);
+    const target = requireTarget(state, "flower");
+    const originalPosition = { x: target.x, z: target.z };
+
+    target.x = state.player.x;
+    target.z = state.player.z;
+    target.status = "cutting";
+    target.accumulatedWork = target.requiredWork - 0.001;
+
+    stepState(state, idleInput, FIXED_TIME_STEP_SECONDS);
+
+    expect(originalPosition).not.toEqual({ x: target.x, z: target.z });
+    expect(target.status).toBe("cut");
+    expect(state.inventory.flowers).toBe(1);
+    expect(state.cutEvents).toEqual([
+      expect.objectContaining({
+        targetId: target.id,
+        kind: "flower",
+      }),
+    ]);
+  });
+
   it("completes the contract on the same tick that the final quota is awarded", () => {
     const state = createInitialState(94);
     const target = isolateTarget(state, "sapling");

@@ -3,7 +3,7 @@ Original prompt: "i want create a threejs based game where you are a spinning bl
 # Grass Blade Progress
 
 Last updated: 2026-07-21
-Active milestone: Phase 2 — deterministic coverage, non-cuttable rocks, ten-seed completion validation, and sapling art polish hardened
+Active milestone: Phase 2 — deterministic coverage, non-cuttable rocks, ten-seed completion validation, sapling art polish, and target spatial query hardened
 
 ## Completed foundation intent
 
@@ -90,6 +90,7 @@ Active milestone: Phase 2 — deterministic coverage, non-cuttable rocks, ten-se
 - [x] Added ten-seed deterministic completion validation that cuts the exact Meadow Delivery quota mix through the normal reducer path and verifies stable final contract snapshots, exact inventory, final level, completion revision, and no rock reward events.
 - [x] Added final sapling art/material polish: varied bark colors, a small bright crown-tip layer for better leafy silhouette readability, and a pale cut-disc on the stump after sapling completion.
 - [x] Added a query-gated `?debug=1` `window.cutTargetForDebug(kind)` browser hook so specific target visuals can be cut through the normal fixed-step reward path during deterministic visual verification.
+- [x] Replaced direct target contact/collision scans with a deterministic uniform-grid candidate query that preserves target iteration order, keeps solid blocking on the same swept path, and rebuilds automatically when debug/test code changes the target array or authored target positions.
 
 ## Phase 1 verification evidence
 
@@ -143,10 +144,13 @@ Active milestone: Phase 2 — deterministic coverage, non-cuttable rocks, ten-se
 - `make checkall` passes formatting verification, ESLint, strict TypeScript, 73 deterministic Vitest tests across four files, and the Vite production build after the sapling art/material polish slice.
 - The required web-game Playwright client ran against `?seed=12345` after the sapling polish build and wrote `output/playwright/sapling-polish-final-smoke/shot-0.png` plus `state-0.json` without browser error artifacts; the inspected screenshot shows the brighter standing sapling crown tips in the dense field.
 - A focused debug-gated Playwright verification at `?seed=12345&debug=1` called `window.cutTargetForDebug("sapling")`, cut a sapling through the normal fixed-step path, awarded Wood `2/6`, and produced `output/playwright/sapling-polish-debug/sapling-stump-disc-clear.png` with an unobstructed pale cut-disc on the remaining stump. Both debug browser error logs are empty.
+- `make checkall` passes formatting verification, ESLint, strict TypeScript, 74 deterministic Vitest tests across four files, and the Vite production build after the target spatial-query slice.
+- The added state regression verifies the spatial query rebuilds after an authored target position changes, then cuts that moved target through the normal fixed-step path.
+- The required web-game Playwright client ran against `?seed=12345` after the spatial-query build and wrote `output/playwright/spatial-query-smoke/shot-0.png` plus `state-0.json` without browser error artifacts; the inspected screenshot and state show grass cutting, solid blocking, target progress bars, and too-tough feedback still working through the spatial candidate path.
 
 ## Remaining TODOs
 
-- [ ] Replace the linear target scan with the planned spatial query before discrete target counts grow beyond this bounded first slice.
+- [ ] Reassess `PRD.md` for the next implementable slice beyond the current Phase 2 hardening items.
 
 ## Handoff rules
 

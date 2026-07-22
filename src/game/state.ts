@@ -23,6 +23,7 @@ const BASE_WORK_RATE = 12;
 const MAX_BLADE_LEVEL = 8;
 const COLLISION_TIME_EPSILON = 1e-6;
 const GRASS_VISUAL_JITTER_RATIO = 0.42;
+const TARGET_SPATIAL_CELL_SIZE = 4;
 const TAU = Math.PI * 2;
 export const CUMULATIVE_XP_THRESHOLDS = [20, 55, 110, 190, 300, 450, 650] as const;
 
@@ -59,6 +60,15 @@ export type TargetStatus = "standing" | "cutting" | "cut";
 export interface TargetState extends TargetSeed {
   status: TargetStatus;
   accumulatedWork: number;
+}
+
+interface TargetSpatialIndex {
+  targets: TargetState[];
+  targetCount: number;
+  maxRadius: number;
+  maxSolidRadius: number;
+  positions: Float32Array;
+  cells: Map<string, number[]>;
 }
 
 export type CuttableTargetKind = Exclude<TargetSeed["kind"], "rock">;
@@ -118,6 +128,7 @@ export interface GameState {
   result: ContractResult | null;
   xp: number;
   targets: TargetState[];
+  targetSpatialIndex: TargetSpatialIndex;
   bladeContactTargetIds: string[];
   grassVisualPositions: Float32Array;
   grassVisualCutMask: Uint8Array;
@@ -140,6 +151,7 @@ export function createInitialState(seed = MEADOW_SEED): GameState {
     ...layout.matureTreeTargets,
     ...layout.rockTargets,
   ];
+  const targets = targetSeeds.map(createTargetState);
   const grassVisualPositions = createGrassVisualPositions(layout.grassVisuals);
 
   return {
@@ -172,7 +184,8 @@ export function createInitialState(seed = MEADOW_SEED): GameState {
     },
     result: null,
     xp: 0,
-    targets: targetSeeds.map(createTargetState),
+    targets,
+    targetSpatialIndex: createTargetSpatialIndex(targets),
     bladeContactTargetIds: [],
     grassVisualPositions,
     grassVisualCutMask: new Uint8Array(layout.grassVisuals.length),
@@ -272,6 +285,114 @@ function createTargetState(seed: TargetSeed): TargetState {
   };
 }
 
+function createTargetSpatialIndex(targets: TargetState[]): TargetSpatialIndex {
+  const cells = new Map<string, number[]>();
+  const positions = new Float32Array(targets.length * 2);
+  let maxRadius = 0;
+  let maxSolidRadius = 0;
+
+  for (let index = 0; index < targets.length; index += 1) {
+    const target = targets[index];
+    if (target === undefined) {
+      continue;
+    }
+
+    positions[index * 2] = target.x;
+    positions[index * 2 + 1] = target.z;
+    maxRadius = Math.max(maxRadius, target.radius);
+    maxSolidRadius = Math.max(maxSolidRadius, target.solidRadius);
+    const key = targetSpatialCellKey(target.x, target.z);
+    const cellTargets = cells.get(key);
+    if (cellTargets === undefined) {
+      cells.set(key, [index]);
+    } else {
+      cellTargets.push(index);
+    }
+  }
+
+  return {
+    targets,
+    targetCount: targets.length,
+    maxRadius,
+    maxSolidRadius,
+    positions,
+    cells,
+  };
+}
+
+function ensureTargetSpatialIndex(state: GameState): TargetSpatialIndex {
+  const index = state.targetSpatialIndex;
+  if (
+    index.targets !== state.targets ||
+    index.targetCount !== state.targets.length ||
+    hasMovedTarget(state.targets, index.positions)
+  ) {
+    state.targetSpatialIndex = createTargetSpatialIndex(state.targets);
+  }
+
+  return state.targetSpatialIndex;
+}
+
+function hasMovedTarget(targets: TargetState[], positions: Float32Array): boolean {
+  if (positions.length !== targets.length * 2) {
+    return true;
+  }
+
+  for (let index = 0; index < targets.length; index += 1) {
+    const target = targets[index];
+    if (target === undefined) {
+      continue;
+    }
+
+    if (positions[index * 2] !== target.x || positions[index * 2 + 1] !== target.z) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function queryTargetsInSweptBounds(
+  state: GameState,
+  startX: number,
+  startZ: number,
+  endX: number,
+  endZ: number,
+  margin: number,
+): TargetState[] {
+  const index = ensureTargetSpatialIndex(state);
+  const minCellX = targetSpatialCellCoordinate(Math.min(startX, endX) - margin);
+  const maxCellX = targetSpatialCellCoordinate(Math.max(startX, endX) + margin);
+  const minCellZ = targetSpatialCellCoordinate(Math.min(startZ, endZ) - margin);
+  const maxCellZ = targetSpatialCellCoordinate(Math.max(startZ, endZ) + margin);
+  const candidateIndices = new Set<number>();
+
+  for (let cellX = minCellX; cellX <= maxCellX; cellX += 1) {
+    for (let cellZ = minCellZ; cellZ <= maxCellZ; cellZ += 1) {
+      const cellTargets = index.cells.get(`${cellX},${cellZ}`);
+      if (cellTargets === undefined) {
+        continue;
+      }
+      for (const targetIndex of cellTargets) {
+        candidateIndices.add(targetIndex);
+      }
+    }
+  }
+
+  return [...candidateIndices]
+    .sort((left, right) => left - right)
+    .map((targetIndex) => state.targets[targetIndex])
+    .filter((target): target is TargetState => target !== undefined);
+}
+
+function targetSpatialCellCoordinate(coordinate: number): number {
+  return Math.floor(coordinate / TARGET_SPATIAL_CELL_SIZE);
+}
+
+function targetSpatialCellKey(x: number, z: number): string {
+  return `${targetSpatialCellCoordinate(x)},${targetSpatialCellCoordinate(z)}`;
+}
+
 function stepCutting(
   state: GameState,
   startX: number,
@@ -282,14 +403,7 @@ function stepCutting(
 ): void {
   const currentTargetRpm = targetRpmForLevel(state.player.level);
   const torque = torqueForLevel(state.player.level);
-  const contacts = findTargetContacts(
-    state.targets,
-    startX,
-    startZ,
-    endX,
-    endZ,
-    state.player.radius,
-  );
+  const contacts = findTargetContacts(state, startX, startZ, endX, endZ, state.player.radius);
   state.bladeContactTargetIds.length = 0;
   for (const contact of contacts) {
     state.bladeContactTargetIds.push(contact.target.id);
@@ -468,7 +582,7 @@ interface TargetContact {
 }
 
 function findTargetContacts(
-  targets: TargetState[],
+  state: GameState,
   startX: number,
   startZ: number,
   endX: number,
@@ -476,8 +590,17 @@ function findTargetContacts(
   bladeRadius: number,
 ): TargetContact[] {
   const contacts: TargetContact[] = [];
+  const index = ensureTargetSpatialIndex(state);
+  const candidates = queryTargetsInSweptBounds(
+    state,
+    startX,
+    startZ,
+    endX,
+    endZ,
+    bladeRadius + index.maxRadius,
+  );
 
-  for (const target of targets) {
+  for (const target of candidates) {
     if (target.status === "cut") {
       continue;
     }
@@ -680,8 +803,17 @@ function resolveSolidMovement(
   intendedZ: number,
 ): void {
   let earliestHitTime: number | null = null;
+  const index = ensureTargetSpatialIndex(state);
+  const candidates = queryTargetsInSweptBounds(
+    state,
+    startX,
+    startZ,
+    intendedX,
+    intendedZ,
+    PLAYER_HUB_RADIUS + index.maxSolidRadius,
+  );
 
-  for (const target of state.targets) {
+  for (const target of candidates) {
     if (target.status === "cut" || target.solidRadius <= 0) {
       continue;
     }
