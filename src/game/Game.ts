@@ -11,6 +11,7 @@ import {
 import { resolveQualitySettings, type QualitySettings } from "./quality";
 import {
   CUMULATIVE_XP_THRESHOLDS,
+  DEFAULT_CONTRACT_ID,
   FIXED_TIME_STEP_SECONDS,
   MAX_FRAME_DELTA_SECONDS,
   createInitialState,
@@ -772,12 +773,16 @@ export class Game {
   }
 
   private readonly restartContract = (): void => {
-    window.location.assign(`?seed=${this.state.seed}`);
+    window.location.assign(
+      contractNavigationSearch(this.state.seed, this.state.contract.id, window.location.search),
+    );
   };
 
   private readonly nextContract = (): void => {
     const nextSeed = (this.state.seed + 0x9e3779b9) >>> 0;
-    window.location.assign(`?seed=${nextSeed}`);
+    window.location.assign(
+      contractNavigationSearch(nextSeed, this.state.contract.id, window.location.search),
+    );
   };
 
   private readonly resumeContract = (): void => {
@@ -1060,6 +1065,21 @@ function requireAppRoot(canvas: HTMLCanvasElement): HTMLElement {
     throw new Error("Grass Blade requires an #app HTMLElement around the game canvas.");
   }
   return root;
+}
+
+export function contractNavigationSearch(
+  seed: number,
+  contractId: string,
+  currentSearch = "",
+): string {
+  const params = new URLSearchParams(currentSearch);
+  params.set("seed", String(seed >>> 0));
+  if (contractId !== DEFAULT_CONTRACT_ID) {
+    params.set("contract", contractId);
+  } else {
+    params.delete("contract");
+  }
+  return `?${params.toString()}`;
 }
 
 export interface PlayableRootSize {

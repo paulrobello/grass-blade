@@ -247,6 +247,7 @@ Active milestone: Phase 5 — expansion after first-playable evidence, with GitH
 - `bun test tests/state.test.ts` passes 57 focused state tests after the authored-contract slice. New coverage verifies the default Meadow Delivery contract metadata, unknown-contract fallback, Flower Sweep quotas, and deterministic Flower Sweep completion through normal quota cuts with final inventory `34/16/4/4`.
 - The required web-game Playwright client ran against `?seed=12345&debug=1&contract=flower-sweep` and wrote `output/playwright/flower-sweep-client-smoke/shot-0.png` plus state without browser error artifacts; the inspected desktop screenshot shows `FLOWER SWEEP` and quotas `4/34`, `0/16`, `0/4`, and `0/4`.
 - A focused 430 by 860 Flower Sweep browser route verified `render_game_to_text().contract`, HUD title `FLOWER SWEEP`, Flower Sweep quota targets, quota-driven `window.completeContractForDebug()`, final inventory `34/16/4/4`, results title `Flower Sweep`, objective completion, and no browser errors. The inspected artifact is `output/playwright/flower-sweep-contract/active.png`.
+- Fixed contract navigation preservation after the authored-contract slice: Restart and Next Contract now preserve the active non-default contract and existing query parameters such as `debug`, while still advancing only the seed for Next Contract. `bun test tests/playableRootSize.test.ts` covers the pure URL helper, and a focused browser route verified Flower Sweep survives both `R` restart and `N` next-contract navigation.
 
 ## Remaining TODOs
 

@@ -7,6 +7,7 @@ import {
   resolveVolume,
 } from "../src/game/audio";
 import {
+  contractNavigationSearch,
   derivePlayableRootSize,
   resolveAccessibilitySettings,
   resolveMotionSettings,
@@ -93,6 +94,27 @@ describe("playable root sizing", () => {
       height: 900,
       constrained: false,
     });
+  });
+});
+
+describe("contract navigation URLs", () => {
+  it("keeps default contract navigation URLs clean", () => {
+    expect(contractNavigationSearch(12345, "meadow-delivery")).toBe("?seed=12345");
+  });
+
+  it("preserves non-default contracts across restart and next-contract navigation", () => {
+    expect(contractNavigationSearch(12345, "flower-sweep")).toBe(
+      "?seed=12345&contract=flower-sweep",
+    );
+  });
+
+  it("preserves existing diagnostics and display query parameters during navigation", () => {
+    expect(
+      contractNavigationSearch(707, "flower-sweep", "?seed=12345&debug=1&motion=reduced"),
+    ).toBe("?seed=707&debug=1&motion=reduced&contract=flower-sweep");
+    expect(contractNavigationSearch(707, "meadow-delivery", "?contract=flower-sweep&debug=1")).toBe(
+      "?debug=1&seed=707",
+    );
   });
 });
 
