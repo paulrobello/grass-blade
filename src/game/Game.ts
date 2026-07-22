@@ -67,12 +67,13 @@ export class Game {
   private readonly targetProgress: TargetProgressOverlay;
   private readonly frameDiagnostics: FrameDiagnosticsTracker = createFrameDiagnosticsTracker();
   private readonly quality: QualitySettings;
-  private readonly input: MovementInput = {
-    left: false,
-    right: false,
-    forward: false,
-    backward: false,
-  };
+  private readonly input: MovementInput = createMovementInput();
+  private readonly keyboardInput: MovementInput = createMovementInput();
+  private readonly pointerInput: MovementInput = createMovementInput();
+  private activePointerId: number | null = null;
+  private pointerAnchorX = 0;
+  private pointerAnchorY = 0;
+  private readonly pointerDeadZonePixels = 14;
 
   private simulationTimeSeconds = 0;
   private accumulatorSeconds = 0;
@@ -136,6 +137,11 @@ export class Game {
     window.addEventListener("blur", this.resetInput);
     window.addEventListener("resize", this.resize);
     document.addEventListener("fullscreenchange", this.resize);
+    this.canvas.addEventListener("pointerdown", this.onPointerDown);
+    this.canvas.addEventListener("pointermove", this.onPointerMove);
+    this.canvas.addEventListener("pointerup", this.onPointerEnd);
+    this.canvas.addEventListener("pointercancel", this.onPointerEnd);
+    this.canvas.addEventListener("lostpointercapture", this.onPointerEnd);
     this.results.restartButton.addEventListener("click", this.restartContract);
     this.results.nextButton.addEventListener("click", this.nextContract);
     this.pause.resumeButton.addEventListener("click", this.resumeContract);
@@ -160,6 +166,11 @@ export class Game {
     window.removeEventListener("blur", this.resetInput);
     window.removeEventListener("resize", this.resize);
     document.removeEventListener("fullscreenchange", this.resize);
+    this.canvas.removeEventListener("pointerdown", this.onPointerDown);
+    this.canvas.removeEventListener("pointermove", this.onPointerMove);
+    this.canvas.removeEventListener("pointerup", this.onPointerEnd);
+    this.canvas.removeEventListener("pointercancel", this.onPointerEnd);
+    this.canvas.removeEventListener("lostpointercapture", this.onPointerEnd);
     this.results.restartButton.removeEventListener("click", this.restartContract);
     this.results.nextButton.removeEventListener("click", this.nextContract);
     this.pause.resumeButton.removeEventListener("click", this.resumeContract);
@@ -215,12 +226,20 @@ export class Game {
     this.accumulatorSeconds += deltaSeconds;
 
     while (this.accumulatorSeconds + Number.EPSILON >= FIXED_TIME_STEP_SECONDS) {
-      stepState(this.state, this.input, FIXED_TIME_STEP_SECONDS);
+      stepState(this.state, this.currentMovementInput(), FIXED_TIME_STEP_SECONDS);
       this.simulationTimeSeconds += FIXED_TIME_STEP_SECONDS;
       this.meadow.sync(this.state, this.simulationTimeSeconds);
       this.collectionMotes.enqueue(this.state.cutEvents, this.simulationTimeSeconds);
       this.accumulatorSeconds -= FIXED_TIME_STEP_SECONDS;
     }
+  }
+
+  private currentMovementInput(): MovementInput {
+    this.input.left = this.keyboardInput.left || this.pointerInput.left;
+    this.input.right = this.keyboardInput.right || this.pointerInput.right;
+    this.input.forward = this.keyboardInput.forward || this.pointerInput.forward;
+    this.input.backward = this.keyboardInput.backward || this.pointerInput.backward;
+    return this.input;
   }
 
   private render(): void {
@@ -390,31 +409,82 @@ export class Game {
     }
   };
 
+  private readonly onPointerDown = (event: PointerEvent): void => {
+    if (event.pointerType === "mouse" && event.button !== 0) {
+      return;
+    }
+    if (this.activePointerId !== null || this.state.mode !== "active") {
+      return;
+    }
+
+    this.activePointerId = event.pointerId;
+    this.pointerAnchorX = event.clientX;
+    this.pointerAnchorY = event.clientY;
+    clearMovementInput(this.pointerInput);
+    this.canvas.setPointerCapture(event.pointerId);
+    this.canvas.focus({ preventScroll: true });
+    event.preventDefault();
+  };
+
+  private readonly onPointerMove = (event: PointerEvent): void => {
+    if (event.pointerId !== this.activePointerId) {
+      return;
+    }
+
+    this.updatePointerInput(event.clientX, event.clientY);
+    event.preventDefault();
+  };
+
+  private readonly onPointerEnd = (event: PointerEvent): void => {
+    if (event.pointerId !== this.activePointerId) {
+      return;
+    }
+
+    this.activePointerId = null;
+    clearMovementInput(this.pointerInput);
+    event.preventDefault();
+  };
+
+  private updatePointerInput(clientX: number, clientY: number): void {
+    const deltaX = clientX - this.pointerAnchorX;
+    const deltaY = clientY - this.pointerAnchorY;
+    const distance = Math.hypot(deltaX, deltaY);
+    if (distance < this.pointerDeadZonePixels) {
+      clearMovementInput(this.pointerInput);
+      return;
+    }
+
+    this.pointerInput.left = deltaX < -this.pointerDeadZonePixels;
+    this.pointerInput.right = deltaX > this.pointerDeadZonePixels;
+    this.pointerInput.forward = deltaY < -this.pointerDeadZonePixels;
+    this.pointerInput.backward = deltaY > this.pointerDeadZonePixels;
+  }
+
   private setMovementKey(code: string, pressed: boolean): boolean {
     let handled = true;
     switch (code) {
       case "KeyA":
       case "ArrowLeft":
         if (this.state.mode === "active") {
-          this.input.left = pressed;
+          this.keyboardInput.left = pressed;
         }
         break;
       case "KeyD":
       case "ArrowRight":
         if (this.state.mode === "active") {
-          this.input.right = pressed;
+          this.keyboardInput.right = pressed;
         }
         break;
       case "KeyW":
       case "ArrowUp":
         if (this.state.mode === "active") {
-          this.input.forward = pressed;
+          this.keyboardInput.forward = pressed;
         }
         break;
       case "KeyS":
       case "ArrowDown":
         if (this.state.mode === "active") {
-          this.input.backward = pressed;
+          this.keyboardInput.backward = pressed;
         }
         break;
       default:
@@ -424,10 +494,10 @@ export class Game {
   }
 
   private readonly resetInput = (): void => {
-    this.input.left = false;
-    this.input.right = false;
-    this.input.forward = false;
-    this.input.backward = false;
+    this.activePointerId = null;
+    clearMovementInput(this.input);
+    clearMovementInput(this.keyboardInput);
+    clearMovementInput(this.pointerInput);
   };
 
   private async toggleFullscreen(): Promise<void> {
@@ -601,7 +671,7 @@ export class Game {
         level: player.level,
       },
       controls: {
-        movement: "WASD or arrow keys",
+        movement: "Drag on the canvas, or use WASD / arrow keys",
         fullscreen: "F toggles; Escape exits fullscreen before pausing",
         pause: this.state.mode === "complete" ? null : "Escape toggles pause",
         restart:
@@ -609,6 +679,11 @@ export class Game {
             ? "R restarts the current seed"
             : null,
         nextContract: this.state.mode === "complete" ? "N opens the next deterministic seed" : null,
+        input: {
+          keyboard: { ...this.keyboardInput },
+          pointer: { ...this.pointerInput },
+          active: { ...this.currentMovementInput() },
+        },
       },
       inventory: this.state.inventory,
       xp: this.state.xp,
@@ -783,6 +858,22 @@ function formatElapsedTime(seconds: number): string {
 
 function clamp(value: number, minimum: number, maximum: number): number {
   return Math.min(maximum, Math.max(minimum, value));
+}
+
+function createMovementInput(): MovementInput {
+  return {
+    left: false,
+    right: false,
+    forward: false,
+    backward: false,
+  };
+}
+
+function clearMovementInput(input: MovementInput): void {
+  input.left = false;
+  input.right = false;
+  input.forward = false;
+  input.backward = false;
 }
 
 function round(value: number): number {

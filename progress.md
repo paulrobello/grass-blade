@@ -96,6 +96,7 @@ Active milestone: Phase 3 — density, frame, and quality diagnostics before ren
 - [x] Added the first quality preset seam: default caps renderer pixel ratio at 1.5, `?quality=low` caps it at 1.0, and `render_game_to_text()` reports the active preset and cap.
 - [x] Expanded `?quality=low` to reduce rendered grass geometry from fourteen to eight blades per visual tuft while keeping the same authored coverage, gameplay targets, and low-quality density threshold diagnostics.
 - [x] Added `public/CNAME` for the requested GitHub Pages custom domain `grass-blade.pardev.net`.
+- [x] Added mobile-friendly drag movement on the game canvas and compressed the phone objective HUD into four icon/count chips with the XP bar preserved.
 
 ## Phase 1 verification evidence
 
@@ -164,6 +165,9 @@ Active milestone: Phase 3 — density, frame, and quality diagnostics before ren
 - Custom-domain setup note: repo-local Pages artifact configuration is `public/CNAME`. GitHub Pages settings have accepted `grass-blade.pardev.net` as the custom domain, but DNS must resolve the hostname to GitHub Pages (`paulrobello.github.io`) before the domain becomes live and GitHub can issue/enforce the HTTPS certificate.
 - Cloudflare DNS now has an explicit DNS-only CNAME `grass-blade.pardev.net -> paulrobello.github.io`, overriding the previous wildcard A-record behavior. `dig` resolves the hostname to GitHub Pages, and `curl -I http://grass-blade.pardev.net/` returns `200 OK` from `Server: GitHub.com`. HTTPS enforcement is still pending because GitHub's API reports `The certificate does not exist yet`; retry enabling HTTPS after GitHub issues the custom-domain certificate.
 - The GitHub Pages deployment for commit `a5864d7` succeeded. A follow-up HTTPS-enforcement retry still returned `The certificate does not exist yet`, so the custom domain is live over HTTP while GitHub Pages certificate provisioning remains pending.
+- `make checkall` passes formatting verification, ESLint, strict TypeScript, 79 deterministic Vitest tests across six files, and the Vite production build after the mobile controls/HUD slice.
+- The required web-game Playwright client ran against `?seed=12345` after the mobile controls build and wrote `output/playwright/mobile-controls-client-smoke/shot-0.png` plus `state-0.json` without browser error artifacts. The inspected screenshot confirms the default desktop HUD remains the full labeled objective tray.
+- A focused 430 by 860 Playwright route verified canvas drag movement, pointer input clearing on release, and a compact mobile HUD. Its state reports the drag moved the player from `(0, 0)` to `(-4.264, -4.264)`, activated forward pointer input during drag, cleared all pointer/active inputs after release, and found an objective tray height of `67.96875` pixels with four `44` pixel chips. The inspected local artifact is `output/playwright/mobile-controls-focused-smoke/mobile-hud-drag.png`; `errors` is empty.
 
 ## Remaining TODOs
 

@@ -813,25 +813,81 @@ body {
 
 @media (max-width: 600px) {
   .game-hud {
-    top: 0.65rem;
-    left: 0.65rem;
+    top: max(0.45rem, env(safe-area-inset-top));
+    left: max(0.45rem, env(safe-area-inset-left));
+    right: max(0.45rem, env(safe-area-inset-right));
+    align-items: center;
   }
 
   .time-dial {
-    width: 7rem;
+    width: 5.55rem;
+    border-width: 0.16rem;
+    box-shadow:
+      inset 0 0 0 0.18rem #92a2ff,
+      0 0.22rem 0 #26336e;
+  }
+
+  .time-dial::before {
+    inset: 0.6rem;
+    border-width: 0.11rem;
+  }
+
+  .time-dial__label {
+    font-size: 0.48rem;
+  }
+
+  .time-dial strong {
+    font-size: 1.28rem;
+  }
+
+  .time-dial__stats {
+    gap: 0.22rem;
+    margin-top: 0.32rem;
+    font-size: 0.48rem;
+  }
+
+  .time-dial__stats b {
+    padding: 0.16rem 0.24rem;
   }
 
   .objective-tray {
-    width: min(14.2rem, calc(100vw - 6.5rem));
-    margin-top: 0.52rem;
-    padding: 0.48rem 0.48rem 0.52rem 0.98rem;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(2.5rem, 1fr));
+    width: min(16.8rem, calc(100vw - 6rem));
+    margin-top: 0.18rem;
+    margin-left: -0.42rem;
+    padding: 0.34rem 0.36rem 0.36rem 0.72rem;
+    gap: 0.25rem;
+    border-width: 0.16rem;
+    border-radius: 0 0.85rem 0.85rem 0;
+  }
+
+  .objective-tray__title {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
 
   .objective-row {
-    grid-template-columns: 1.85rem 1fr auto;
-    min-height: 2.08rem;
-    gap: 0.28rem;
-    padding-right: 0.4rem;
+    grid-template-columns: 1fr;
+    min-height: 2.75rem;
+    justify-items: center;
+    gap: 0.06rem;
+    padding: 0.24rem 0.16rem 0.18rem;
+    border-width: 0.1rem;
+    border-radius: 0.54rem;
+  }
+
+  .objective-row:first-of-type,
+  .objective-row:nth-of-type(4) {
+    border-radius: 0.54rem;
+  }
+
+  .objective-row + .objective-row {
+    border-top: 0.1rem solid #e9c995;
   }
 
   .objective-row__name {
@@ -839,21 +895,35 @@ body {
   }
 
   .objective-row strong {
-    min-width: 3.2rem;
-    font-size: 0.88rem;
-  }
-
-  .objective-tray__title {
+    min-width: 0;
+    font-size: 0.76rem;
+    line-height: 1;
+    text-align: center;
     overflow: hidden;
-    font-size: 0.52rem;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  .resource-icon {
+    width: 1.35rem;
+    height: 1.35rem;
+    transform: scale(0.82);
+    transform-origin: center;
+  }
+
+  .xp-track {
+    grid-column: 1 / -1;
+    height: 0.28rem;
+    margin: 0.02rem 0.08rem 0;
+    border-width: 0.06rem;
   }
 
   .controls-hint {
     width: max-content;
     max-width: calc(100vw - 1.5rem);
-    font-size: 0.6rem;
+    bottom: max(0.65rem, env(safe-area-inset-bottom));
+    padding: 0.42rem 0.62rem;
+    font-size: 0.58rem;
   }
 
   .level-toast {
