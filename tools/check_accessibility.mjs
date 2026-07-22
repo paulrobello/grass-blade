@@ -57,15 +57,50 @@ async function checkKeyboardFocus(browser, options) {
     assertEqual(scrollAfterSpace.x, 0, "Space on focused canvas does not scroll horizontally");
     assertEqual(scrollAfterSpace.y, 0, "Space on focused canvas does not scroll vertically");
 
+    await page.keyboard.down("ArrowUp");
+    await page.evaluate(() => window.advanceTime(500));
+    const beforeBlur = await renderState(page);
+    assertEqual(beforeBlur.mode, "active", "contract is active before blur");
+    assert(beforeBlur.elapsedSeconds > 0, "contract advanced before blur");
+    assertEqual(
+      beforeBlur.controls.input.keyboard.forward,
+      true,
+      "held key registered before blur",
+    );
+
+    await page.evaluate(() => window.dispatchEvent(new Event("blur")));
+    await waitForState(
+      page,
+      (nextState) =>
+        nextState.mode === "paused" &&
+        nextState.flow.focusedElementId === "pause-resume" &&
+        nextState.controls.input.keyboard.forward === false,
+    );
+    const blurPausedState = await renderState(page);
+    await page.evaluate(() => window.advanceTime(1000));
+    const afterBlurAdvance = await renderState(page);
+    assertEqual(
+      afterBlurAdvance.elapsedSeconds,
+      blurPausedState.elapsedSeconds,
+      "blur pause freezes elapsed time",
+    );
+    const pausedPath = path.join(options.outputDir, "keyboard-paused.png");
+    await page.screenshot({ path: pausedPath, fullPage: false });
+    await page.keyboard.up("ArrowUp");
+
+    await page.keyboard.press("Enter");
+    await waitForState(
+      page,
+      (nextState) =>
+        nextState.mode === "active" && nextState.flow.focusedElementId === "game-canvas",
+    );
+
     await page.keyboard.press("Escape");
     await waitForState(
       page,
       (nextState) =>
         nextState.mode === "paused" && nextState.flow.focusedElementId === "pause-resume",
     );
-    const pausedPath = path.join(options.outputDir, "keyboard-paused.png");
-    await page.screenshot({ path: pausedPath, fullPage: false });
-
     await page.keyboard.press("Enter");
     await waitForState(
       page,
@@ -87,6 +122,7 @@ async function checkKeyboardFocus(browser, options) {
       name: "keyboard-focus",
       viewport: "430x860",
       focusedElementId: (await renderState(page)).flow.focusedElementId,
+      blurPausedElapsedSeconds: blurPausedState.elapsedSeconds,
       scrollAfterSpace,
       screenshots: [pausedPath, resultsPath],
       errors,

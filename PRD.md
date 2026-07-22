@@ -396,22 +396,22 @@ If Grass Blade copies or substantially derives upstream code, add a third-party 
 - Manual upgrade choices during a run; leveling is automatic.
 - Online multiplayer, accounts, leaderboards, cloud saves, or monetization.
 - Fully simulated tree-fall physics, deformable terrain, or per-blade rigid bodies.
-- Touch controls and production mobile support before the desktop first playable is stable.
+- Native mobile app packaging, stores, and platform-specific persistence.
 - Copying the reference GrassField wholesale.
 
 ## Risks and open questions
 
-| Topic            | Current decision                                                                     | Open question / validation                                                    |
-| ---------------- | ------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------- |
-| Blade silhouette | Oversized readable hub-and-cutter direction approved; production asset still pending | Test disc, two-arm, and four-arm silhouettes for readability and friendliness |
-| Tree finish      | Authored sever/fall presentation, not rigid-body simulation                          | Pick fall direction rule that cannot obscure the player or block quotas       |
-| Grass cut mask   | CPU grid projected into per-chunk GPU texture                                        | Validate texel density so edges look organic without large texture updates    |
-| Camera           | Fixed orthographic isometric follow camera                                           | Validate pitch and zoom on laptop and ultrawide displays                      |
-| Contract length  | Meadow Delivery targets a 6-10 minute first run                                      | Tune only after measuring novice completion and stall moments                 |
-| Timed contracts  | Allowed only as explicit authored contracts, not the default mode                    | Tune time limits and quotas only with before/after playtest evidence          |
-| Audio            | RPM pitch and material contact are important feedback                                | Select generation/licensing pipeline and reduced-sensory defaults later       |
-| Art scope        | One meadow with six target types                                                     | Decide whether shrubs/saplings use authored models or procedural primitives   |
-| Mobile           | Explicitly deferred                                                                  | Reassess after desktop performance and input contracts are stable             |
+| Topic            | Current decision                                                                                      | Open question / validation                                                               |
+| ---------------- | ----------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| Blade silhouette | Generated GLB cutter asset ships with two-arm, four-arm, and saw tiers plus a cyan orientation stripe | Continue testing silhouettes for readability and friendliness on physical mobile devices |
+| Tree finish      | Authored sever/fall presentation, not rigid-body simulation                                           | Pick fall direction rule that cannot obscure the player or block quotas                  |
+| Grass cut mask   | CPU grid projected into per-chunk GPU texture                                                         | Validate texel density so edges look organic without large texture updates               |
+| Camera           | Fixed orthographic isometric follow camera                                                            | Validate pitch and zoom on laptop and ultrawide displays                                 |
+| Contract length  | Meadow Delivery targets a 6-10 minute first run                                                       | Tune only after measuring novice completion and stall moments                            |
+| Timed contracts  | Allowed only as explicit authored contracts, not the default mode                                     | Tune time limits and quotas only with before/after playtest evidence                     |
+| Audio            | RPM pitch and material contact are important feedback                                                 | Select generation/licensing pipeline and reduced-sensory defaults later                  |
+| Art scope        | One meadow with six target types                                                                      | Decide whether shrubs/saplings use authored models or procedural primitives              |
+| Mobile           | Browser touch controls, responsive HUD, and mobile viewport sizing are implemented                    | Validate on more physical devices and tune mobile performance if needed                  |
 
 ## Phased delivery plan
 

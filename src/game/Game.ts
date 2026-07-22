@@ -242,7 +242,7 @@ export class Game {
     this.started = true;
     window.addEventListener("keydown", this.onKeyDown);
     window.addEventListener("keyup", this.onKeyUp);
-    window.addEventListener("blur", this.resetInput);
+    window.addEventListener("blur", this.onWindowBlur);
     window.addEventListener("resize", this.resize);
     window.visualViewport?.addEventListener("resize", this.resize);
     window.visualViewport?.addEventListener("scroll", this.resize);
@@ -283,7 +283,7 @@ export class Game {
     this.renderer.setAnimationLoop(null);
     window.removeEventListener("keydown", this.onKeyDown);
     window.removeEventListener("keyup", this.onKeyUp);
-    window.removeEventListener("blur", this.resetInput);
+    window.removeEventListener("blur", this.onWindowBlur);
     window.removeEventListener("resize", this.resize);
     window.visualViewport?.removeEventListener("resize", this.resize);
     window.visualViewport?.removeEventListener("scroll", this.resize);
@@ -890,6 +890,17 @@ export class Game {
     clearMovementInput(this.keyboardInput);
     clearMovementInput(this.pointerInput);
     this.updateTouchStick();
+  };
+
+  private readonly onWindowBlur = (): void => {
+    const shouldPause = this.contractStarted && this.state.mode === "active";
+    this.resetInput();
+    if (!shouldPause) {
+      return;
+    }
+
+    setPaused(this.state, true);
+    this.render();
   };
 
   private async toggleFullscreen(): Promise<void> {
