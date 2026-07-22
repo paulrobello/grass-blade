@@ -2,9 +2,12 @@ import { describe, expect, it } from "vitest";
 
 import {
   MAX_WOOD_CONTACT_EMISSIONS_PER_SYNC,
+  REDUCED_MOTION_ROCK_CONTACT_FRAGMENTS_PER_EMISSION,
   REDUCED_MOTION_WOOD_CONTACT_FRAGMENTS_PER_EMISSION,
+  ROCK_CONTACT_FRAGMENTS_PER_EMISSION,
   WOOD_CONTACT_FRAGMENTS_PER_EMISSION,
   planWoodContactChipEmissions,
+  shouldEmitRockContactDeflection,
 } from "../src/game/cutEffects";
 
 describe("wood contact chip thresholds", () => {
@@ -101,5 +104,23 @@ describe("wood contact chip thresholds", () => {
 
   it("ignores non-woody cutting targets", () => {
     expect(planWoodContactChipEmissions("denseWeed", 100, 0, true).emissionCount).toBe(0);
+  });
+});
+
+describe("rock contact deflection", () => {
+  it("emits only on rock contact entry", () => {
+    expect(shouldEmitRockContactDeflection("rock", "standing", false, true)).toBe(true);
+    expect(shouldEmitRockContactDeflection("rock", "standing", true, true)).toBe(false);
+    expect(shouldEmitRockContactDeflection("rock", "standing", false, false)).toBe(false);
+  });
+
+  it("ignores cut or non-rock targets", () => {
+    expect(shouldEmitRockContactDeflection("rock", "cut", false, true)).toBe(false);
+    expect(shouldEmitRockContactDeflection("sapling", "standing", false, true)).toBe(false);
+  });
+
+  it("uses bounded visible stone bursts with a reduced-motion minimum", () => {
+    expect(ROCK_CONTACT_FRAGMENTS_PER_EMISSION).toBe(22);
+    expect(REDUCED_MOTION_ROCK_CONTACT_FRAGMENTS_PER_EMISSION).toBe(4);
   });
 });

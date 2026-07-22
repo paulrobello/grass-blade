@@ -6,6 +6,7 @@ import {
   createScene,
   deriveReadableBladeAngle,
 } from "../src/game/createScene";
+import { ROCK_CONTACT_FRAGMENTS_PER_EMISSION } from "../src/game/cutEffects";
 import { resolveQualitySettings } from "../src/game/quality";
 import {
   CONTRACT_DEFINITIONS,
@@ -1784,6 +1785,46 @@ describe("active game state", () => {
     expect(state.xp).toBe(0);
     expect(state.cutEvents).toEqual([]);
     expect(state.cutRevision).toBe(0);
+  });
+
+  it("emits a bounded rock deflection burst without making rocks cuttable", () => {
+    const originalWindow = globalThis.window;
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      value: {
+        matchMedia: () => ({ matches: false }),
+      },
+    });
+    const scene = createScene(343, resolveQualitySettings(null));
+    try {
+      const state = createInitialState(343);
+      const target = isolateTarget(state, "rock");
+      placeTargetAtPositiveXContact(state, target);
+
+      for (let frame = 0; frame < 24; frame += 1) {
+        stepState(state, positiveXInput, FIXED_TIME_STEP_SECONDS);
+      }
+      scene.sync(state, state.elapsedSeconds);
+
+      expect(state.bladeContactTargetIds).toEqual([target.id]);
+      expect(target.status).toBe("standing");
+      expect(target.accumulatedWork).toBe(0);
+      expect(state.cutEvents).toEqual([]);
+      expect(scene.presentation.rockDeflectionEmissions).toBe(1);
+      expect(scene.presentation.lastRockDeflectionTargetId).toBe(target.id);
+      expect(scene.presentation.activeFragments).toBeGreaterThanOrEqual(
+        ROCK_CONTACT_FRAGMENTS_PER_EMISSION,
+      );
+
+      scene.sync(state, state.elapsedSeconds + 0.05);
+      expect(scene.presentation.rockDeflectionEmissions).toBe(1);
+    } finally {
+      scene.dispose();
+      Object.defineProperty(globalThis, "window", {
+        configurable: true,
+        value: originalWindow,
+      });
+    }
   });
 
   it("allows the blade hub to back away from a non-cuttable rock", () => {

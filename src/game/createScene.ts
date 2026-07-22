@@ -140,6 +140,8 @@ export interface MeadowPresentationDiagnostics {
   activeFragments: number;
   consumedCutRevision: number;
   consumedGrassVisualCuts: number;
+  rockDeflectionEmissions: number;
+  lastRockDeflectionTargetId: string | null;
 }
 
 interface BladeVisual {
@@ -380,6 +382,8 @@ export function createScene(
     activeFragments: 0,
     consumedCutRevision: 0,
     consumedGrassVisualCuts: 0,
+    rockDeflectionEmissions: 0,
+    lastRockDeflectionTargetId: null,
   };
 
   const hemisphere = new THREE.HemisphereLight(0xeafcff, 0x4f8a3f, 2.4);
@@ -457,6 +461,8 @@ export function createScene(
     presentation.activeFragments = cutEffects.diagnostics.activeFragments;
     presentation.consumedCutRevision = cutEffects.diagnostics.consumedCutRevision;
     presentation.consumedGrassVisualCuts = cutEffects.diagnostics.consumedGrassVisualCuts;
+    presentation.rockDeflectionEmissions = cutEffects.diagnostics.rockDeflectionEmissions;
+    presentation.lastRockDeflectionTargetId = cutEffects.diagnostics.lastRockDeflectionTargetId;
   }
 
   function resize(aspect: number): void {

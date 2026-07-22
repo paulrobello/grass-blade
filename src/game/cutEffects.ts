@@ -10,8 +10,11 @@ const GRASS_FRAGMENT = 0;
 const PETAL_FRAGMENT = 1;
 const LEAF_FRAGMENT = 2;
 const WOOD_FRAGMENT = 3;
+const STONE_FRAGMENT = 4;
 
 export const MAX_WOOD_CONTACT_EMISSIONS_PER_SYNC = 4;
+export const ROCK_CONTACT_FRAGMENTS_PER_EMISSION = 22;
+export const REDUCED_MOTION_ROCK_CONTACT_FRAGMENTS_PER_EMISSION = 4;
 
 export const WOOD_CONTACT_WORK_INTERVALS = {
   sapling: 1.25,
@@ -47,11 +50,14 @@ const GRASS_COLORS = [0x2b8c3f, 0x54bf4d, 0x9be85d] as const;
 const PETAL_COLORS = [0xffffff, 0xff78b4, 0xd08aff, 0x79d7ff, 0xffdd63] as const;
 const LEAF_COLORS = [0x287f3b, 0x45a94b, 0x75c84e, 0xa6d74d] as const;
 const WOOD_COLORS = [0x8f512b, 0xb76b33, 0xd9964f, 0xf0bd72] as const;
+const STONE_COLORS = [0xffffff, 0xf6dd86, 0xd7ded8, 0x9fa9a4] as const;
 
 export interface CutEffectsDiagnostics {
   activeFragments: number;
   consumedCutRevision: number;
   consumedGrassVisualCuts: number;
+  rockDeflectionEmissions: number;
+  lastRockDeflectionTargetId: string | null;
 }
 
 export interface CutEffects {
@@ -64,6 +70,15 @@ export interface WoodContactChipEmissionPlan {
   firstEmissionOrdinal: number;
   emissionCount: number;
   nextConsumedThresholdCount: number;
+}
+
+export function shouldEmitRockContactDeflection(
+  kind: TargetState["kind"],
+  status: TargetState["status"],
+  wasInContact: boolean,
+  inContact: boolean,
+): boolean {
+  return kind === "rock" && status !== "cut" && inContact && !wasInContact;
 }
 
 export function planWoodContactChipEmissions(
@@ -132,6 +147,8 @@ export function createCutEffects(
     activeFragments: 0,
     consumedCutRevision: 0,
     consumedGrassVisualCuts: 0,
+    rockDeflectionEmissions: 0,
+    lastRockDeflectionTargetId: null,
   };
 
   let nextSlot = 0;
@@ -140,7 +157,10 @@ export function createCutEffects(
   let colorsChanged = false;
   let trackedTargets: GameState["targets"] | null = null;
   const woodyTargetsById = new Map<string, TargetState>();
+  const rockTargetsById = new Map<string, TargetState>();
   const consumedWoodContactThresholds = new Map<string, number>();
+  const activeRockContactIds = new Set<string>();
+  const rockContactEmissionOrdinals = new Map<string, number>();
 
   position.set(0, -10, 0);
   quaternion.identity();
@@ -181,10 +201,22 @@ export function createCutEffects(
     const radius =
       randomUnit(seed, key, 1) * (spawnRadius ?? (style === GRASS_FRAGMENT ? 0.2 : 0.48));
     const speed =
-      (style === WOOD_FRAGMENT ? 1.25 : style === GRASS_FRAGMENT ? 0.68 : 0.95) *
+      (style === STONE_FRAGMENT
+        ? 1.7
+        : style === WOOD_FRAGMENT
+          ? 1.25
+          : style === GRASS_FRAGMENT
+            ? 0.68
+            : 0.95) *
       (0.72 + randomUnit(seed, key, 2) * 0.72);
     const lift =
-      (style === WOOD_FRAGMENT ? 2.5 : style === GRASS_FRAGMENT ? 1.28 : 2.05) *
+      (style === STONE_FRAGMENT
+        ? 1.7
+        : style === WOOD_FRAGMENT
+          ? 2.5
+          : style === GRASS_FRAGMENT
+            ? 1.28
+            : 2.05) *
       (0.82 + randomUnit(seed, key, 3) * 0.5);
 
     bornAt[slot] = simulationTimeSeconds;
@@ -216,6 +248,11 @@ export function createCutEffects(
         width[slot] = 0.24 + randomUnit(seed, key, 8) * 0.16;
         height[slot] = 0.09 + randomUnit(seed, key, 9) * 0.06;
         color.setHex(paletteColor(WOOD_COLORS, seed, key, 10));
+        break;
+      case STONE_FRAGMENT:
+        width[slot] = 0.18 + randomUnit(seed, key, 8) * 0.13;
+        height[slot] = 0.075 + randomUnit(seed, key, 9) * 0.055;
+        color.setHex(paletteColor(STONE_COLORS, seed, key, 10));
         break;
       default:
         width[slot] = 0.16 + randomUnit(seed, key, 8) * 0.1;
@@ -295,16 +332,7 @@ export function createCutEffects(
   }
 
   function spawnWoodContactChips(state: GameState, simulationTimeSeconds: number): void {
-    if (trackedTargets !== state.targets) {
-      trackedTargets = state.targets;
-      woodyTargetsById.clear();
-      consumedWoodContactThresholds.clear();
-      for (const target of state.targets) {
-        if (isWoodyTargetKind(target.kind)) {
-          woodyTargetsById.set(target.id, target);
-        }
-      }
-    }
+    refreshTrackedTargets(state);
 
     for (const targetId of state.bladeContactTargetIds) {
       const target = woodyTargetsById.get(targetId);
@@ -341,6 +369,84 @@ export function createCutEffects(
             config.spawnRadius,
           );
         }
+      }
+    }
+  }
+
+  function spawnRockDeflectionSparks(state: GameState, simulationTimeSeconds: number): void {
+    refreshTrackedTargets(state);
+    const currentRockContactIds = new Set<string>();
+
+    for (const targetId of state.bladeContactTargetIds) {
+      const target = rockTargetsById.get(targetId);
+      if (target === undefined || target.status === "cut") {
+        continue;
+      }
+
+      currentRockContactIds.add(targetId);
+      if (
+        !shouldEmitRockContactDeflection(
+          target.kind,
+          target.status,
+          activeRockContactIds.has(targetId),
+          true,
+        )
+      ) {
+        continue;
+      }
+
+      activeRockContactIds.add(targetId);
+      const emissionOrdinal = rockContactEmissionOrdinals.get(targetId) ?? 0;
+      rockContactEmissionOrdinals.set(targetId, emissionOrdinal + 1);
+      diagnostics.rockDeflectionEmissions += 1;
+      diagnostics.lastRockDeflectionTargetId = targetId;
+      const fragmentCount = reducedMotion
+        ? REDUCED_MOTION_ROCK_CONTACT_FRAGMENTS_PER_EMISSION
+        : ROCK_CONTACT_FRAGMENTS_PER_EMISSION;
+      const deltaX = state.player.x - target.x;
+      const deltaZ = state.player.z - target.z;
+      const distance = Math.hypot(deltaX, deltaZ);
+      const contactX =
+        distance > 0 ? target.x + (deltaX / distance) * (target.solidRadius + 0.12) : target.x;
+      const contactZ =
+        distance > 0 ? target.z + (deltaZ / distance) * (target.solidRadius + 0.12) : target.z;
+
+      for (let fragmentIndex = 0; fragmentIndex < fragmentCount; fragmentIndex += 1) {
+        spawnFragment(
+          STONE_FRAGMENT,
+          rockContactFragmentKey(targetId, emissionOrdinal, fragmentIndex),
+          contactX,
+          contactZ,
+          0.62,
+          simulationTimeSeconds,
+          0.34,
+        );
+      }
+    }
+
+    for (const targetId of activeRockContactIds) {
+      if (!currentRockContactIds.has(targetId)) {
+        activeRockContactIds.delete(targetId);
+      }
+    }
+  }
+
+  function refreshTrackedTargets(state: GameState): void {
+    if (trackedTargets === state.targets) {
+      return;
+    }
+
+    trackedTargets = state.targets;
+    woodyTargetsById.clear();
+    rockTargetsById.clear();
+    consumedWoodContactThresholds.clear();
+    activeRockContactIds.clear();
+    rockContactEmissionOrdinals.clear();
+    for (const target of state.targets) {
+      if (isWoodyTargetKind(target.kind)) {
+        woodyTargetsById.set(target.id, target);
+      } else if (target.kind === "rock") {
+        rockTargetsById.set(target.id, target);
       }
     }
   }
@@ -412,6 +518,7 @@ export function createCutEffects(
     }
 
     spawnWoodContactChips(state, simulationTimeSeconds);
+    spawnRockDeflectionSparks(state, simulationTimeSeconds);
 
     if (updateFragments(simulationTimeSeconds)) {
       fragments.instanceMatrix.needsUpdate = true;
@@ -445,6 +552,18 @@ function woodContactFragmentKey(
     stableStringHash(targetId) ^
     Math.imul(emissionOrdinal + 1, 0x9e3779b1) ^
     Math.imul(fragmentIndex + 1, 0x85ebca6b)
+  );
+}
+
+function rockContactFragmentKey(
+  targetId: string,
+  emissionOrdinal: number,
+  fragmentIndex: number,
+): number {
+  return (
+    stableStringHash(targetId) ^
+    Math.imul(emissionOrdinal + 1, 0xc2b2ae35) ^
+    Math.imul(fragmentIndex + 1, 0x27d4eb2f)
   );
 }
 
