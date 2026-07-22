@@ -26,6 +26,8 @@ import {
   DENSE_WEED_VISUALS_PER_TARGET,
   FLOWER_CLUSTER_COUNT,
   FLOWER_VISUAL_COUNT,
+  GRASS_BLADES_PER_VISUAL,
+  GRASS_FIELD_SIZE,
   GRASS_LOGICAL_COLUMNS,
   GRASS_VISUAL_COLUMNS,
   MATURE_TREE_COUNT,
@@ -33,6 +35,7 @@ import {
   SAPLING_COUNT,
   SHRUB_COUNT,
   SHRUB_VISUAL_COUNT,
+  createMeadowDensityReport,
   createMeadowLayout,
   type TargetKind,
 } from "../src/game/world";
@@ -293,7 +296,9 @@ describe("active game state", () => {
     for (const visual of first.flowerVisuals) {
       flowerVisualCounts[visual.targetIndex] = (flowerVisualCounts[visual.targetIndex] ?? 0) + 1;
     }
-    expect(flowerVisualCounts.every((count) => count === 26 || count === 27)).toBe(true);
+    expect(
+      flowerVisualCounts.every((count) => count === FLOWER_VISUAL_COUNT / FLOWER_CLUSTER_COUNT),
+    ).toBe(true);
 
     const denseWeedVisualCounts = Array<number>(first.denseWeedTargets.length).fill(0);
     for (const visual of first.denseWeedVisuals) {
@@ -370,6 +375,28 @@ describe("active game state", () => {
       .filter((target) => target.kind === "sapling")
       .reduce((sum, target) => sum + target.yield, 0);
     expect(saplingWood).toBeGreaterThanOrEqual(state.objectives.wood.target);
+  });
+
+  it("reports deterministic meadow density against the Phase 3 lush-field thresholds", () => {
+    for (const seed of COMPLETION_VALIDATION_SEEDS) {
+      const layout = createMeadowLayout(seed);
+      const report = createMeadowDensityReport(layout);
+
+      expect(report.eligibleTerrainArea).toBe(GRASS_FIELD_SIZE * GRASS_FIELD_SIZE);
+      expect(report.grassCoverageFraction).toBe(1);
+      expect(report.decorativeGrassBladesPerWorldUnitSquared).toBeCloseTo(
+        (GRASS_VISUAL_COLUMNS * GRASS_VISUAL_COLUMNS * GRASS_BLADES_PER_VISUAL) /
+          (GRASS_FIELD_SIZE * GRASS_FIELD_SIZE),
+      );
+      expect(report.flowerDriftCoverageFraction).toBeGreaterThanOrEqual(0.2);
+      expect(report.flowerDriftCoverageFraction).toBeLessThanOrEqual(0.3);
+      expect(report.flowerBlossomsPerDriftWorldUnitSquared).toBeGreaterThanOrEqual(2);
+      expect(report.flowerBlossomsPerDriftWorldUnitSquared).toBeLessThanOrEqual(4);
+      expect(report.meetsDefaultGrassCoverage).toBe(true);
+      expect(report.meetsDefaultGrassDensity).toBe(true);
+      expect(report.meetsFlowerDriftCoverage).toBe(true);
+      expect(report.meetsFlowerBlossomDensity).toBe(true);
+    }
   });
 
   it("completes quota contracts deterministically across ten authored seeds", () => {
@@ -1399,6 +1426,17 @@ function completeContractThroughQuotaCuts(state: GameState): void {
     ...targetsForKind(state, "sapling", state.objectives.wood.target / 2),
   ];
   state.targets = quotaTargets;
+
+  for (let index = 0; index < quotaTargets.length; index += 1) {
+    const target = quotaTargets[index];
+    if (target === undefined) {
+      continue;
+    }
+    target.x = 80 + index * 4;
+    target.z = 80;
+    target.status = "standing";
+    target.accumulatedWork = 0;
+  }
 
   for (const target of quotaTargets) {
     target.x = state.player.x;

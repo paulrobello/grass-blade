@@ -16,16 +16,18 @@ import {
 } from "./vegetationFall";
 import {
   createMeadowLayout,
+  createMeadowDensityReport,
+  GRASS_BLADES_PER_VISUAL,
   FLOWER_VISUAL_COUNT,
   GRASS_VISUAL_COLUMNS,
   type MeadowLayout,
+  type MeadowDensityReport,
 } from "./world";
 
 const CAMERA_OFFSET_X = 8.5;
 const CAMERA_OFFSET_Y = 22;
 const CAMERA_OFFSET_Z = 8.5;
 const CAMERA_VIEW_HEIGHT = 15.5;
-const GRASS_BLADES_PER_INSTANCE = 14;
 const BLADE_VISUAL_SPIN_SCALE = 0.0775;
 
 interface VegetationSync {
@@ -81,6 +83,7 @@ export interface MeadowScene {
     saplingInstances: number;
     treeInstances: number;
     rockInstances: number;
+    report: MeadowDensityReport;
   };
   presentation: MeadowPresentationDiagnostics;
   resize: (aspect: number) => void;
@@ -96,6 +99,7 @@ export function createScene(seed: number): MeadowScene {
   const camera = new THREE.OrthographicCamera(-10, 10, 10, -10, 0.1, 100);
   const resources: Array<THREE.BufferGeometry | THREE.Material> = [];
   const layout = createMeadowLayout(seed);
+  const densityReport = createMeadowDensityReport(layout);
   const random = createSeededRandom(seed);
   const scratchMatrix = new THREE.Matrix4();
   const scratchPosition = new THREE.Vector3();
@@ -321,13 +325,14 @@ export function createScene(seed: number): MeadowScene {
     camera,
     density: {
       grassInstances: GRASS_VISUAL_COLUMNS * GRASS_VISUAL_COLUMNS,
-      grassBlades: GRASS_VISUAL_COLUMNS * GRASS_VISUAL_COLUMNS * GRASS_BLADES_PER_INSTANCE,
+      grassBlades: GRASS_VISUAL_COLUMNS * GRASS_VISUAL_COLUMNS * GRASS_BLADES_PER_VISUAL,
       flowerInstances: FLOWER_VISUAL_COUNT,
       weedInstances: layout.denseWeedVisuals.length,
       shrubInstances: layout.shrubVisuals.length,
       saplingInstances: layout.saplingVisuals.length,
       treeInstances: layout.matureTreeVisuals.length,
       rockInstances: layout.rockVisuals.length,
+      report: densityReport,
     },
     presentation,
     resize,
@@ -532,9 +537,9 @@ function addGrass(
 function createGrassClumpGeometry(): THREE.BufferGeometry {
   const positions: number[] = [];
 
-  for (let index = 0; index < GRASS_BLADES_PER_INSTANCE; index += 1) {
+  for (let index = 0; index < GRASS_BLADES_PER_VISUAL; index += 1) {
     const angle = index * 2.399963229728653;
-    const radius = Math.sqrt((index + 0.5) / GRASS_BLADES_PER_INSTANCE) * 0.21;
+    const radius = Math.sqrt((index + 0.5) / GRASS_BLADES_PER_VISUAL) * 0.21;
     appendGrassBlade(positions, {
       angle,
       x: Math.cos(angle) * radius,

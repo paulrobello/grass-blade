@@ -9,8 +9,9 @@ const SAPLING_COLOR_COUNT = 3;
 export const GRASS_VISUAL_COLUMNS = 104;
 export const GRASS_LOGICAL_COLUMNS = 26;
 export const GRASS_FIELD_SIZE = 41;
+export const GRASS_BLADES_PER_VISUAL = 14;
 export const FLOWER_CLUSTER_COUNT = 16;
-export const FLOWER_VISUAL_COUNT = 420;
+export const FLOWER_VISUAL_COUNT = 880;
 export const DENSE_WEED_COUNT = 12;
 export const DENSE_WEED_VISUALS_PER_TARGET = 9;
 export const DENSE_WEED_VISUAL_COUNT = DENSE_WEED_COUNT * DENSE_WEED_VISUALS_PER_TARGET;
@@ -164,6 +165,18 @@ export interface MeadowLayout {
   rockVisuals: RockVisual[];
 }
 
+export interface MeadowDensityReport {
+  eligibleTerrainArea: number;
+  grassCoverageFraction: number;
+  decorativeGrassBladesPerWorldUnitSquared: number;
+  flowerDriftCoverageFraction: number;
+  flowerBlossomsPerDriftWorldUnitSquared: number;
+  meetsDefaultGrassCoverage: boolean;
+  meetsDefaultGrassDensity: boolean;
+  meetsFlowerDriftCoverage: boolean;
+  meetsFlowerBlossomDensity: boolean;
+}
+
 export function createMeadowLayout(seed: number): MeadowLayout {
   const grassCells = createGrassCells();
   const grassVisuals = createGrassVisuals(createSeededRandom(seed ^ 0x9e3779b9));
@@ -201,6 +214,36 @@ export function createMeadowLayout(seed: number): MeadowLayout {
     matureTreeVisuals,
     rockTargets,
     rockVisuals,
+  };
+}
+
+export function createMeadowDensityReport(layout: MeadowLayout): MeadowDensityReport {
+  const eligibleTerrainArea = GRASS_FIELD_SIZE * GRASS_FIELD_SIZE;
+  const grassCoverageFraction =
+    (layout.grassCells.length * (GRASS_FIELD_SIZE / GRASS_LOGICAL_COLUMNS) ** 2) /
+    eligibleTerrainArea;
+  const decorativeGrassBladesPerWorldUnitSquared =
+    (layout.grassVisuals.length * GRASS_BLADES_PER_VISUAL) / eligibleTerrainArea;
+  const flowerDriftArea = estimateFlowerDriftArea(layout.flowerTargets);
+  const flowerDriftCoverageFraction = flowerDriftArea / eligibleTerrainArea;
+  const flowerBlossomsPerDriftWorldUnitSquared = layout.flowerVisuals.length / flowerDriftArea;
+
+  return {
+    eligibleTerrainArea: roundDensityMetric(eligibleTerrainArea),
+    grassCoverageFraction: roundDensityMetric(grassCoverageFraction),
+    decorativeGrassBladesPerWorldUnitSquared: roundDensityMetric(
+      decorativeGrassBladesPerWorldUnitSquared,
+    ),
+    flowerDriftCoverageFraction: roundDensityMetric(flowerDriftCoverageFraction),
+    flowerBlossomsPerDriftWorldUnitSquared: roundDensityMetric(
+      flowerBlossomsPerDriftWorldUnitSquared,
+    ),
+    meetsDefaultGrassCoverage: grassCoverageFraction >= 0.85,
+    meetsDefaultGrassDensity: decorativeGrassBladesPerWorldUnitSquared >= 90,
+    meetsFlowerDriftCoverage:
+      flowerDriftCoverageFraction >= 0.2 && flowerDriftCoverageFraction <= 0.3,
+    meetsFlowerBlossomDensity:
+      flowerBlossomsPerDriftWorldUnitSquared >= 2 && flowerBlossomsPerDriftWorldUnitSquared <= 4,
   };
 }
 
@@ -273,7 +316,7 @@ function createFlowerTargets(random: () => number): TargetSeed[] {
       kind: "flower",
       x: -halfUsableField + (column + 0.5) * clusterCellSize + randomRange(random, -jitter, jitter),
       z: -halfUsableField + (row + 0.5) * clusterCellSize + randomRange(random, -jitter, jitter),
-      radius: 1.35 + random() * 0.35,
+      radius: 2.55 + random() * 0.28,
       solidRadius: 0,
       recommendedLevel: 1,
       requiredWork: 4,
@@ -297,7 +340,7 @@ function createFlowerVisuals(targets: TargetSeed[], random: () => number): Flowe
     }
 
     const angle = random() * TAU;
-    const distance = Math.sqrt(random()) * target.radius * 0.9;
+    const distance = Math.sqrt(random()) * target.radius * 0.92;
     visuals.push({
       x: target.x + Math.cos(angle) * distance,
       z: target.z + Math.sin(angle) * distance,
@@ -482,6 +525,37 @@ function createRockVisuals(random: () => number): RockVisual[] {
     rotation: random() * TAU,
     targetIndex,
   }));
+}
+
+function estimateFlowerDriftArea(targets: TargetSeed[]): number {
+  const sampleColumns = 192;
+  const cellSize = GRASS_FIELD_SIZE / sampleColumns;
+  const halfField = GRASS_FIELD_SIZE / 2;
+  let coveredSamples = 0;
+
+  for (let row = 0; row < sampleColumns; row += 1) {
+    const z = -halfField + (row + 0.5) * cellSize;
+    for (let column = 0; column < sampleColumns; column += 1) {
+      const x = -halfField + (column + 0.5) * cellSize;
+      if (
+        targets.some((target) => distanceSquared(x, z, target.x, target.z) <= target.radius ** 2)
+      ) {
+        coveredSamples += 1;
+      }
+    }
+  }
+
+  return (coveredSamples / (sampleColumns * sampleColumns)) * GRASS_FIELD_SIZE * GRASS_FIELD_SIZE;
+}
+
+function distanceSquared(ax: number, az: number, bx: number, bz: number): number {
+  const dx = ax - bx;
+  const dz = az - bz;
+  return dx * dx + dz * dz;
+}
+
+function roundDensityMetric(value: number): number {
+  return Math.round(value * 10_000) / 10_000;
 }
 
 function createSeededRandom(seed: number): () => number {

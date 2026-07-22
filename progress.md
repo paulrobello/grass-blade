@@ -3,7 +3,7 @@ Original prompt: "i want create a threejs based game where you are a spinning bl
 # Grass Blade Progress
 
 Last updated: 2026-07-21
-Active milestone: Phase 2 — deterministic coverage, non-cuttable rocks, ten-seed completion validation, sapling art polish, and target spatial query hardened
+Active milestone: Phase 3 — denser flower drifts and deterministic meadow density diagnostics
 
 ## Completed foundation intent
 
@@ -91,6 +91,7 @@ Active milestone: Phase 2 — deterministic coverage, non-cuttable rocks, ten-se
 - [x] Added final sapling art/material polish: varied bark colors, a small bright crown-tip layer for better leafy silhouette readability, and a pale cut-disc on the stump after sapling completion.
 - [x] Added a query-gated `?debug=1` `window.cutTargetForDebug(kind)` browser hook so specific target visuals can be cut through the normal fixed-step reward path during deterministic visual verification.
 - [x] Replaced direct target contact/collision scans with a deterministic uniform-grid candidate query that preserves target iteration order, keeps solid blocking on the same swept path, and rebuilds automatically when debug/test code changes the target array or authored target positions.
+- [x] Increased authored wildflower drifts from 420 to 880 decorative blossoms, widened their coherent drift radius, and exposed a deterministic meadow density report through `render_game_to_text()` for Phase 3 grass/flower density thresholds.
 
 ## Phase 1 verification evidence
 
@@ -147,10 +148,13 @@ Active milestone: Phase 2 — deterministic coverage, non-cuttable rocks, ten-se
 - `make checkall` passes formatting verification, ESLint, strict TypeScript, 74 deterministic Vitest tests across four files, and the Vite production build after the target spatial-query slice.
 - The added state regression verifies the spatial query rebuilds after an authored target position changes, then cuts that moved target through the normal fixed-step path.
 - The required web-game Playwright client ran against `?seed=12345` after the spatial-query build and wrote `output/playwright/spatial-query-smoke/shot-0.png` plus `state-0.json` without browser error artifacts; the inspected screenshot and state show grass cutting, solid blocking, target progress bars, and too-tough feedback still working through the spatial candidate path.
+- `make checkall` passes formatting verification, ESLint, strict TypeScript, 75 deterministic Vitest tests across four files, and the Vite production build after the flower-density diagnostic slice.
+- The added density regression validates ten authored seeds against 100% current grass coverage, 90+ decorative grass blades per world unit squared, 20-30% authored flower-drift coverage, and 2-4 decorative blossoms per drift world unit squared.
+- The required web-game Playwright client ran against `?seed=12345` after the flower-density build and wrote `output/playwright/flower-density-smoke/shot-0.png` plus `state-0.json` without browser error artifacts; the inspected screenshot shows visibly fuller flower clusters embedded in the dense grass canopy, and the state reports 880 flower instances with all density-threshold flags true.
 
 ## Remaining TODOs
 
-- [ ] Reassess `PRD.md` for the next implementable slice beyond the current Phase 2 hardening items.
+- [ ] Continue Phase 3 renderer hardening with chunk culling, quality presets, frame diagnostics, or the production blade GLB path.
 
 ## Handoff rules
 
