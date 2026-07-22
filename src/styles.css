@@ -1322,22 +1322,20 @@ body {
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .xp-track span {
-    transition: none;
-  }
+#app[data-motion="reduced"] .xp-track span {
+  transition: none;
+}
 
-  .objective-row--awarded {
-    animation: objective-award-reduced 260ms linear;
-  }
+#app[data-motion="reduced"] .objective-row--awarded {
+  animation: objective-award-reduced 260ms linear;
+}
 
-  .level-toast--active {
-    animation: level-toast-reduced 720ms linear both;
-  }
+#app[data-motion="reduced"] .level-toast--active {
+  animation: level-toast-reduced 720ms linear both;
+}
 
-  .level-toast--active .level-toast__ring {
-    animation: none;
-  }
+#app[data-motion="reduced"] .level-toast--active .level-toast__ring {
+  animation: none;
 }
 
 @keyframes objective-award-reduced {

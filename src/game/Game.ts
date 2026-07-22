@@ -89,6 +89,11 @@ export interface AccessibilitySettings {
   contrastSource: "standard" | "query" | "forced-colors" | "prefers-contrast";
 }
 
+export interface MotionSettings {
+  reducedMotion: boolean;
+  motionSource: "standard" | "query" | "prefers-reduced-motion";
+}
+
 export class Game {
   private readonly canvas: HTMLCanvasElement;
   private readonly appRoot: HTMLElement;
@@ -107,6 +112,7 @@ export class Game {
   private readonly frameDiagnostics: FrameDiagnosticsTracker = createFrameDiagnosticsTracker();
   private readonly quality: QualitySettings;
   private readonly accessibilitySettings: AccessibilitySettings;
+  private readonly motionSettings: MotionSettings;
   private readonly graphicsAdapter: GraphicsAdapterDiagnostics;
   private readonly layoutResizeObserver: ResizeObserver | null =
     typeof ResizeObserver === "undefined" ? null : new ResizeObserver(() => this.resize());
@@ -153,6 +159,12 @@ export class Game {
     });
     this.appRoot.dataset.contrast = this.accessibilitySettings.highContrast ? "high" : "standard";
     this.appRoot.dataset.contrastSource = this.accessibilitySettings.contrastSource;
+    this.motionSettings = resolveMotionSettings({
+      motionQuery: searchParams.get("motion"),
+      prefersReducedMotion: window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+    });
+    this.appRoot.dataset.motion = this.motionSettings.reducedMotion ? "reduced" : "standard";
+    this.appRoot.dataset.motionSource = this.motionSettings.motionSource;
     this.hud = getHudElements();
     this.audio = new GameAudio(resolveAudioSettings(searchParams));
     this.audioControls = createAudioElements(this.appRoot);
@@ -160,7 +172,7 @@ export class Game {
     this.intro = createIntroElements(this.appRoot);
     this.results = createResultsElements(this.appRoot);
     this.pause = createPauseElements(this.appRoot);
-    this.meadow = createScene(this.state.seed, this.quality);
+    this.meadow = createScene(this.state.seed, this.quality, this.motionSettings.reducedMotion);
     this.collectionMotes = createCollectionMotes(
       this.appRoot,
       {
@@ -170,7 +182,7 @@ export class Game {
         wood: this.hud.wood,
       },
       this.state.seed,
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+      this.motionSettings.reducedMotion,
     );
     this.targetProgress = createTargetProgressOverlay(this.appRoot);
     this.renderer = new THREE.WebGLRenderer({
@@ -919,6 +931,8 @@ export class Game {
         liveRegionText: this.lastAccessibilityAnnouncement,
         highContrast: this.accessibilitySettings.highContrast,
         contrastSource: this.accessibilitySettings.contrastSource,
+        reducedMotion: this.motionSettings.reducedMotion,
+        motionSource: this.motionSettings.motionSource,
       },
       audio: this.audio.diagnostics satisfies AudioDiagnostics,
       meadow: this.meadow.density,
@@ -1077,6 +1091,24 @@ export function resolveAccessibilitySettings(options: {
   }
 
   return { highContrast: false, contrastSource: "standard" };
+}
+
+export function resolveMotionSettings(options: {
+  motionQuery: string | null;
+  prefersReducedMotion: boolean;
+}): MotionSettings {
+  const normalizedQuery = options.motionQuery?.trim().toLowerCase() ?? "";
+  if (["1", "reduced", "reduce", "true"].includes(normalizedQuery)) {
+    return { reducedMotion: true, motionSource: "query" };
+  }
+  if (["0", "false", "normal", "standard", "off"].includes(normalizedQuery)) {
+    return { reducedMotion: false, motionSource: "query" };
+  }
+  if (options.prefersReducedMotion) {
+    return { reducedMotion: true, motionSource: "prefers-reduced-motion" };
+  }
+
+  return { reducedMotion: false, motionSource: "standard" };
 }
 
 function deriveAspectRatio(width: number, height: number): number {

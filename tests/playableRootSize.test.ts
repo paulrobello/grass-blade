@@ -6,7 +6,11 @@ import {
   resolveAudioSettings,
   resolveVolume,
 } from "../src/game/audio";
-import { derivePlayableRootSize, resolveAccessibilitySettings } from "../src/game/Game";
+import {
+  derivePlayableRootSize,
+  resolveAccessibilitySettings,
+  resolveMotionSettings,
+} from "../src/game/Game";
 
 describe("playable root sizing", () => {
   it("uses the visible phone browser viewport instead of narrowing the play area", () => {
@@ -142,6 +146,44 @@ describe("accessibility settings", () => {
     ).toEqual({
       highContrast: true,
       contrastSource: "prefers-contrast",
+    });
+  });
+});
+
+describe("motion settings", () => {
+  it("lets query-string reduced motion override standard media settings", () => {
+    expect(
+      resolveMotionSettings({
+        motionQuery: "reduced",
+        prefersReducedMotion: false,
+      }),
+    ).toEqual({
+      reducedMotion: true,
+      motionSource: "query",
+    });
+  });
+
+  it("lets query-string standard motion override reduced media settings", () => {
+    expect(
+      resolveMotionSettings({
+        motionQuery: "standard",
+        prefersReducedMotion: true,
+      }),
+    ).toEqual({
+      reducedMotion: false,
+      motionSource: "query",
+    });
+  });
+
+  it("honors prefers-reduced-motion when no query override is present", () => {
+    expect(
+      resolveMotionSettings({
+        motionQuery: null,
+        prefersReducedMotion: true,
+      }),
+    ).toEqual({
+      reducedMotion: true,
+      motionSource: "prefers-reduced-motion",
     });
   });
 });

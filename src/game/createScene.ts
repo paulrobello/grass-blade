@@ -101,6 +101,7 @@ interface GrassChunk {
 export type BladeTier = "two-arm" | "four-arm" | "saw";
 
 export interface MeadowPresentationDiagnostics {
+  reducedMotion: boolean;
   bladeTier: BladeTier;
   visibleBladeCount: number;
   visibleTeeth: number;
@@ -183,7 +184,11 @@ export interface MeadowScene {
   dispose: () => void;
 }
 
-export function createScene(seed: number, quality: QualitySettings): MeadowScene {
+export function createScene(
+  seed: number,
+  quality: QualitySettings,
+  reducedMotion = resolveReducedMotionPreference(),
+): MeadowScene {
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0xb5df8b);
   scene.fog = new THREE.Fog(0xb5df8b, 28, 58);
@@ -200,8 +205,6 @@ export function createScene(seed: number, quality: QualitySettings): MeadowScene
   const scratchColor = new THREE.Color();
   const cameraTarget = new THREE.Vector3();
   const yAxis = new THREE.Vector3(0, 1, 0);
-  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
   const groundGeometry = track(resources, new THREE.PlaneGeometry(80, 80));
   const groundMaterial = track(
     resources,
@@ -324,6 +327,7 @@ export function createScene(seed: number, quality: QualitySettings): MeadowScene
   scene.add(playerRoot);
 
   const presentation: MeadowPresentationDiagnostics = {
+    reducedMotion,
     bladeTier: blade.diagnostics.bladeTier,
     visibleBladeCount: blade.diagnostics.visibleBladeCount,
     visibleTeeth: blade.diagnostics.visibleTeeth,
@@ -498,6 +502,10 @@ export function accumulateReadableBladeAngle(
 ): number {
   const rawDelta = (currentRawAngleRadians - previousRawAngleRadians + Math.PI * 2) % (Math.PI * 2);
   return (previousVisualAngleRadians + deriveReadableBladeAngle(rawDelta)) % (Math.PI * 2);
+}
+
+function resolveReducedMotionPreference(): boolean {
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
 function addGroundPatches(
