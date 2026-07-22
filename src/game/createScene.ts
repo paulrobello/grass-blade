@@ -1304,8 +1304,17 @@ function addSaplings(
   const trunkMaterial = track(
     resources,
     new THREE.MeshStandardMaterial({
-      color: 0x9a6538,
+      color: 0xffffff,
       roughness: 0.9,
+      flatShading: true,
+    }),
+  );
+  const cutDiscGeometry = track(resources, new THREE.CylinderGeometry(0.16, 0.2, 0.035, 14));
+  const cutDiscMaterial = track(
+    resources,
+    new THREE.MeshStandardMaterial({
+      color: 0xffffff,
+      roughness: 0.72,
       flatShading: true,
     }),
   );
@@ -1320,9 +1329,11 @@ function addSaplings(
   );
   const trunks = new THREE.InstancedMesh(trunkGeometry, trunkMaterial, count);
   const stumps = new THREE.InstancedMesh(trunkGeometry, trunkMaterial, count);
+  const cutDiscs = new THREE.InstancedMesh(cutDiscGeometry, cutDiscMaterial, count);
   const lowerCrowns = new THREE.InstancedMesh(crownGeometry, crownMaterial, count);
   const middleCrowns = new THREE.InstancedMesh(crownGeometry, crownMaterial, count);
   const upperCrowns = new THREE.InstancedMesh(crownGeometry, crownMaterial, count);
+  const tipCrowns = new THREE.InstancedMesh(crownGeometry, crownMaterial, count);
   const crownLayers = [
     {
       mesh: lowerCrowns,
@@ -1351,11 +1362,22 @@ function addSaplings(
       scaleY: 0.58,
       scaleZ: 0.52,
     },
+    {
+      mesh: tipCrowns,
+      offsetX: 0.16,
+      offsetY: 2.75,
+      offsetZ: -0.02,
+      scaleX: 0.26,
+      scaleY: 0.22,
+      scaleZ: 0.24,
+    },
   ] as const;
+  const trunkPalette = [0x9a6538, 0xaa7141, 0x855633] as const;
+  const cutDiscPalette = [0xf3c985, 0xf8d89a, 0xe7b873] as const;
   const crownPalettes = [
-    [0x2b8f49, 0x3ea957, 0x61c568],
-    [0x258746, 0x39a451, 0x57bd5d],
-    [0x33974d, 0x47b05b, 0x6bca6c],
+    [0x2b8f49, 0x3ea957, 0x61c568, 0x9be778],
+    [0x258746, 0x39a451, 0x57bd5d, 0x90dc70],
+    [0x33974d, 0x47b05b, 0x6bca6c, 0xa9ef83],
   ] as const;
   const tiltAxis = new THREE.Vector3();
   const tiltRotation = new THREE.Quaternion();
@@ -1387,6 +1409,11 @@ function addSaplings(
 
   for (const visual of layout.saplingVisuals) {
     const palette = crownPalettes[visual.colorIndex] ?? crownPalettes[0];
+    color.setHex(trunkPalette[visual.colorIndex] ?? trunkPalette[0]);
+    trunks.setColorAt(visual.targetIndex, color);
+    stumps.setColorAt(visual.targetIndex, color);
+    color.setHex(cutDiscPalette[visual.colorIndex] ?? cutDiscPalette[0]);
+    cutDiscs.setColorAt(visual.targetIndex, color);
     for (let layerIndex = 0; layerIndex < crownLayers.length; layerIndex += 1) {
       color.setHex(palette[layerIndex] ?? palette[0]);
       crownLayers[layerIndex]?.mesh.setColorAt(visual.targetIndex, color);
@@ -1404,9 +1431,18 @@ function addSaplings(
     matrix.compose(position, rotation, scale);
     writeMatrix(hiddenMatrices, visual.targetIndex, matrix);
     stumps.setMatrixAt(visual.targetIndex, matrix);
+    cutDiscs.setMatrixAt(visual.targetIndex, matrix);
   }
 
-  for (const mesh of [trunks, stumps, lowerCrowns, middleCrowns, upperCrowns]) {
+  for (const mesh of [
+    trunks,
+    stumps,
+    cutDiscs,
+    lowerCrowns,
+    middleCrowns,
+    upperCrowns,
+    tipCrowns,
+  ]) {
     mesh.castShadow = true;
     mesh.receiveShadow = true;
     mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
@@ -1415,7 +1451,7 @@ function addSaplings(
       mesh.instanceColor.needsUpdate = true;
     }
   }
-  scene.add(trunks, stumps, lowerCrowns, middleCrowns, upperCrowns);
+  scene.add(trunks, stumps, cutDiscs, lowerCrowns, middleCrowns, upperCrowns, tipCrowns);
 
   return {
     diagnostics,
@@ -1428,6 +1464,12 @@ function addSaplings(
             fallStartTimes[visual.targetIndex] = simulationTimeSeconds;
             readMatrix(matrix, stumpMatrices, visual.targetIndex);
             stumps.setMatrixAt(visual.targetIndex, matrix);
+            const stumpHeight = trunkHeight * stumpHeightScale * visual.size;
+            rotation.identity();
+            position.set(visual.x, stumpHeight + 0.018, visual.z);
+            scale.setScalar(visual.size);
+            matrix.compose(position, rotation, scale);
+            cutDiscs.setMatrixAt(visual.targetIndex, matrix);
             const deltaX = visual.x - state.player.x;
             const deltaZ = visual.z - state.player.z;
             fallDirections[visual.targetIndex] =
@@ -1601,9 +1643,11 @@ function addSaplings(
 
       trunks.instanceMatrix.needsUpdate = true;
       stumps.instanceMatrix.needsUpdate = true;
+      cutDiscs.instanceMatrix.needsUpdate = true;
       lowerCrowns.instanceMatrix.needsUpdate = true;
       middleCrowns.instanceMatrix.needsUpdate = true;
       upperCrowns.instanceMatrix.needsUpdate = true;
+      tipCrowns.instanceMatrix.needsUpdate = true;
     },
   };
 }
