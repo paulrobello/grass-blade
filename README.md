@@ -15,8 +15,10 @@ Current Phase 3 work is focused on renderer hardening: measurable density diagno
 The public GitHub Pages deployment is configured to publish the production Vite build from `main`:
 
 ```text
-https://paulrobello.github.io/grass-blade/
+https://grass-blade.pardev.net/
 ```
+
+The GitHub Pages fallback URL is `https://paulrobello.github.io/grass-blade/`.
 
 ## Requirements
 

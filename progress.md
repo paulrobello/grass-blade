@@ -94,6 +94,7 @@ Active milestone: Phase 3 — density, frame, and quality diagnostics before ren
 - [x] Increased authored wildflower drifts from 420 to 880 decorative blossoms, widened their coherent drift radius, and exposed a deterministic meadow density report through `render_game_to_text()` for Phase 3 grass/flower density thresholds.
 - [x] Added a fixed-size frame diagnostics tracker, clamped renderer pixel ratio to 1.5, and exposed recent frame timing, accumulator, pixel-ratio, and canvas-size diagnostics through `render_game_to_text()` for Phase 3 performance work.
 - [x] Added the first quality preset seam: default caps renderer pixel ratio at 1.5, `?quality=low` caps it at 1.0, and `render_game_to_text()` reports the active preset and cap.
+- [x] Added `public/CNAME` for the requested GitHub Pages custom domain `grass-blade.pardev.net`.
 
 ## Phase 1 verification evidence
 
@@ -157,6 +158,7 @@ Active milestone: Phase 3 — density, frame, and quality diagnostics before ren
 - The required web-game Playwright client ran against `?seed=12345` after the frame-diagnostics build and wrote `output/playwright/frame-diagnostics-smoke/shot-0.png` plus `state-0.json` without browser error artifacts; the inspected state includes the new fixed-size frame diagnostics, reported pixel ratio, canvas size, and accumulator, and the screenshot keeps dense flowers, cut trails, HUD, progress bars, and too-tough feedback readable.
 - `make checkall` passes formatting verification, ESLint, strict TypeScript, 79 deterministic Vitest tests across six files, and the Vite production build after the initial quality-preset seam.
 - The required web-game Playwright client ran against `?seed=12345&quality=low` after the quality-preset build and wrote `output/playwright/quality-low-smoke/shot-0.png` plus `state-0.json` without browser error artifacts; the inspected state reports `qualityPreset: "low"`, `maxPixelRatio: 1`, and the screenshot remains visually readable with dense flowers, cut trails, HUD, progress bars, and too-tough feedback intact.
+- Custom-domain setup note: repo-local Pages artifact configuration is `public/CNAME`. GitHub Pages settings have accepted `grass-blade.pardev.net` as the custom domain, but DNS must resolve the hostname to GitHub Pages (`paulrobello.github.io`) before the domain becomes live and GitHub can issue/enforce the HTTPS certificate.
 
 ## Remaining TODOs
 
