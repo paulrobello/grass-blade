@@ -69,6 +69,11 @@ interface PauseElements {
   restartButton: HTMLButtonElement;
 }
 
+interface IntroElements {
+  overlay: HTMLDivElement;
+  startButton: HTMLButtonElement;
+}
+
 export class Game {
   private readonly canvas: HTMLCanvasElement;
   private readonly appRoot: HTMLElement;
@@ -76,6 +81,7 @@ export class Game {
   private readonly meadow: MeadowScene;
   private readonly state: GameState;
   private readonly hud: HudElements;
+  private readonly intro: IntroElements;
   private readonly results: ResultsElements;
   private readonly pause: PauseElements;
   private readonly accessibilityStatus: HTMLElement;
@@ -112,6 +118,7 @@ export class Game {
   };
   private manualTime = false;
   private started = false;
+  private contractStarted = false;
 
   public constructor(canvas: HTMLCanvasElement, seed?: number) {
     this.canvas = canvas;
@@ -122,6 +129,7 @@ export class Game {
     );
     this.hud = getHudElements();
     this.accessibilityStatus = requireElement("accessibility-status");
+    this.intro = createIntroElements(this.appRoot);
     this.results = createResultsElements(this.appRoot);
     this.pause = createPauseElements(this.appRoot);
     this.meadow = createScene(this.state.seed, this.quality);
@@ -182,12 +190,13 @@ export class Game {
     this.canvas.addEventListener("lostpointercapture", this.onPointerEnd);
     this.results.restartButton.addEventListener("click", this.restartContract);
     this.results.nextButton.addEventListener("click", this.nextContract);
+    this.intro.startButton.addEventListener("click", this.beginContract);
     this.pause.resumeButton.addEventListener("click", this.resumeContract);
     this.pause.restartButton.addEventListener("click", this.restartContract);
 
     this.resize();
     this.render();
-    this.canvas.focus({ preventScroll: true });
+    this.intro.startButton.focus({ preventScroll: true });
     this.renderer.setAnimationLoop(this.onAnimationFrame);
     window.__grassBladeReady = true;
   }
@@ -214,8 +223,10 @@ export class Game {
     this.canvas.removeEventListener("lostpointercapture", this.onPointerEnd);
     this.results.restartButton.removeEventListener("click", this.restartContract);
     this.results.nextButton.removeEventListener("click", this.nextContract);
+    this.intro.startButton.removeEventListener("click", this.beginContract);
     this.pause.resumeButton.removeEventListener("click", this.resumeContract);
     this.pause.restartButton.removeEventListener("click", this.restartContract);
+    this.intro.overlay.remove();
     this.results.overlay.remove();
     this.pause.overlay.remove();
     delete window.completeContractForDebug;
@@ -229,6 +240,12 @@ export class Game {
 
   private readonly onAnimationFrame = (timeMs: number): void => {
     if (this.manualTime) {
+      this.render();
+      return;
+    }
+
+    if (!this.contractStarted) {
+      this.lastFrameTimeMs = timeMs;
       this.render();
       return;
     }
@@ -259,11 +276,19 @@ export class Game {
     }
     this.manualTime = true;
     this.lastFrameTimeMs = null;
+    if (!this.contractStarted) {
+      this.render();
+      return;
+    }
     this.step(milliseconds / MILLISECONDS_PER_SECOND);
     this.render();
   };
 
   private step(deltaSeconds: number): void {
+    if (!this.contractStarted) {
+      return;
+    }
+
     this.accumulatorSeconds += deltaSeconds;
 
     while (this.accumulatorSeconds + Number.EPSILON >= FIXED_TIME_STEP_SECONDS) {
@@ -276,6 +301,11 @@ export class Game {
   }
 
   private currentMovementInput(): MovementInput {
+    if (!this.contractStarted || this.state.mode !== "active") {
+      clearMovementInput(this.input);
+      return this.input;
+    }
+
     this.input.left = this.keyboardInput.left || this.pointerInput.left;
     this.input.right = this.keyboardInput.right || this.pointerInput.right;
     this.input.forward = this.keyboardInput.forward || this.pointerInput.forward;
@@ -321,9 +351,14 @@ export class Game {
     this.hud.root.style.setProperty("--rpm-progress", `${Math.round(rpmProgress * 100)}%`);
     this.hud.xpFill.style.width = `${xpProgress * 100}%`;
     this.updateHudFeedback();
+    this.updateIntro();
     this.updatePause();
     this.updateResults();
     this.updateAccessibilityAnnouncements();
+  }
+
+  private updateIntro(): void {
+    this.intro.overlay.hidden = this.contractStarted;
   }
 
   private updatePause(): void {
@@ -451,6 +486,10 @@ export class Game {
   };
 
   private readonly onKeyDown = (event: KeyboardEvent): void => {
+    if (!this.contractStarted) {
+      return;
+    }
+
     if (this.setMovementKey(event.code, true)) {
       event.preventDefault();
       return;
@@ -491,6 +530,10 @@ export class Game {
   };
 
   private readonly onKeyUp = (event: KeyboardEvent): void => {
+    if (!this.contractStarted) {
+      return;
+    }
+
     if (this.setMovementKey(event.code, false)) {
       event.preventDefault();
     }
@@ -500,7 +543,7 @@ export class Game {
     if (event.pointerType === "mouse" && event.button !== 0) {
       return;
     }
-    if (this.activePointerId !== null || this.state.mode !== "active") {
+    if (!this.contractStarted || this.activePointerId !== null || this.state.mode !== "active") {
       return;
     }
 
@@ -618,8 +661,25 @@ export class Game {
     this.canvas.focus({ preventScroll: true });
   };
 
+  private readonly beginContract = (): void => {
+    if (this.contractStarted) {
+      return;
+    }
+
+    this.contractStarted = true;
+    this.manualTime = false;
+    this.accumulatorSeconds = 0;
+    this.lastFrameTimeMs = null;
+    this.lastAccessibilityAnnouncement =
+      "Contract started. Drag to move, or use W A S D and arrow keys.";
+    setText(this.accessibilityStatus, this.lastAccessibilityAnnouncement);
+    this.resetInput();
+    this.render();
+    this.canvas.focus({ preventScroll: true });
+  };
+
   private togglePause(): void {
-    if (this.state.mode === "complete") {
+    if (!this.contractStarted || this.state.mode === "complete") {
       return;
     }
 
@@ -632,6 +692,7 @@ export class Game {
     if (this.state.mode === "complete") {
       return;
     }
+    this.beginContract();
 
     const finalTarget = this.state.targets.find(
       (target) => target.kind === "grass" && target.status !== "cut",
@@ -658,6 +719,7 @@ export class Game {
     if (this.state.mode === "complete") {
       return;
     }
+    this.beginContract();
 
     const target = this.state.targets.find(
       (candidate) => candidate.kind === kind && candidate.status !== "cut",
@@ -729,8 +791,11 @@ export class Game {
     return JSON.stringify({
       coordinateSystem:
         "Ground plane is XZ with origin at meadow center and +Y up; movement is screen-relative under the fixed isometric camera.",
-      mode: this.state.mode,
+      mode: this.contractStarted ? this.state.mode : "ready",
       seed: this.state.seed,
+      flow: {
+        contractStarted: this.contractStarted,
+      },
       elapsedSeconds: round(this.state.elapsedSeconds),
       result: this.state.result,
       accessibility: {
@@ -768,9 +833,13 @@ export class Game {
         level: player.level,
       },
       controls: {
-        movement: "Drag on the canvas, or use WASD / arrow keys",
-        fullscreen: "F toggles; Escape exits fullscreen before pausing",
-        pause: this.state.mode === "complete" ? null : "Escape toggles pause",
+        start: this.contractStarted ? null : "Activate Start Cutting before movement is captured",
+        movement: this.contractStarted ? "Drag on the canvas, or use WASD / arrow keys" : null,
+        fullscreen: this.contractStarted
+          ? "F toggles; Escape exits fullscreen before pausing"
+          : null,
+        pause:
+          this.contractStarted && this.state.mode !== "complete" ? "Escape toggles pause" : null,
         restart:
           this.state.mode === "paused" || this.state.mode === "complete"
             ? "R restarts the current seed"
@@ -906,6 +975,43 @@ function getHudElements(): HudElements {
     levelToast: requireElement("level-toast"),
     levelToastNumber: requireElement("level-toast-number"),
   };
+}
+
+function createIntroElements(root: HTMLElement): IntroElements {
+  const overlay = document.createElement("div");
+  const card = document.createElement("section");
+  const eyebrow = document.createElement("p");
+  const title = document.createElement("h2");
+  const summary = document.createElement("p");
+  const controls = document.createElement("p");
+  const startButton = document.createElement("button");
+
+  overlay.className = "intro-overlay";
+  overlay.setAttribute("role", "dialog");
+  overlay.setAttribute("aria-modal", "true");
+  overlay.setAttribute("aria-labelledby", "intro-title");
+  overlay.setAttribute("aria-describedby", "intro-summary");
+  card.className = "intro-card";
+  eyebrow.className = "intro-card__eyebrow";
+  eyebrow.textContent = "Meadow Delivery";
+  title.id = "intro-title";
+  title.textContent = "Start Cutting";
+  summary.id = "intro-summary";
+  summary.className = "intro-card__summary";
+  summary.textContent =
+    "Clear grass, flowers, fiber, and wood quotas with a spinning blade that levels up as you cut.";
+  controls.className = "intro-card__controls";
+  controls.textContent = "Drag to move after starting. Keyboard: WASD or arrows. Escape pauses.";
+  startButton.id = "start-contract";
+  startButton.type = "button";
+  startButton.className = "intro-card__button intro-card__button--primary";
+  startButton.textContent = "Start Cutting";
+
+  card.append(eyebrow, title, summary, controls, startButton);
+  overlay.append(card);
+  root.append(overlay);
+
+  return { overlay, startButton };
 }
 
 function createResultsElements(root: HTMLElement): ResultsElements {
