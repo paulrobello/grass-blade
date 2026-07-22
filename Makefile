@@ -1,4 +1,4 @@
-.PHONY: dev preview build test lint fmt fmt-check typecheck perf-capture perf-capture-headed checkall pre-commit pre-commit-update
+.PHONY: dev preview build test lint fmt fmt-check typecheck accessibility-check perf-capture perf-capture-headed checkall pre-commit pre-commit-update
 
 dev:
 	bun run dev
@@ -23,6 +23,9 @@ fmt-check:
 
 typecheck:
 	bun run typecheck
+
+accessibility-check:
+	bun run accessibility:check
 
 perf-capture:
 	bun run perf:capture

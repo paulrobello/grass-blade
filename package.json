@@ -13,6 +13,7 @@
     "lint": "eslint . --max-warnings 0",
     "fmt": "prettier --write .",
     "fmt:check": "prettier --check .",
+    "accessibility:check": "node tools/check_accessibility.mjs",
     "perf:capture": "node tools/capture_performance.mjs",
     "perf:capture:headed": "node tools/capture_performance.mjs --headed",
     "typecheck": "tsc --noEmit",
