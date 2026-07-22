@@ -2617,22 +2617,19 @@ function addBlade(playerRoot: THREE.Group, resources: SceneResource[]): BladeVis
   cap.castShadow = true;
   proceduralRotatingGroup.add(cap);
 
-  const orientationCueGeometry = track(
-    resources,
-    new THREE.CylinderGeometry(0.115, 0.115, 0.11, 12),
-  );
+  const orientationCueGeometry = track(resources, new THREE.BoxGeometry(0.62, 0.035, 0.12));
   const orientationCueMaterial = track(
     resources,
     new THREE.MeshStandardMaterial({
-      color: 0xffc94d,
-      roughness: 0.25,
-      metalness: 0.68,
-      emissive: 0x8a4a00,
-      emissiveIntensity: 0.16,
+      color: 0xa8f4ff,
+      roughness: 0.2,
+      metalness: 0.55,
+      emissive: 0x1e8ca6,
+      emissiveIntensity: 0.18,
     }),
   );
   const orientationCue = new THREE.Mesh(orientationCueGeometry, orientationCueMaterial);
-  orientationCue.position.set(1.22, 0.235, 0);
+  orientationCue.position.set(1.08, 0.245, 0.13);
   orientationCue.castShadow = true;
   proceduralRotatingGroup.add(orientationCue);
 

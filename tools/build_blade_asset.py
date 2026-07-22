@@ -126,6 +126,46 @@ def add_saw(parent: bpy.types.Object, blade_mat: bpy.types.Material, ring_mat: b
         obj.parent = parent
 
 
+def make_orientation_stripe_mesh(name: str, mat: bpy.types.Material) -> bpy.types.Object:
+    inner_radius = 0.78
+    outer_radius = 1.48
+    half_width = 0.055
+    bottom_z = 0.052
+    top_z = 0.082
+    profile = [
+        (inner_radius, -half_width),
+        (outer_radius, -half_width),
+        (outer_radius, half_width),
+        (inner_radius, half_width),
+    ]
+
+    verts: list[tuple[float, float, float]] = []
+    for z in (bottom_z, top_z):
+        for radius, side in profile:
+            verts.append((radius, side, z))
+
+    faces = [
+        (3, 2, 1, 0),
+        (4, 5, 6, 7),
+        (0, 1, 5, 4),
+        (1, 2, 6, 5),
+        (2, 3, 7, 6),
+        (3, 0, 4, 7),
+    ]
+    mesh = bpy.data.meshes.new(f"{name}_Mesh")
+    mesh.from_pydata(verts, [], faces)
+    mesh.update()
+    obj = bpy.data.objects.new(name, mesh)
+    bpy.context.collection.objects.link(obj)
+    obj.data.materials.append(mat)
+    return obj
+
+
+def add_orientation_stripe(parent: bpy.types.Object, name: str, mat: bpy.types.Material) -> None:
+    stripe = make_orientation_stripe_mesh(name, mat)
+    stripe.parent = parent
+
+
 def build_asset() -> None:
     remove_prior_objects()
     bpy.context.scene.unit_settings.system = "METRIC"
@@ -135,7 +175,7 @@ def build_asset() -> None:
     cap_mat = material("Hub_Cap", (0.82, 0.97, 1.0, 1), 0.55, 0.22)
     blade_mat = material("Blade_Silver", (0.9, 0.94, 0.96, 1), 0.9, 0.16)
     ring_mat = material("Saw_Cyan", (0.25, 0.78, 1.0, 1), 0.75, 0.2)
-    cue_mat = material("Orientation_Gold", (1.0, 0.68, 0.14, 1), 0.35, 0.28)
+    cue_mat = material("Orientation_Cyan", (0.68, 0.96, 1.0, 1), 0.55, 0.2)
 
     hub = make_empty("GB_Hub_STATIC")
     add_cylinder("GB_Hub_Base", hub, 0.82, 0.42, 1.02, hub_mat, vertices=32)
@@ -145,15 +185,15 @@ def build_asset() -> None:
 
     two_arm = make_empty("GB_TwoArm_ROTATING")
     add_curved_blades(two_arm, 2, blade_mat)
-    add_cylinder("GB_TwoArm_Orientation_Cue", two_arm, 0.1, 0.08, 0.22, cue_mat, vertices=14).location.x = 1.22
+    add_orientation_stripe(two_arm, "GB_TwoArm_Orientation_Stripe", cue_mat)
 
     four_arm = make_empty("GB_FourArm_ROTATING")
     add_curved_blades(four_arm, 4, blade_mat)
-    add_cylinder("GB_FourArm_Orientation_Cue", four_arm, 0.1, 0.08, 0.22, cue_mat, vertices=14).location.x = 1.22
+    add_orientation_stripe(four_arm, "GB_FourArm_Orientation_Stripe", cue_mat)
 
     saw = make_empty("GB_Saw_ROTATING")
     add_saw(saw, blade_mat, ring_mat)
-    add_cylinder("GB_Saw_Orientation_Cue", saw, 0.1, 0.08, 0.22, cue_mat, vertices=14).location.x = 1.22
+    add_orientation_stripe(saw, "GB_Saw_Orientation_Stripe", cue_mat)
 
     bpy.ops.object.select_all(action="DESELECT")
     for obj in bpy.data.objects:

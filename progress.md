@@ -105,6 +105,7 @@ Active milestone: Phase 3 — renderer hardening: chunk culling, distance LOD, G
 - [x] Added the first production blade GLB asset path: `tools/build_blade_asset.py` generates `public/assets/blades/cutter-v1.glb` with stable `GB_*` tier nodes, the runtime loads those nodes with `GLTFLoader`, and the procedural blade remains the no-network/no-asset fallback.
 - [x] Expanded frame diagnostics with CSS/backing aspect reporting so mobile squeeze regressions can be detected from `render_game_to_text()` as `canvasAspectMismatchRatio` instead of relying only on screenshots.
 - [x] Deepened the grass GPU cut-mask path so completed grass no longer allocates or rewrites a terminal per-instance stubble matrix; after the renderer-owned fall animation completes, the persistent world-aligned mask owns the settled stubble state and diagnostics report zero completed-grass CPU matrix updates.
+- [x] Polished the generated blade asset and procedural fallback by replacing the visible gold orientation peg with a low-profile cyan orientation stripe on the rotating cutter tiers.
 
 ## Phase 1 verification evidence
 
@@ -193,10 +194,13 @@ Active milestone: Phase 3 — renderer hardening: chunk culling, distance LOD, G
 - A focused 592 by 981 mobile Playwright route verified the phone play area after the squeeze report and wrote `output/playwright/mobile-aspect-after.png`; the state reports CSS size `592 by 981`, backing size `888 by 1471`, `displayAspectRatio: 0.603`, `canvasBackingAspectRatio: 0.604`, and `canvasAspectMismatchRatio: 1`.
 - `make checkall` passes formatting verification, ESLint, strict TypeScript, 83 deterministic Vitest tests across seven files, and the Vite production build after the GPU-settled grass cut-mask slice.
 - The required web-game Playwright client ran against `?seed=12345` after the GPU-settled grass build and wrote `output/playwright/gpu-settled-grass-smoke/shot-0.png` plus `state-0.json` without browser error artifacts. The inspected screenshot keeps a coherent cut swath, dense standing grass, HUD, progress bars, and too-tough notice readable; the state reports `grassCutMaskAppliedTexels: 289`, `grassCutMaskGpuSettledVisuals: 289`, `grassCpuCompletedGrassMatrixUpdates: 0`, `visuallyCutGrassTufts: 289`, and `canvasAspectMismatchRatio: 1`.
+- `make checkall` passes formatting verification, ESLint, strict TypeScript, 83 deterministic Vitest tests across seven files, and the Vite production build after the blade orientation-stripe polish.
+- The regenerated `public/assets/blades/cutter-v1.glb` validates as GLB v2 with 36 nodes, 32 meshes, five materials, `GB_Orientation_Cyan`, no `GB_Orientation_Gold`, and three stripe nodes: `GB_TwoArm_Orientation_Stripe`, `GB_FourArm_Orientation_Stripe`, and `GB_Saw_Orientation_Stripe`.
+- The required web-game Playwright client ran against `?seed=12345` after the blade stripe build and wrote `output/playwright/blade-stripe-polish-smoke/shot-0.png` plus `state-0.json` without browser error artifacts. The inspected screenshot shows no gold peg/protrusion on the blade, and the state reports `bladeAssetStatus: "loaded"`, `visibleBladeCount: 2`, `orientationCueCount: 1`, and `canvasAspectMismatchRatio: 1`.
 
 ## Remaining TODOs
 
-- [ ] Continue Phase 3 renderer hardening with blade-art polish from the new GLB pipeline and captured integrated-GPU/mobile performance evidence.
+- [ ] Continue Phase 3 renderer hardening with captured integrated-GPU/mobile performance evidence.
 - [ ] Retry GitHub Pages HTTPS enforcement for `grass-blade.pardev.net`; HTTP is live, but the custom-domain certificate was still pending during the last deployment check.
 
 ## Handoff rules

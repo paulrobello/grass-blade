@@ -44,13 +44,16 @@ describe("blade asset contract", () => {
     const glb = (await readGlbJson(assetPath)) as {
       nodes?: Array<{ name?: string }>;
       meshes?: unknown[];
-      materials?: unknown[];
+      materials?: Array<{ name?: string }>;
     };
     const nodeNames = new Set((glb.nodes ?? []).map((node) => node.name));
+    const materialNames = new Set((glb.materials ?? []).map((material) => material.name));
 
     for (const nodeName of Object.values(BLADE_ASSET_CONTRACT.nodes)) {
       expect(nodeNames.has(nodeName)).toBe(true);
     }
+    expect(materialNames.has("GB_Orientation_Cyan")).toBe(true);
+    expect(materialNames.has("GB_Orientation_Gold")).toBe(false);
     expect(glb.meshes?.length ?? 0).toBeGreaterThanOrEqual(30);
     expect(glb.materials?.length ?? 0).toBeGreaterThanOrEqual(5);
   });
