@@ -71,17 +71,17 @@ bun run typecheck
 
 ## Controls
 
-| Input         | Action                                                   |
-| ------------- | -------------------------------------------------------- |
-| Start button  | Begin the contract before movement keys are captured     |
-| Contract card | Choose Meadow Delivery or Flower Sweep before starting   |
-| `W A S D`     | Move relative to the screen                              |
-| Arrow keys    | Equivalent movement controls                             |
-| `F`           | Toggle fullscreen                                        |
-| `M`           | Toggle mute                                              |
-| `Escape`      | Leave fullscreen if active; otherwise pause/resume       |
-| `R`           | Restart the current seed from pause or results           |
-| `N`           | Open the next deterministic seed from the results screen |
+| Input         | Action                                                 |
+| ------------- | ------------------------------------------------------ |
+| Start button  | Begin the contract before movement keys are captured   |
+| Contract card | Choose Meadow Delivery or Flower Sweep before starting |
+| `W A S D`     | Move relative to the screen                            |
+| Arrow keys    | Equivalent movement controls                           |
+| `F`           | Toggle fullscreen                                      |
+| `M`           | Toggle mute                                            |
+| `Escape`      | Leave fullscreen if active; otherwise pause/resume     |
+| `R`           | Restart the current seed from pause or results         |
+| `N`           | Open the next authored contract and deterministic seed |
 
 The blade spins automatically; there is no attack button.
 

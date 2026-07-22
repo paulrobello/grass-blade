@@ -73,7 +73,7 @@ The game must be fully playable with a keyboard. The browser page must not scrol
 4. Completing a cut awards the resource and XP exactly once.
 5. XP automatically raises the blade level during the run; no upgrade menu interrupts play.
 6. Complete every quota to finish the contract.
-7. Show a calm results card with elapsed time, targets cut, highest level, and Restart/Next Contract actions.
+7. Show a calm results card with elapsed time, targets cut, highest level, and Restart/Next Contract actions. Next Contract advances to the next authored contract template and the next deterministic seed.
 
 Blade level, XP, cut targets, and collected resources reset at the start of each contract. Persistent currency, meta-upgrades, and account progression are not part of the MVP.
 

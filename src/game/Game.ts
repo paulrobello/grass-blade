@@ -87,6 +87,7 @@ interface PauseElements {
 
 interface IntroElements {
   overlay: HTMLDivElement;
+  contractEyebrow: HTMLElement;
   startButton: HTMLButtonElement;
   contractButtons: HTMLButtonElement[];
 }
@@ -436,6 +437,7 @@ export class Game {
 
   private updateIntro(): void {
     this.intro.overlay.hidden = this.contractStarted;
+    setText(this.intro.contractEyebrow, this.state.contract.title);
     for (const button of this.intro.contractButtons) {
       const selected = button.dataset.contractId === this.state.contract.id;
       button.classList.toggle("intro-card__contract--selected", selected);
@@ -794,8 +796,9 @@ export class Game {
 
   private readonly nextContract = (): void => {
     const nextSeed = (this.state.seed + 0x9e3779b9) >>> 0;
+    const nextContractId = nextAuthoredContractId(this.state.contract.id);
     window.location.assign(
-      contractNavigationSearch(nextSeed, this.state.contract.id, window.location.search),
+      contractNavigationSearch(nextSeed, nextContractId, window.location.search),
     );
   };
 
@@ -1064,7 +1067,10 @@ export class Game {
           this.state.mode === "paused" || this.state.mode === "complete"
             ? "R restarts the current seed"
             : null,
-        nextContract: this.state.mode === "complete" ? "N opens the next deterministic seed" : null,
+        nextContract:
+          this.state.mode === "complete"
+            ? "N opens the next authored contract with the next deterministic seed"
+            : null,
         input: {
           keyboard: { ...this.keyboardInput },
           pointer: { ...this.pointerInput },
@@ -1110,6 +1116,18 @@ export function contractNavigationSearch(
     params.delete("contract");
   }
   return `?${params.toString()}`;
+}
+
+export function nextAuthoredContractId(currentContractId: string): ContractDefinition["id"] {
+  const currentIndex = CONTRACT_DEFINITIONS.findIndex(
+    (contract) => contract.id === currentContractId,
+  );
+  if (currentIndex < 0) {
+    return DEFAULT_CONTRACT_ID;
+  }
+
+  const nextIndex = (currentIndex + 1) % CONTRACT_DEFINITIONS.length;
+  return CONTRACT_DEFINITIONS[nextIndex]?.id ?? DEFAULT_CONTRACT_ID;
 }
 
 export interface PlayableRootSize {
@@ -1381,7 +1399,7 @@ function createIntroElements(
   overlay.append(card);
   root.append(overlay);
 
-  return { overlay, startButton, contractButtons };
+  return { overlay, contractEyebrow: eyebrow, startButton, contractButtons };
 }
 
 function createResultsElements(root: HTMLElement): ResultsElements {

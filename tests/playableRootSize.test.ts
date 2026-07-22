@@ -10,6 +10,7 @@ import {
   applyPlayableRootSize,
   contractNavigationSearch,
   derivePlayableRootSize,
+  nextAuthoredContractId,
   resolveAccessibilitySettings,
   resolveMotionSettings,
 } from "../src/game/Game";
@@ -130,6 +131,29 @@ describe("contract navigation URLs", () => {
     expect(contractNavigationSearch(707, "meadow-delivery", "?contract=flower-sweep&debug=1")).toBe(
       "?debug=1&seed=707",
     );
+  });
+
+  it("cycles through authored contracts for the results next action", () => {
+    expect(nextAuthoredContractId("meadow-delivery")).toBe("flower-sweep");
+    expect(nextAuthoredContractId("flower-sweep")).toBe("meadow-delivery");
+    expect(nextAuthoredContractId("unknown-contract")).toBe("meadow-delivery");
+  });
+
+  it("opens the next authored contract while preserving diagnostics", () => {
+    expect(
+      contractNavigationSearch(
+        2654448114,
+        nextAuthoredContractId("meadow-delivery"),
+        "?seed=12345&debug=1",
+      ),
+    ).toBe("?seed=2654448114&debug=1&contract=flower-sweep");
+    expect(
+      contractNavigationSearch(
+        1013916587,
+        nextAuthoredContractId("flower-sweep"),
+        "?seed=2654448114&debug=1&contract=flower-sweep",
+      ),
+    ).toBe("?seed=1013916587&debug=1");
   });
 });
 
