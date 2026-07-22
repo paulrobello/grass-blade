@@ -31,11 +31,6 @@ const OBJECTIVE_LABELS: Record<ObjectiveResource, string> = {
   fiber: "Fiber",
   wood: "Wood",
 };
-const MOBILE_CHROME_ASPECT_WIDE_RATIO = 1.08;
-const MOBILE_PHONE_PORTRAIT_ASPECT_FALLBACK = 37 / 80;
-const MOBILE_PHONE_MAX_VIEWPORT_WIDTH = 700;
-const MOBILE_PHONE_MIN_VIEWPORT_HEIGHT = 700;
-
 interface HudElements {
   root: HTMLElement;
   time: HTMLElement;
@@ -1026,33 +1021,11 @@ export function derivePlayableRootSize(options: {
 }): PlayableRootSize {
   const viewportWidth = Math.max(1, options.viewportWidth);
   const viewportHeight = Math.max(1, options.viewportHeight);
-  const viewportAspectRatio = viewportWidth / viewportHeight;
-  const screenAspectRatio = deriveConstrainedPhoneAspectRatio({
-    viewportWidth,
-    viewportHeight,
-    screenWidth: options.screenWidth,
-    screenHeight: options.screenHeight,
-    screenAvailableWidth: options.screenAvailableWidth,
-    screenAvailableHeight: options.screenAvailableHeight,
-  });
-  const shouldConstrain =
-    options.allowConstrain &&
-    viewportAspectRatio < 1 &&
-    screenAspectRatio < 0.75 &&
-    viewportAspectRatio > screenAspectRatio * MOBILE_CHROME_ASPECT_WIDE_RATIO;
-
-  if (!shouldConstrain) {
-    return {
-      width: viewportWidth,
-      height: viewportHeight,
-      constrained: false,
-    };
-  }
 
   return {
-    width: Math.max(1, Math.min(viewportWidth, Math.round(viewportHeight * screenAspectRatio))),
+    width: viewportWidth,
     height: viewportHeight,
-    constrained: true,
+    constrained: false,
   };
 }
 
@@ -1067,7 +1040,7 @@ function syncPlayableRootSize(root: HTMLElement): void {
     screenHeight: window.screen.height,
     screenAvailableWidth: window.screen.availWidth,
     screenAvailableHeight: window.screen.availHeight,
-    allowConstrain: isTouchLikeViewport(),
+    allowConstrain: true,
   });
 
   if (!rootSize.constrained) {
@@ -1106,50 +1079,12 @@ export function resolveAccessibilitySettings(options: {
   return { highContrast: false, contrastSource: "standard" };
 }
 
-function derivePortraitAspectRatio(width: number, height: number): number {
-  if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
-    return 1;
-  }
-
-  return Math.min(width, height) / Math.max(width, height);
-}
-
-function deriveConstrainedPhoneAspectRatio(options: {
-  viewportWidth: number;
-  viewportHeight: number;
-  screenWidth: number;
-  screenHeight: number;
-  screenAvailableWidth?: number;
-  screenAvailableHeight?: number;
-}): number {
-  const screenAspectRatio = derivePortraitAspectRatio(options.screenWidth, options.screenHeight);
-  const availableAspectRatio = derivePortraitAspectRatio(
-    options.screenAvailableWidth ?? options.screenWidth,
-    options.screenAvailableHeight ?? options.screenHeight,
-  );
-  const viewportAspectRatio = options.viewportWidth / options.viewportHeight;
-  const isPhoneSizedBrowserChromeViewport =
-    options.viewportWidth <= MOBILE_PHONE_MAX_VIEWPORT_WIDTH &&
-    options.viewportHeight >= MOBILE_PHONE_MIN_VIEWPORT_HEIGHT &&
-    viewportAspectRatio > MOBILE_PHONE_PORTRAIT_ASPECT_FALLBACK * MOBILE_CHROME_ASPECT_WIDE_RATIO;
-
-  if (!isPhoneSizedBrowserChromeViewport) {
-    return Math.min(screenAspectRatio, availableAspectRatio);
-  }
-
-  return Math.min(screenAspectRatio, availableAspectRatio, MOBILE_PHONE_PORTRAIT_ASPECT_FALLBACK);
-}
-
 function deriveAspectRatio(width: number, height: number): number {
   if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
     return 1;
   }
 
   return width / height;
-}
-
-function isTouchLikeViewport(): boolean {
-  return window.matchMedia("(pointer: coarse)").matches || navigator.maxTouchPoints > 0;
 }
 
 function getHudElements(): HudElements {

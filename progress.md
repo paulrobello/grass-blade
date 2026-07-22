@@ -113,6 +113,7 @@ Active milestone: Phase 4 — cozy presentation and accessibility, with GitHub P
 - [x] Captured and archived real headed hardware performance evidence in `docs/evidence/performance/2026-07-22-headed-summary.json`; all three scenarios reported `hardwareEvidence: true` on Apple Metal via `ANGLE (Apple, ANGLE Metal Renderer: Apple M4 Max, Unspecified Version)`.
 - [x] Added the first Phase 4 assistive-technology live region: a dedicated off-screen polite status announces pause/resume, level-ups, quota completion, and contract completion while avoiding per-grass-cut chatter; `render_game_to_text()` exposes the latest text as `accessibility.liveRegionText`.
 - [x] Added the first Phase 4 onboarding gate: a code-native focused `Start Cutting` dialog is shown before gameplay input is captured, simulation time stays frozen until Start, and `render_game_to_text()` reports `mode: "ready"` plus `flow.contractStarted: false` during that pre-start state.
+- [x] Removed the phone-browser root-width compensation after live Safari evidence showed it was horizontally squeezing the play area; mobile now sizes `#app` and the canvas to the actual visible viewport while the existing camera diagnostics continue to report the rendered aspect.
 
 ## Phase 1 verification evidence
 

@@ -9,7 +9,7 @@ import {
 import { derivePlayableRootSize, resolveAccessibilitySettings } from "../src/game/Game";
 
 describe("playable root sizing", () => {
-  it("constrains a phone browser viewport that is wider than the physical screen aspect", () => {
+  it("uses the visible phone browser viewport instead of narrowing the play area", () => {
     const rootSize = derivePlayableRootSize({
       viewportWidth: 592,
       viewportHeight: 981,
@@ -19,13 +19,13 @@ describe("playable root sizing", () => {
     });
 
     expect(rootSize).toEqual({
-      width: 454,
+      width: 592,
       height: 981,
-      constrained: true,
+      constrained: false,
     });
   });
 
-  it("falls back to a phone aspect when browser chrome makes screen metrics match the visible viewport", () => {
+  it("keeps browser-chrome-sized phone viewports full width", () => {
     const rootSize = derivePlayableRootSize({
       viewportWidth: 592,
       viewportHeight: 981,
@@ -37,9 +37,9 @@ describe("playable root sizing", () => {
     });
 
     expect(rootSize).toEqual({
-      width: 454,
+      width: 592,
       height: 981,
-      constrained: true,
+      constrained: false,
     });
   });
 
