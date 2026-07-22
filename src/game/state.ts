@@ -1,4 +1,5 @@
 import {
+  FLOWER_TARGET_COUNT,
   GRASS_FIELD_SIZE,
   GRASS_VISUAL_COLUMNS,
   createMeadowLayout,
@@ -90,8 +91,8 @@ export const CONTRACT_DEFINITIONS = [
   {
     id: "flower-sweep",
     title: "Flower Sweep",
-    summary: "Harvest every flower drift while keeping lighter Fiber and Wood quotas.",
-    objectives: { grass: 34, flowers: 16, fiber: 4, wood: 4 },
+    summary: "Harvest every flower drift instead of just clipping the patch edges.",
+    objectives: { grass: 34, flowers: FLOWER_TARGET_COUNT, fiber: 4, wood: 4 },
   },
   {
     id: "woodland-cleanup",

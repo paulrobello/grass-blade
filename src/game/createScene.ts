@@ -33,6 +33,8 @@ const CAMERA_OFFSET_Z = 8.5;
 const CAMERA_VIEW_HEIGHT = 15.5;
 const CAMERA_PORTRAIT_MIN_VIEW_WIDTH = CAMERA_VIEW_HEIGHT;
 const BLADE_VISUAL_SPIN_SCALE = 0.0775;
+const BLADE_VISUAL_SCALE_PER_LEVEL = 0.04;
+const BLADE_VISUAL_MAX_SCALE = 1.2;
 const GRASS_RENDER_CHUNKS_PER_AXIS = 8;
 const GRASS_VISUALS_PER_CHUNK_EDGE = GRASS_VISUAL_COLUMNS / GRASS_RENDER_CHUNKS_PER_AXIS;
 const GRASS_CHUNK_CULL_MARGIN = 3.5;
@@ -107,6 +109,7 @@ export interface MeadowPresentationDiagnostics {
   visibleTeeth: number;
   orientationCueCount: number;
   visualBladeAngleRadians: number;
+  bladeVisualScale: number;
   bladeAssetId: string;
   bladeAssetUrl: string;
   bladeAssetStatus: BladeAssetLoadState;
@@ -152,6 +155,7 @@ interface BladeVisual {
     | "visibleTeeth"
     | "orientationCueCount"
     | "visualBladeAngleRadians"
+    | "bladeVisualScale"
     | "bladeAssetId"
     | "bladeAssetUrl"
     | "bladeAssetStatus"
@@ -349,6 +353,7 @@ export function createScene(
     visibleTeeth: blade.diagnostics.visibleTeeth,
     orientationCueCount: blade.diagnostics.orientationCueCount,
     visualBladeAngleRadians: blade.diagnostics.visualBladeAngleRadians,
+    bladeVisualScale: blade.diagnostics.bladeVisualScale,
     bladeAssetId: blade.diagnostics.bladeAssetId,
     bladeAssetUrl: blade.diagnostics.bladeAssetUrl,
     bladeAssetStatus: blade.diagnostics.bladeAssetStatus,
@@ -435,6 +440,7 @@ export function createScene(
     presentation.visibleTeeth = blade.diagnostics.visibleTeeth;
     presentation.orientationCueCount = blade.diagnostics.orientationCueCount;
     presentation.visualBladeAngleRadians = blade.diagnostics.visualBladeAngleRadians;
+    presentation.bladeVisualScale = blade.diagnostics.bladeVisualScale;
     presentation.bladeAssetStatus = blade.diagnostics.bladeAssetStatus;
     presentation.fallingGrassTufts = grass.diagnostics.activeFalls;
     presentation.fallingFlowerInstances = flowers.diagnostics.activeFalls;
@@ -515,6 +521,11 @@ export function createScene(
 
 export function deriveReadableBladeAngle(angleRadians: number): number {
   return (angleRadians * BLADE_VISUAL_SPIN_SCALE) % (Math.PI * 2);
+}
+
+export function deriveBladeVisualScale(level: number): number {
+  const levelSteps = Math.max(0, Math.floor(level) - 1);
+  return Math.min(BLADE_VISUAL_MAX_SCALE, 1 + levelSteps * BLADE_VISUAL_SCALE_PER_LEVEL);
 }
 
 export function accumulateReadableBladeAngle(
@@ -2735,6 +2746,7 @@ function addBlade(playerRoot: THREE.Group, resources: SceneResource[]): BladeVis
     visibleTeeth: 0,
     orientationCueCount: 1,
     visualBladeAngleRadians: 0,
+    bladeVisualScale: 1,
     bladeAssetId: BLADE_ASSET_CONTRACT.id,
     bladeAssetUrl: resolveBladeAssetUrl(import.meta.env.BASE_URL),
     bladeAssetStatus: "procedural-fallback",
@@ -2754,8 +2766,11 @@ function addBlade(playerRoot: THREE.Group, resources: SceneResource[]): BladeVis
     );
     previousRawAngleRadians = angleRadians;
     const visualBladeAngleRadians = accumulatedVisualAngleRadians;
+    const bladeVisualScale = deriveBladeVisualScale(level);
     bladePivot.rotation.y = visualBladeAngleRadians;
+    bladePivot.scale.set(bladeVisualScale, 1, bladeVisualScale);
     diagnostics.visualBladeAngleRadians = visualBladeAngleRadians;
+    diagnostics.bladeVisualScale = bladeVisualScale;
     const tier: BladeTier = level >= 6 ? "saw" : level >= 2 ? "four-arm" : "two-arm";
     if (tier === appliedTier) {
       return;

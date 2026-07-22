@@ -147,10 +147,10 @@ Authored contracts are selected by deterministic contract ID and seed. The defau
 
 - Contract ID: `flower-sweep`
 - Collect 34 Grass.
-- Collect 16 Flowers.
+- Collect every authored Flower target in the arena (`320` at the current 16 drifts by 20 targets per drift).
 - Collect 4 Fiber.
 - Collect 4 Wood.
-- Requires longer passes through flower drifts while keeping Fiber and Wood lighter than Meadow Delivery.
+- Requires deliberate passes through each flower drift; grazing one patch edge must not complete the Flower objective.
 
 ### Woodland Cleanup
 

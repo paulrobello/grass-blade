@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import {
   accumulateReadableBladeAngle,
   createScene,
+  deriveBladeVisualScale,
   deriveReadableBladeAngle,
 } from "../src/game/createScene";
 import { ROCK_CONTACT_FRAGMENTS_PER_EMISSION } from "../src/game/cutEffects";
@@ -115,6 +116,14 @@ describe("active game state", () => {
 
     expect(nextVisualAngle).toBeGreaterThan(previousVisualAngle);
     expect(nextVisualAngle - previousVisualAngle).toBeCloseTo(deriveReadableBladeAngle(0.15));
+  });
+
+  it("derives visual-only cutter scale from blade level", () => {
+    expect(deriveBladeVisualScale(1)).toBe(1);
+    expect(deriveBladeVisualScale(2)).toBeCloseTo(1.04);
+    expect(deriveBladeVisualScale(4)).toBeCloseTo(1.12);
+    expect(deriveBladeVisualScale(6)).toBeCloseTo(1.2);
+    expect(deriveBladeVisualScale(8)).toBeCloseTo(1.2);
   });
 
   it("creates the same active contract state every time", () => {
@@ -278,24 +287,24 @@ describe("active game state", () => {
     expect(state.contract).toEqual({
       id: "flower-sweep",
       title: "Flower Sweep",
-      summary: "Harvest every flower drift while keeping lighter Fiber and Wood quotas.",
+      summary: "Harvest every flower drift instead of just clipping the patch edges.",
       timeLimitSeconds: null,
       completionMode: "quota",
     });
     expect(state.objectives.grass.target).toBe(34);
-    expect(state.objectives.flowers.target).toBe(16);
+    expect(state.objectives.flowers.target).toBe(FLOWER_TARGET_COUNT);
     expect(state.objectives.fiber.target).toBe(4);
     expect(state.objectives.wood.target).toBe(4);
 
     completeContractThroughQuotaCuts(state);
 
     expect(state.mode).toBe("complete");
-    expect(state.inventory).toEqual({ grass: 34, flowers: 16, fiber: 4, wood: 4 });
+    expect(state.inventory).toEqual({ grass: 34, flowers: FLOWER_TARGET_COUNT, fiber: 4, wood: 4 });
     expect(state.result).toMatchObject({
-      cutTargets: 56,
-      highestLevel: 4,
-      finalInventory: { grass: 34, flowers: 16, fiber: 4, wood: 4 },
-      completionRevision: 56,
+      cutTargets: 360,
+      highestLevel: 8,
+      finalInventory: { grass: 34, flowers: FLOWER_TARGET_COUNT, fiber: 4, wood: 4 },
+      completionRevision: 360,
     });
   });
 
@@ -867,6 +876,41 @@ describe("active game state", () => {
     }
   });
 
+  it("reports visual cutter scale without changing authoritative collision radius", () => {
+    const originalWindow = globalThis.window;
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      value: {
+        matchMedia: () => ({ matches: false }),
+      },
+    });
+    const scene = createScene(12345, resolveQualitySettings(null));
+    try {
+      const state = createInitialState(12345);
+      scene.sync(state, 0);
+      expect(scene.presentation.bladeVisualScale).toBe(1);
+      expect(state.player.radius).toBe(PLAYER_RADIUS);
+
+      state.player.level = 4;
+      scene.sync(state, 1);
+      expect(scene.presentation.bladeTier).toBe("four-arm");
+      expect(scene.presentation.bladeVisualScale).toBeCloseTo(1.12);
+      expect(state.player.radius).toBe(PLAYER_RADIUS);
+
+      state.player.level = 8;
+      scene.sync(state, 2);
+      expect(scene.presentation.bladeTier).toBe("saw");
+      expect(scene.presentation.bladeVisualScale).toBe(1.2);
+      expect(state.player.radius).toBe(PLAYER_RADIUS);
+    } finally {
+      scene.dispose();
+      Object.defineProperty(globalThis, "window", {
+        configurable: true,
+        value: originalWindow,
+      });
+    }
+  });
+
   it("keeps grass chunk meshes frustum-cullable with computed bounds", () => {
     const originalWindow = globalThis.window;
     Object.defineProperty(globalThis, "window", {
@@ -1345,6 +1389,38 @@ describe("active game state", () => {
     expect(cutFlowers.length).toBeLessThan(clusterFlowers.length);
     expect(cutFlowers.length).toBeLessThanOrEqual(3);
     expect(state.inventory.flowers).toBe(cutFlowers.length);
+  });
+
+  it("does not complete Flower Sweep by grazing one flower patch edge", () => {
+    const state = createInitialState(202, "flower-sweep");
+    const clusterFlowers = state.targets
+      .filter((target) => target.kind === "flower" && target.id.startsWith("flower-0-"))
+      .sort((first, second) => first.x - second.x);
+    const edgeFlower = clusterFlowers[0];
+    if (edgeFlower === undefined) {
+      throw new Error("Missing edge flower target");
+    }
+
+    state.targets = clusterFlowers;
+    state.objectives.grass.collected = state.objectives.grass.target;
+    state.objectives.fiber.collected = state.objectives.fiber.target;
+    state.objectives.wood.collected = state.objectives.wood.target;
+    state.player.x = edgeFlower.x;
+    state.player.z = edgeFlower.z;
+    state.player.vx = 0;
+    state.player.vz = 0;
+
+    for (let frame = 0; frame < 60; frame += 1) {
+      stepState(state, idleInput, FIXED_TIME_STEP_SECONDS);
+    }
+
+    const cutFlowers = clusterFlowers.filter((target) => target.status === "cut");
+    expect(cutFlowers.length).toBeGreaterThan(0);
+    expect(cutFlowers.length).toBeLessThan(clusterFlowers.length);
+    expect(state.objectives.flowers.collected).toBe(cutFlowers.length);
+    expect(state.objectives.flowers.collected).toBeLessThan(state.objectives.flowers.target);
+    expect(state.mode).toBe("active");
+    expect(state.result).toBeNull();
   });
 
   it("cuts an isolated dense weed within its recommended-level timing range", () => {
