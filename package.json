@@ -13,6 +13,8 @@
     "lint": "eslint . --max-warnings 0",
     "fmt": "prettier --write .",
     "fmt:check": "prettier --check .",
+    "perf:capture": "node tools/capture_performance.mjs",
+    "perf:capture:headed": "node tools/capture_performance.mjs --headed",
     "typecheck": "tsc --noEmit",
     "checkall": "bun run fmt:check && bun run lint && bun run typecheck && bun run test && bun run build"
   },

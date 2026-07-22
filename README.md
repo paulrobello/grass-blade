@@ -49,16 +49,18 @@ bun run typecheck
 
 ## Make targets
 
-| Target            | Purpose                                                        |
-| ----------------- | -------------------------------------------------------------- |
-| `make dev`        | Start the Vite development server on `127.0.0.1:4209`          |
-| `make build`      | Produce the production bundle                                  |
-| `make test`       | Run deterministic unit tests                                   |
-| `make lint`       | Run ESLint                                                     |
-| `make fmt`        | Format source and project files                                |
-| `make typecheck`  | Run TypeScript without emitting files                          |
-| `make checkall`   | Run formatting verification, lint, typecheck, tests, and build |
-| `make pre-commit` | Run all configured pre-commit hooks, including secret scans    |
+| Target                     | Purpose                                                                       |
+| -------------------------- | ----------------------------------------------------------------------------- |
+| `make dev`                 | Start the Vite development server on `127.0.0.1:4209`                         |
+| `make build`               | Produce the production bundle                                                 |
+| `make test`                | Run deterministic unit tests                                                  |
+| `make lint`                | Run ESLint                                                                    |
+| `make fmt`                 | Format source and project files                                               |
+| `make typecheck`           | Run TypeScript without emitting files                                         |
+| `make perf-capture`        | Capture default headless performance screenshots and JSON summaries           |
+| `make perf-capture-headed` | Capture the same scenarios in a visible browser for hardware-adapter evidence |
+| `make checkall`            | Run formatting verification, lint, typecheck, tests, and build                |
+| `make pre-commit`          | Run all configured pre-commit hooks, including secret scans                   |
 
 ## Controls
 
@@ -92,6 +94,28 @@ Example URL:
 ```text
 http://127.0.0.1:4209/?seed=12345
 ```
+
+## Performance capture
+
+Start the dev server first:
+
+```sh
+make dev
+```
+
+Then capture automated screenshots, JSON snapshots, frame timing, quality settings, canvas/backing ratios, and WebGL adapter strings:
+
+```sh
+make perf-capture
+```
+
+Use a visible browser when the goal is real hardware evidence rather than CI/headless smoke evidence:
+
+```sh
+make perf-capture-headed
+```
+
+The capture output defaults to `output/playwright/performance-capture/`. A `summary.json` entry is only hardware evidence when `hardwareEvidence` is `true`; SwiftShader, software, or llvmpipe renderers are useful automation checks but do not satisfy the Phase 3 integrated-GPU/mobile performance exit criterion.
 
 ## Rendering direction
 
