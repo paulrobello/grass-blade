@@ -111,6 +111,7 @@ Active milestone: Phase 4 — cozy presentation and accessibility, with GitHub P
 - [x] Fixed the remaining portrait play-area squeeze by giving the orthographic camera a minimum world-space width on portrait viewports; canvas/backing aspect stays synchronized, while the camera now zooms out vertically instead of narrowing the horizontal playable field. `render_game_to_text()` now reports camera view width, height, and aspect diagnostics.
 - [x] Re-enabled Three.js frustum culling for the grass render chunks by computing instanced bounds per chunk, while keeping the existing manual camera-footprint visibility and near/far LOD decisions.
 - [x] Captured and archived real headed hardware performance evidence in `docs/evidence/performance/2026-07-22-headed-summary.json`; all three scenarios reported `hardwareEvidence: true` on Apple Metal via `ANGLE (Apple, ANGLE Metal Renderer: Apple M4 Max, Unspecified Version)`.
+- [x] Added the first Phase 4 assistive-technology live region: a dedicated off-screen polite status announces pause/resume, level-ups, quota completion, and contract completion while avoiding per-grass-cut chatter; `render_game_to_text()` exposes the latest text as `accessibility.liveRegionText`.
 
 ## Phase 1 verification evidence
 
@@ -212,6 +213,8 @@ Active milestone: Phase 4 — cozy presentation and accessibility, with GitHub P
 - `make perf-capture-headed` captured desktop default, desktop low, and 430 by 860 phone scenarios against a visible Chromium window after the frustum-culling cleanup. All three reports used `ANGLE (Apple, ANGLE Metal Renderer: Apple M4 Max, Unspecified Version)`, set `hardwareEvidence: true`, reported no browser errors, kept `canvas.aspectMismatch: 1`, and measured about `8.33 ms` average frame time with `10.0-10.2 ms` p95. The tracked archive is `docs/evidence/performance/2026-07-22-headed-summary.json`.
 - `bun test tests/state.test.ts` passes after the frustum-culling cleanup; the added regression finds all 128 grass chunk meshes, confirms `frustumCulled` remains `true`, and confirms each chunk has a computed instanced bounding sphere.
 - A GitHub Pages HTTPS-enforcement retry on 2026-07-22 after the hardware capture still failed with `The certificate does not exist yet (HTTP 404)`, so `grass-blade.pardev.net` remains live over HTTP while GitHub's custom-domain certificate provisioning is still pending.
+- A focused Playwright accessibility route at `?seed=12345&debug=1` verified the new live region through both DOM text and `render_game_to_text()`: Escape announces `Contract paused. Cutting and timer are frozen.`, Escape again announces `Contract resumed. Cutting is active.`, `window.cutTargetForDebug("sapling")` announces `Blade level 2. Target speed 760 RPM.`, and `window.completeContractForDebug()` announces all completed quotas plus final contract completion without browser errors. The inspected artifact is `output/playwright/accessibility-live-region/complete.png`.
+- The required web-game Playwright client ran against `?seed=12345` after the live-region build and wrote `output/playwright/accessibility-client-smoke/shot-0.png` plus `state-0.json` without browser error artifacts; the state exposes `accessibility.liveRegionText`, and the inspected screenshot keeps the normal HUD, dense grass, flowers, cutter, and cut feedback intact.
 
 ## Remaining TODOs
 

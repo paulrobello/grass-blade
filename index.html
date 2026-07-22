@@ -13,6 +13,13 @@
   <body>
     <main id="app">
       <canvas id="game-canvas" aria-label="Grass Blade meadow" tabindex="0"></canvas>
+      <div
+        id="accessibility-status"
+        class="sr-only"
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+      ></div>
       <section id="game-hud" class="game-hud" aria-label="Meadow Delivery status">
         <div class="time-dial" aria-label="Elapsed time">
           <span class="time-dial__label">TIME</span>

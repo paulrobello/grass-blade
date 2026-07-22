@@ -75,6 +75,10 @@ bun run typecheck
 
 The blade spins automatically; there is no attack button.
 
+## Accessibility
+
+Grass Blade exposes a dedicated off-screen polite live region for assistive technology. It announces pause/resume, level-ups, quota completion, and final contract completion while avoiding noisy per-grass-cut chatter. The same latest announcement is included in `window.render_game_to_text()` under `accessibility.liveRegionText` for automated verification.
+
 ## Deterministic debug hooks
 
 The browser-facing automation contract lets the game be observed and driven without synthetic mouse gestures:
@@ -87,7 +91,7 @@ The browser-facing automation contract lets the game be observed and driven with
 - `?debug=1` exposes `window.completeContractForDebug()` for deterministic browser verification of the results flow; the hook completes the final quota through the normal fixed-step award path.
 - `?debug=1` also exposes `window.cutTargetForDebug(kind)` for visual verification of a specific authored target kind through the same fixed-step cut and reward path. Non-cuttable targets such as rocks are ignored.
 
-These hooks include the current mode, pause/result state, inventory, objectives, XP, RPM, target counts, live blade-contact target IDs, too-tough notice diagnostics, partially cut target work, recent authoritative cut events, blade presentation tier, blade asset load state, orientation cue, pooled-fragment diagnostics, meadow density diagnostics, grass chunk/distance-LOD diagnostics, GPU cut-mask diagnostics including GPU-settled grass and completed-grass CPU matrix updates, canvas/backing aspect diagnostics, WebGL adapter diagnostics, and recent frame timing/pixel-ratio/quality diagnostics. See [progress.md](progress.md) for the recorded evidence.
+These hooks include the current mode, pause/result state, accessibility live-region text, inventory, objectives, XP, RPM, target counts, live blade-contact target IDs, too-tough notice diagnostics, partially cut target work, recent authoritative cut events, blade presentation tier, blade asset load state, orientation cue, pooled-fragment diagnostics, meadow density diagnostics, grass chunk/distance-LOD diagnostics, GPU cut-mask diagnostics including GPU-settled grass and completed-grass CPU matrix updates, canvas/backing aspect diagnostics, WebGL adapter diagnostics, and recent frame timing/pixel-ratio/quality diagnostics. See [progress.md](progress.md) for the recorded evidence.
 
 Example URL:
 

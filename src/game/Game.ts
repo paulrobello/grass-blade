@@ -21,6 +21,15 @@ import {
 import { createTargetProgressOverlay, type TargetProgressOverlay } from "./targetProgress";
 
 const MILLISECONDS_PER_SECOND = 1000;
+const OBJECTIVE_RESOURCES = ["grass", "flowers", "fiber", "wood"] as const;
+type ObjectiveResource = (typeof OBJECTIVE_RESOURCES)[number];
+
+const OBJECTIVE_LABELS: Record<ObjectiveResource, string> = {
+  grass: "Grass",
+  flowers: "Flowers",
+  fiber: "Fiber",
+  wood: "Wood",
+};
 
 interface HudElements {
   root: HTMLElement;
@@ -67,6 +76,7 @@ export class Game {
   private readonly hud: HudElements;
   private readonly results: ResultsElements;
   private readonly pause: PauseElements;
+  private readonly accessibilityStatus: HTMLElement;
   private readonly collectionMotes: CollectionMotes;
   private readonly targetProgress: TargetProgressOverlay;
   private readonly frameDiagnostics: FrameDiagnosticsTracker = createFrameDiagnosticsTracker();
@@ -89,6 +99,15 @@ export class Game {
   private accumulatorSeconds = 0;
   private lastFrameTimeMs: number | null = null;
   private processedHudCutEvents = 0;
+  private lastAnnouncedMode: GameState["mode"] = "active";
+  private lastAnnouncedLevel = 1;
+  private lastAccessibilityAnnouncement = "";
+  private readonly announcedObjectiveCompletions: Record<ObjectiveResource, boolean> = {
+    grass: false,
+    flowers: false,
+    fiber: false,
+    wood: false,
+  };
   private manualTime = false;
   private started = false;
 
@@ -99,6 +118,7 @@ export class Game {
       new URLSearchParams(window.location.search).get("quality"),
     );
     this.hud = getHudElements();
+    this.accessibilityStatus = requireElement("accessibility-status");
     this.results = createResultsElements(requireAppRoot(canvas));
     this.pause = createPauseElements(requireAppRoot(canvas));
     this.meadow = createScene(this.state.seed, this.quality);
@@ -300,6 +320,7 @@ export class Game {
     this.updateHudFeedback();
     this.updatePause();
     this.updateResults();
+    this.updateAccessibilityAnnouncements();
   }
 
   private updatePause(): void {
@@ -369,6 +390,48 @@ export class Game {
     if (consolidatedLevel > 0) {
       setText(this.hud.levelToastNumber, String(consolidatedLevel));
       restartCssAnimation(this.hud.levelToast, "level-toast--active");
+    }
+  }
+
+  private updateAccessibilityAnnouncements(): void {
+    const { objectives, player, result } = this.state;
+    const announcements: string[] = [];
+
+    for (const resource of OBJECTIVE_RESOURCES) {
+      const objective = objectives[resource];
+      if (
+        !this.announcedObjectiveCompletions[resource] &&
+        objective.collected >= objective.target
+      ) {
+        this.announcedObjectiveCompletions[resource] = true;
+        announcements.push(
+          `${OBJECTIVE_LABELS[resource]} quota complete: ${objective.target} collected.`,
+        );
+      }
+    }
+
+    if (player.level > this.lastAnnouncedLevel) {
+      this.lastAnnouncedLevel = player.level;
+      announcements.push(`Blade level ${player.level}. Target speed ${player.targetRpm} RPM.`);
+    }
+
+    if (this.state.mode !== this.lastAnnouncedMode) {
+      this.lastAnnouncedMode = this.state.mode;
+      if (this.state.mode === "paused") {
+        announcements.push("Contract paused. Cutting and timer are frozen.");
+      } else if (this.state.mode === "active") {
+        announcements.push("Contract resumed. Cutting is active.");
+      } else if (this.state.mode === "complete" && result !== null) {
+        announcements.push(
+          `Contract complete in ${formatElapsedTime(result.completedAtSeconds)}. ` +
+            `${result.cutTargets} targets cut. Highest blade level ${result.highestLevel}.`,
+        );
+      }
+    }
+
+    if (announcements.length > 0) {
+      this.lastAccessibilityAnnouncement = announcements.join(" ");
+      setText(this.accessibilityStatus, this.lastAccessibilityAnnouncement);
     }
   }
 
@@ -666,6 +729,9 @@ export class Game {
       seed: this.state.seed,
       elapsedSeconds: round(this.state.elapsedSeconds),
       result: this.state.result,
+      accessibility: {
+        liveRegionText: this.lastAccessibilityAnnouncement,
+      },
       meadow: this.meadow.density,
       presentation: {
         ...this.meadow.presentation,
