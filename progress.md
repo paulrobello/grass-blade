@@ -2,8 +2,8 @@ Original prompt: "i want create a threejs based game where you are a spinning bl
 
 # Grass Blade Progress
 
-Last updated: 2026-07-21
-Active milestone: Phase 3 — density, frame, and quality diagnostics before renderer chunking
+Last updated: 2026-07-22
+Active milestone: Phase 3 — renderer hardening: chunk culling, distance LOD, first GPU cut-mask path, and production blade asset path
 
 ## Completed foundation intent
 
@@ -99,6 +99,9 @@ Active milestone: Phase 3 — density, frame, and quality diagnostics before ren
 - [x] Added mobile-friendly drag movement on the game canvas and compressed the phone objective HUD into four icon/count chips with the XP bar preserved.
 - [x] Split decorative grass into 64 deterministic render chunks, added conservative camera-footprint visibility culling, and exposed visible/culled chunk diagnostics through `render_game_to_text()`.
 - [x] Expanded `?quality=low` renderer-cost scaling to disable antialiasing and shadow rendering while reporting those active settings through frame diagnostics.
+- [x] Added near/far decorative-grass distance LOD: visible chunks close to the blade keep the full default fourteen-blade tuft geometry, far visible chunks switch to the lower eight-blade tuft geometry, and `render_game_to_text()` reports near/far chunk counts plus the current visible grass blade budget.
+- [x] Fixed mobile browser play-area aspect sizing by measuring the actual canvas rectangle, listening to `visualViewport` resize/scroll changes, and using dynamic viewport height where supported; the rendered camera aspect now matches the visible canvas on phone-sized Safari/Chromium viewports.
+- [x] Added the first world-aligned GPU cut-mask path for grass: completed CPU visual grass cuts project into a persistent 104 by 104 `DataTexture`, the instanced grass shader samples that mask by world position, and diagnostics report mask resolution, applied texels, coverage ratio, and world size.
 
 ## Phase 1 verification evidence
 
@@ -176,10 +179,16 @@ Active milestone: Phase 3 — density, frame, and quality diagnostics before ren
 - A second browser route drove the player to the meadow edge and wrote `output/playwright/grass-chunk-culling-edge-smoke/shot-0.png` plus `state-0.json` without browser error artifacts. The inspected screenshot shows normal world-edge falloff with no visible gap around the blade; the state reports `grassTotalChunks: 64`, `grassVisibleChunks: 48`, `grassCulledChunks: 16`, and `grassVisibleInstances: 8112`.
 - `make checkall` passes formatting verification, ESLint, strict TypeScript, 80 deterministic Vitest tests across six files, and the Vite production build after the low-quality render-cost slice.
 - The required web-game Playwright client ran against `?seed=12345&quality=low` after the render-cost quality build and wrote `output/playwright/quality-render-cost-low-smoke/shot-0.png` plus `state-0.json` without browser error artifacts. The inspected screenshot remains readable with the lower-cost grass field, HUD, cut trail, progress bars, and too-tough notice. The state reports `qualityPreset: "low"`, `antialias: false`, `maxPixelRatio: 1`, `grassBladesPerVisual: 8`, `shadowsEnabled: false`, `shadowMapSize: 0`, and `grassBlades: 86528`.
+- `make checkall` passes formatting verification, ESLint, strict TypeScript, 80 deterministic Vitest tests across six files, and the Vite production build after the grass distance-LOD slice.
+- The required web-game Playwright client ran against `?seed=12345` after distance LOD and wrote `output/playwright/grass-distance-lod-smoke/shot-0.png` without browser error artifacts. The state reports `grassTotalChunks: 64`, `grassNearChunks: 24`, `grassFarChunks: 40`, `grassVisibleBladeBudget: 110864`, `grassNearBladesPerVisual: 14`, and `grassFarBladesPerVisual: 8` near the meadow center.
+- A focused 430 by 860 mobile Playwright route verified the canvas/display aspect fix after the live mobile squeeze report: the canvas rect was `430 by 860`, `displayAspectRatio` was `0.5`, CSS diagnostic size matched the visible rect, and the inspected local artifact `output/playwright/mobile-aspect-smoke/mobile-aspect.png` showed the blade and field proportions no longer horizontally squeezed.
+- `make checkall` passes formatting verification, ESLint, strict TypeScript, 81 deterministic Vitest tests across six files, and the Vite production build after the first GPU cut-mask slice.
+- The required web-game Playwright client ran against `?seed=12345` after the cut-mask shader build and wrote `output/playwright/gpu-cut-mask-smoke/shot-0.png` plus `state-0.json` without browser error artifacts. The inspected screenshot keeps continuous grass, the cut swath, HUD, progress bars, and too-tough notice readable; the state reports `grassCutMaskResolution: 104`, `grassCutMaskAppliedTexels: 289`, `grassCutMaskCoverageRatio: 0.02671967455621302`, `grassCutMaskWorldSize: 41`, and `consumedGrassVisualCuts: 289`.
 
 ## Remaining TODOs
 
-- [ ] Continue Phase 3 renderer hardening with the production blade GLB path, the world-aligned GPU cut-mask path, or deeper distance LOD.
+- [ ] Continue Phase 3 renderer hardening with the production blade GLB path, a deeper GPU cut-mask path that replaces more per-instance completed-grass matrix updates, and captured integrated-GPU/mobile performance evidence.
+- [ ] Retry GitHub Pages HTTPS enforcement for `grass-blade.pardev.net`; HTTP is live, but the custom-domain certificate was still pending during the last deployment check.
 
 ## Handoff rules
 

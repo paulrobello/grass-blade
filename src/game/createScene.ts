@@ -35,6 +35,10 @@ const GRASS_VISUALS_PER_CHUNK_EDGE = GRASS_VISUAL_COLUMNS / GRASS_RENDER_CHUNKS_
 const GRASS_CHUNK_CULL_MARGIN = 3.5;
 const GRASS_FAR_LOD_RATIO = 0.58;
 const GRASS_MIN_FAR_BLADES_PER_VISUAL = 5;
+const GRASS_CUT_MASK_RESOLUTION = GRASS_VISUAL_COLUMNS;
+const GRASS_CUT_MASK_CUT_VALUE = 255;
+
+type SceneResource = THREE.BufferGeometry | THREE.Material | THREE.Texture;
 
 interface VegetationSync {
   syncTargets: (state: GameState, simulationTimeSeconds: number) => void;
@@ -58,8 +62,23 @@ interface GrassVegetationSync extends VegetationSync {
     visibleBladeBudget: number;
     nearBladesPerVisual: number;
     farBladesPerVisual: number;
+    cutMaskResolution: number;
+    cutMaskAppliedTexels: number;
+    cutMaskCoverageRatio: number;
+    cutMaskWorldSize: number;
   };
   syncVisibility: (camera: THREE.OrthographicCamera, focusX: number, focusZ: number) => void;
+}
+
+interface GrassCutMask {
+  texture: THREE.DataTexture;
+  diagnostics: {
+    resolution: number;
+    appliedTexels: number;
+    coverageRatio: number;
+    worldSize: number;
+  };
+  markCutVisual: (visualIndex: number) => void;
 }
 
 interface GrassChunk {
@@ -97,6 +116,10 @@ export interface MeadowPresentationDiagnostics {
   grassVisibleBladeBudget: number;
   grassNearBladesPerVisual: number;
   grassFarBladesPerVisual: number;
+  grassCutMaskResolution: number;
+  grassCutMaskAppliedTexels: number;
+  grassCutMaskCoverageRatio: number;
+  grassCutMaskWorldSize: number;
   activeFragments: number;
   consumedCutRevision: number;
   consumedGrassVisualCuts: number;
@@ -140,7 +163,7 @@ export function createScene(seed: number, quality: QualitySettings): MeadowScene
   scene.fog = new THREE.Fog(0xb5df8b, 28, 58);
 
   const camera = new THREE.OrthographicCamera(-10, 10, 10, -10, 0.1, 100);
-  const resources: Array<THREE.BufferGeometry | THREE.Material> = [];
+  const resources: SceneResource[] = [];
   const layout = createMeadowLayout(seed);
   const densityReport = createMeadowDensityReport(layout, quality.grassBladesPerVisual);
   const random = createSeededRandom(seed);
@@ -295,6 +318,10 @@ export function createScene(seed: number, quality: QualitySettings): MeadowScene
     grassVisibleBladeBudget: grass.diagnostics.visibleBladeBudget,
     grassNearBladesPerVisual: grass.diagnostics.nearBladesPerVisual,
     grassFarBladesPerVisual: grass.diagnostics.farBladesPerVisual,
+    grassCutMaskResolution: grass.diagnostics.cutMaskResolution,
+    grassCutMaskAppliedTexels: grass.diagnostics.cutMaskAppliedTexels,
+    grassCutMaskCoverageRatio: grass.diagnostics.cutMaskCoverageRatio,
+    grassCutMaskWorldSize: grass.diagnostics.cutMaskWorldSize,
     activeFragments: 0,
     consumedCutRevision: 0,
     consumedGrassVisualCuts: 0,
@@ -364,6 +391,10 @@ export function createScene(seed: number, quality: QualitySettings): MeadowScene
     presentation.grassVisibleBladeBudget = grass.diagnostics.visibleBladeBudget;
     presentation.grassNearBladesPerVisual = grass.diagnostics.nearBladesPerVisual;
     presentation.grassFarBladesPerVisual = grass.diagnostics.farBladesPerVisual;
+    presentation.grassCutMaskResolution = grass.diagnostics.cutMaskResolution;
+    presentation.grassCutMaskAppliedTexels = grass.diagnostics.cutMaskAppliedTexels;
+    presentation.grassCutMaskCoverageRatio = grass.diagnostics.cutMaskCoverageRatio;
+    presentation.grassCutMaskWorldSize = grass.diagnostics.cutMaskWorldSize;
     presentation.activeFragments = cutEffects.diagnostics.activeFragments;
     presentation.consumedCutRevision = cutEffects.diagnostics.consumedCutRevision;
     presentation.consumedGrassVisualCuts = cutEffects.diagnostics.consumedGrassVisualCuts;
@@ -422,7 +453,7 @@ export function accumulateReadableBladeAngle(
 
 function addGroundPatches(
   scene: THREE.Scene,
-  resources: Array<THREE.BufferGeometry | THREE.Material>,
+  resources: SceneResource[],
   random: () => number,
   matrix: THREE.Matrix4,
   position: THREE.Vector3,
@@ -453,7 +484,7 @@ function addGroundPatches(
 
 function addGrass(
   scene: THREE.Scene,
-  resources: Array<THREE.BufferGeometry | THREE.Material>,
+  resources: SceneResource[],
   layout: MeadowLayout,
   matrix: THREE.Matrix4,
   position: THREE.Vector3,
@@ -466,18 +497,10 @@ function addGrass(
 ): GrassVegetationSync {
   const count = layout.grassVisuals.length;
   const farGrassBladesPerVisual = deriveFarGrassBladesPerVisual(grassBladesPerVisual);
+  const cutMask = createGrassCutMask(resources);
   const nearGeometry = track(resources, createGrassClumpGeometry(grassBladesPerVisual));
   const farGeometry = track(resources, createGrassClumpGeometry(farGrassBladesPerVisual));
-  const material = track(
-    resources,
-    new THREE.MeshStandardMaterial({
-      color: 0xffffff,
-      roughness: 0.82,
-      metalness: 0,
-      flatShading: true,
-      side: THREE.DoubleSide,
-    }),
-  );
+  const material = track(resources, createGrassMaterial(cutMask.texture));
   const chunkInstanceCount = GRASS_VISUALS_PER_CHUNK_EDGE * GRASS_VISUALS_PER_CHUNK_EDGE;
   const chunks = createGrassChunks(scene, nearGeometry, farGeometry, material, chunkInstanceCount);
   const visualChunkIndices = new Uint8Array(count);
@@ -509,6 +532,10 @@ function addGrass(
     visibleBladeBudget: count * grassBladesPerVisual,
     nearBladesPerVisual: grassBladesPerVisual,
     farBladesPerVisual: farGrassBladesPerVisual,
+    cutMaskResolution: cutMask.diagnostics.resolution,
+    cutMaskAppliedTexels: cutMask.diagnostics.appliedTexels,
+    cutMaskCoverageRatio: cutMask.diagnostics.coverageRatio,
+    cutMaskWorldSize: cutMask.diagnostics.worldSize,
   };
   const groundBounds = {
     minX: -Infinity,
@@ -660,6 +687,7 @@ function addGrass(
           continue;
         }
         if (fallSample.stage === "complete") {
+          cutMask.markCutVisual(visualIndex);
           readMatrix(matrix, cutMatrices, visualIndex);
           chunk.nearMesh.setMatrixAt(localIndex, matrix);
           chunk.farMesh.setMatrixAt(localIndex, matrix);
@@ -691,6 +719,8 @@ function addGrass(
       }
       fallingVisualIndices.length = activeWriteIndex;
       diagnostics.activeFalls = activeWriteIndex;
+      diagnostics.cutMaskAppliedTexels = cutMask.diagnostics.appliedTexels;
+      diagnostics.cutMaskCoverageRatio = cutMask.diagnostics.coverageRatio;
 
       for (const chunkIndex of dirtyChunkIndices) {
         const chunk = chunks[chunkIndex];
@@ -714,6 +744,100 @@ function markDirtyChunk(
   }
   dirtyChunkFlags[chunkIndex] = 1;
   dirtyChunkIndices.push(chunkIndex);
+}
+
+function createGrassCutMask(resources: SceneResource[]): GrassCutMask {
+  const data = new Uint8Array(GRASS_CUT_MASK_RESOLUTION * GRASS_CUT_MASK_RESOLUTION);
+  const texture = track(
+    resources,
+    new THREE.DataTexture(
+      data,
+      GRASS_CUT_MASK_RESOLUTION,
+      GRASS_CUT_MASK_RESOLUTION,
+      THREE.RedFormat,
+      THREE.UnsignedByteType,
+    ),
+  );
+  texture.colorSpace = THREE.NoColorSpace;
+  texture.generateMipmaps = false;
+  texture.magFilter = THREE.NearestFilter;
+  texture.minFilter = THREE.NearestFilter;
+  texture.wrapS = THREE.ClampToEdgeWrapping;
+  texture.wrapT = THREE.ClampToEdgeWrapping;
+  texture.needsUpdate = true;
+
+  const diagnostics = {
+    resolution: GRASS_CUT_MASK_RESOLUTION,
+    appliedTexels: 0,
+    coverageRatio: 0,
+    worldSize: GRASS_FIELD_SIZE,
+  };
+
+  return {
+    texture,
+    diagnostics,
+    markCutVisual(visualIndex: number): void {
+      if (visualIndex < 0 || visualIndex >= data.length) {
+        return;
+      }
+      if (data[visualIndex] === GRASS_CUT_MASK_CUT_VALUE) {
+        return;
+      }
+
+      data[visualIndex] = GRASS_CUT_MASK_CUT_VALUE;
+      diagnostics.appliedTexels += 1;
+      diagnostics.coverageRatio = diagnostics.appliedTexels / data.length;
+      texture.needsUpdate = true;
+    },
+  };
+}
+
+function createGrassMaterial(cutMaskTexture: THREE.Texture): THREE.MeshStandardMaterial {
+  const material = new THREE.MeshStandardMaterial({
+    color: 0xffffff,
+    roughness: 0.82,
+    metalness: 0,
+    flatShading: true,
+    side: THREE.DoubleSide,
+  });
+  material.onBeforeCompile = (shader) => {
+    shader.uniforms.uGrassCutMask = { value: cutMaskTexture };
+    shader.uniforms.uGrassCutMaskWorldSize = { value: GRASS_FIELD_SIZE };
+    shader.vertexShader = shader.vertexShader
+      .replace(
+        "#include <common>",
+        [
+          "#include <common>",
+          "uniform sampler2D uGrassCutMask;",
+          "uniform float uGrassCutMaskWorldSize;",
+          "varying float vGrassCutMaskValue;",
+        ].join("\n"),
+      )
+      .replace(
+        "#include <begin_vertex>",
+        [
+          "#include <begin_vertex>",
+          "vec4 grassCutMaskOrigin = modelMatrix * instanceMatrix * vec4(0.0, 0.0, 0.0, 1.0);",
+          "vec2 grassCutMaskUv = grassCutMaskOrigin.xz / uGrassCutMaskWorldSize + vec2(0.5);",
+          "vGrassCutMaskValue = texture2D(uGrassCutMask, grassCutMaskUv).r;",
+          "transformed.xz *= mix(1.0, 0.82, vGrassCutMaskValue);",
+          "transformed.y *= mix(1.0, 0.55, vGrassCutMaskValue);",
+        ].join("\n"),
+      );
+    shader.fragmentShader = shader.fragmentShader
+      .replace(
+        "#include <common>",
+        ["#include <common>", "varying float vGrassCutMaskValue;"].join("\n"),
+      )
+      .replace(
+        "#include <color_fragment>",
+        [
+          "#include <color_fragment>",
+          "diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.22, 0.48, 0.22), vGrassCutMaskValue * 0.42);",
+        ].join("\n"),
+      );
+  };
+  return material;
 }
 
 function createGrassChunks(
@@ -892,7 +1016,7 @@ function appendTriangle(
 
 function addFlowers(
   scene: THREE.Scene,
-  resources: Array<THREE.BufferGeometry | THREE.Material>,
+  resources: SceneResource[],
   layout: MeadowLayout,
   matrix: THREE.Matrix4,
   position: THREE.Vector3,
@@ -1123,7 +1247,7 @@ function createFlowerHeadGeometry(): THREE.CircleGeometry {
 
 function addDenseWeeds(
   scene: THREE.Scene,
-  resources: Array<THREE.BufferGeometry | THREE.Material>,
+  resources: SceneResource[],
   layout: MeadowLayout,
   matrix: THREE.Matrix4,
   position: THREE.Vector3,
@@ -1406,7 +1530,7 @@ function appendDenseWeedLeaf(
 
 function addShrubs(
   scene: THREE.Scene,
-  resources: Array<THREE.BufferGeometry | THREE.Material>,
+  resources: SceneResource[],
   layout: MeadowLayout,
   matrix: THREE.Matrix4,
   position: THREE.Vector3,
@@ -1592,7 +1716,7 @@ function addShrubs(
 
 function addSaplings(
   scene: THREE.Scene,
-  resources: Array<THREE.BufferGeometry | THREE.Material>,
+  resources: SceneResource[],
   layout: MeadowLayout,
   matrix: THREE.Matrix4,
   position: THREE.Vector3,
@@ -1957,7 +2081,7 @@ function addSaplings(
 
 function addTrees(
   scene: THREE.Scene,
-  resources: Array<THREE.BufferGeometry | THREE.Material>,
+  resources: SceneResource[],
   layout: MeadowLayout,
   matrix: THREE.Matrix4,
   position: THREE.Vector3,
@@ -2253,7 +2377,7 @@ function addTrees(
 
 function addRocks(
   scene: THREE.Scene,
-  resources: Array<THREE.BufferGeometry | THREE.Material>,
+  resources: SceneResource[],
   layout: MeadowLayout,
   matrix: THREE.Matrix4,
   position: THREE.Vector3,
@@ -2297,7 +2421,7 @@ function addRocks(
 
 function addBoundaryStones(
   scene: THREE.Scene,
-  resources: Array<THREE.BufferGeometry | THREE.Material>,
+  resources: SceneResource[],
   matrix: THREE.Matrix4,
   position: THREE.Vector3,
   rotation: THREE.Quaternion,
@@ -2339,10 +2463,7 @@ function addBoundaryStones(
   scene.add(stones);
 }
 
-function addBlade(
-  playerRoot: THREE.Group,
-  resources: Array<THREE.BufferGeometry | THREE.Material>,
-): BladeVisual {
+function addBlade(playerRoot: THREE.Group, resources: SceneResource[]): BladeVisual {
   const baseGeometry = track(resources, new THREE.CylinderGeometry(0.7, 0.82, 0.48, 24));
   const baseMaterial = track(
     resources,
@@ -2594,10 +2715,7 @@ function readMatrix(matrix: THREE.Matrix4, buffer: Float32Array, index: number):
   }
 }
 
-function track<T extends THREE.BufferGeometry | THREE.Material>(
-  resources: Array<THREE.BufferGeometry | THREE.Material>,
-  resource: T,
-): T {
+function track<T extends SceneResource>(resources: SceneResource[], resource: T): T {
   resources.push(resource);
   return resource;
 }

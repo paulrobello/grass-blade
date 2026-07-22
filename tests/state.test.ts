@@ -475,6 +475,45 @@ describe("active game state", () => {
     }
   });
 
+  it("projects completed grass visuals into the world-aligned render cut mask", () => {
+    const originalWindow = globalThis.window;
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      value: {
+        matchMedia: () => ({ matches: false }),
+      },
+    });
+    const scene = createScene(707, resolveQualitySettings(null));
+    try {
+      const state = createInitialState(707);
+      stepState(state, idleInput, FIXED_TIME_STEP_SECONDS);
+      expect(state.cutGrassVisualIndices.length).toBeGreaterThan(0);
+
+      scene.resize(16 / 9);
+      scene.sync(state, 0);
+      expect(scene.presentation.grassCutMaskResolution).toBe(GRASS_VISUAL_COLUMNS);
+      expect(scene.presentation.grassCutMaskWorldSize).toBe(GRASS_FIELD_SIZE);
+      expect(scene.presentation.grassCutMaskAppliedTexels).toBe(0);
+      expect(scene.presentation.grassCutMaskCoverageRatio).toBe(0);
+
+      scene.sync(state, 5);
+      expect(scene.presentation.grassCutMaskAppliedTexels).toBe(state.cutGrassVisualIndices.length);
+      expect(scene.presentation.grassCutMaskCoverageRatio).toBeCloseTo(
+        state.cutGrassVisualIndices.length / (GRASS_VISUAL_COLUMNS * GRASS_VISUAL_COLUMNS),
+        6,
+      );
+
+      scene.sync(state, 6);
+      expect(scene.presentation.grassCutMaskAppliedTexels).toBe(state.cutGrassVisualIndices.length);
+    } finally {
+      scene.dispose();
+      Object.defineProperty(globalThis, "window", {
+        configurable: true,
+        value: originalWindow,
+      });
+    }
+  });
+
   it("completes quota contracts deterministically across ten authored seeds", () => {
     for (const seed of COMPLETION_VALIDATION_SEEDS) {
       const first = createInitialState(seed);
