@@ -1,5 +1,7 @@
 import * as THREE from "three";
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 
+import { BLADE_ASSET_CONTRACT, resolveBladeAssetUrl, type BladeAssetLoadState } from "./bladeAsset";
 import { createCutEffects } from "./cutEffects";
 import type { QualitySettings } from "./quality";
 import type { GameState } from "./state";
@@ -101,6 +103,11 @@ export interface MeadowPresentationDiagnostics {
   visibleTeeth: number;
   orientationCueCount: number;
   visualBladeAngleRadians: number;
+  bladeAssetId: string;
+  bladeAssetUrl: string;
+  bladeAssetStatus: BladeAssetLoadState;
+  bladeAssetSweptRadius: number;
+  bladeAssetSpinAxis: string;
   fallingGrassTufts: number;
   fallingFlowerInstances: number;
   fallingWeedInstances: number;
@@ -133,8 +140,19 @@ interface BladeVisual {
     | "visibleTeeth"
     | "orientationCueCount"
     | "visualBladeAngleRadians"
+    | "bladeAssetId"
+    | "bladeAssetUrl"
+    | "bladeAssetStatus"
+    | "bladeAssetSweptRadius"
+    | "bladeAssetSpinAxis"
   >;
   sync: (level: number, angleRadians: number) => void;
+}
+
+interface LoadedBladeAsset {
+  twoArm: THREE.Object3D;
+  fourArm: THREE.Object3D;
+  saw: THREE.Object3D;
 }
 
 export interface MeadowScene {
@@ -303,6 +321,11 @@ export function createScene(seed: number, quality: QualitySettings): MeadowScene
     visibleTeeth: blade.diagnostics.visibleTeeth,
     orientationCueCount: blade.diagnostics.orientationCueCount,
     visualBladeAngleRadians: blade.diagnostics.visualBladeAngleRadians,
+    bladeAssetId: blade.diagnostics.bladeAssetId,
+    bladeAssetUrl: blade.diagnostics.bladeAssetUrl,
+    bladeAssetStatus: blade.diagnostics.bladeAssetStatus,
+    bladeAssetSweptRadius: blade.diagnostics.bladeAssetSweptRadius,
+    bladeAssetSpinAxis: blade.diagnostics.bladeAssetSpinAxis,
     fallingGrassTufts: 0,
     fallingFlowerInstances: 0,
     fallingWeedInstances: 0,
@@ -376,6 +399,7 @@ export function createScene(seed: number, quality: QualitySettings): MeadowScene
     presentation.visibleTeeth = blade.diagnostics.visibleTeeth;
     presentation.orientationCueCount = blade.diagnostics.orientationCueCount;
     presentation.visualBladeAngleRadians = blade.diagnostics.visualBladeAngleRadians;
+    presentation.bladeAssetStatus = blade.diagnostics.bladeAssetStatus;
     presentation.fallingGrassTufts = grass.diagnostics.activeFalls;
     presentation.fallingFlowerInstances = flowers.diagnostics.activeFalls;
     presentation.fallingWeedInstances = weeds.diagnostics.activeFalls;
@@ -2464,6 +2488,10 @@ function addBoundaryStones(
 }
 
 function addBlade(playerRoot: THREE.Group, resources: SceneResource[]): BladeVisual {
+  const proceduralStaticGroup = new THREE.Group();
+  proceduralStaticGroup.name = "ProceduralBladeStaticFallback";
+  playerRoot.add(proceduralStaticGroup);
+
   const baseGeometry = track(resources, new THREE.CylinderGeometry(0.7, 0.82, 0.48, 24));
   const baseMaterial = track(
     resources,
@@ -2478,11 +2506,15 @@ function addBlade(playerRoot: THREE.Group, resources: SceneResource[]): BladeVis
   const base = new THREE.Mesh(baseGeometry, baseMaterial);
   base.position.y = 1.02;
   base.castShadow = true;
-  playerRoot.add(base);
+  proceduralStaticGroup.add(base);
 
   const bladePivot = new THREE.Group();
   bladePivot.position.y = 1.3;
   playerRoot.add(bladePivot);
+
+  const proceduralRotatingGroup = new THREE.Group();
+  proceduralRotatingGroup.name = "ProceduralBladeRotatingFallback";
+  bladePivot.add(proceduralRotatingGroup);
 
   const bladeGeometry = track(resources, createCurvedBladeGeometry());
   const bladeMaterial = track(
@@ -2503,7 +2535,7 @@ function addBlade(playerRoot: THREE.Group, resources: SceneResource[]): BladeVis
     blade.rotation.y = index * (Math.PI / 2);
     blade.castShadow = true;
     curvedBlades.push(blade);
-    bladePivot.add(blade);
+    proceduralRotatingGroup.add(blade);
   }
 
   const sawGroup = new THREE.Group();
@@ -2534,7 +2566,7 @@ function addBlade(playerRoot: THREE.Group, resources: SceneResource[]): BladeVis
     sawGroup.add(tooth);
   }
   sawGroup.visible = false;
-  bladePivot.add(sawGroup);
+  proceduralRotatingGroup.add(sawGroup);
 
   const outerRingGeometry = track(resources, new THREE.CylinderGeometry(0.76, 0.82, 0.24, 28));
   const outerRingMaterial = track(
@@ -2550,7 +2582,7 @@ function addBlade(playerRoot: THREE.Group, resources: SceneResource[]): BladeVis
   const outerRing = new THREE.Mesh(outerRingGeometry, outerRingMaterial);
   outerRing.position.y = 0.06;
   outerRing.castShadow = true;
-  bladePivot.add(outerRing);
+  proceduralRotatingGroup.add(outerRing);
 
   const innerRingGeometry = track(resources, new THREE.CylinderGeometry(0.53, 0.59, 0.28, 24));
   const innerRingMaterial = track(
@@ -2566,7 +2598,7 @@ function addBlade(playerRoot: THREE.Group, resources: SceneResource[]): BladeVis
   const innerRing = new THREE.Mesh(innerRingGeometry, innerRingMaterial);
   innerRing.position.y = 0.105;
   innerRing.castShadow = true;
-  bladePivot.add(innerRing);
+  proceduralRotatingGroup.add(innerRing);
 
   const capGeometry = track(resources, new THREE.CylinderGeometry(0.3, 0.36, 0.34, 20));
   const capMaterial = track(
@@ -2582,7 +2614,7 @@ function addBlade(playerRoot: THREE.Group, resources: SceneResource[]): BladeVis
   const cap = new THREE.Mesh(capGeometry, capMaterial);
   cap.position.y = 0.19;
   cap.castShadow = true;
-  bladePivot.add(cap);
+  proceduralRotatingGroup.add(cap);
 
   const orientationCueGeometry = track(
     resources,
@@ -2601,7 +2633,7 @@ function addBlade(playerRoot: THREE.Group, resources: SceneResource[]): BladeVis
   const orientationCue = new THREE.Mesh(orientationCueGeometry, orientationCueMaterial);
   orientationCue.position.set(1.22, 0.235, 0);
   orientationCue.castShadow = true;
-  bladePivot.add(orientationCue);
+  proceduralRotatingGroup.add(orientationCue);
 
   const diagnostics: BladeVisual["diagnostics"] = {
     bladeTier: "two-arm",
@@ -2609,7 +2641,13 @@ function addBlade(playerRoot: THREE.Group, resources: SceneResource[]): BladeVis
     visibleTeeth: 0,
     orientationCueCount: 1,
     visualBladeAngleRadians: 0,
+    bladeAssetId: BLADE_ASSET_CONTRACT.id,
+    bladeAssetUrl: resolveBladeAssetUrl(import.meta.env.BASE_URL),
+    bladeAssetStatus: "procedural-fallback",
+    bladeAssetSweptRadius: BLADE_ASSET_CONTRACT.sweptRadius,
+    bladeAssetSpinAxis: BLADE_ASSET_CONTRACT.spinAxis,
   };
+  let loadedAsset: LoadedBladeAsset | null = null;
   let appliedTier: BladeTier | null = null;
   let previousRawAngleRadians = 0;
   let accumulatedVisualAngleRadians = 0;
@@ -2642,6 +2680,7 @@ function addBlade(playerRoot: THREE.Group, resources: SceneResource[]): BladeVis
       }
     }
     sawGroup.visible = tier === "saw";
+    syncLoadedBladeAsset(loadedAsset, tier);
     outerRingMaterial.color.setHex(
       tier === "saw" ? 0x52d8ff : tier === "four-arm" ? 0x38c5ff : 0x35c9f4,
     );
@@ -2651,7 +2690,92 @@ function addBlade(playerRoot: THREE.Group, resources: SceneResource[]): BladeVis
   }
 
   sync(1, 0);
+  startBladeAssetLoad(
+    playerRoot,
+    bladePivot,
+    proceduralStaticGroup,
+    proceduralRotatingGroup,
+    resources,
+    diagnostics,
+    (asset) => {
+      loadedAsset = asset;
+      syncLoadedBladeAsset(loadedAsset, diagnostics.bladeTier);
+    },
+  );
   return { diagnostics, sync };
+}
+
+function startBladeAssetLoad(
+  playerRoot: THREE.Group,
+  bladePivot: THREE.Group,
+  proceduralStaticGroup: THREE.Group,
+  proceduralRotatingGroup: THREE.Group,
+  resources: SceneResource[],
+  diagnostics: BladeVisual["diagnostics"],
+  onLoaded: (asset: LoadedBladeAsset) => void,
+): void {
+  if (!canLoadBladeAsset()) {
+    diagnostics.bladeAssetStatus = "procedural-fallback";
+    return;
+  }
+
+  diagnostics.bladeAssetStatus = "loading";
+  const loader = new GLTFLoader();
+  loader.load(
+    diagnostics.bladeAssetUrl,
+    (gltf) => {
+      const hub = gltf.scene.getObjectByName(BLADE_ASSET_CONTRACT.nodes.staticHub);
+      const twoArm = gltf.scene.getObjectByName(BLADE_ASSET_CONTRACT.nodes.twoArm);
+      const fourArm = gltf.scene.getObjectByName(BLADE_ASSET_CONTRACT.nodes.fourArm);
+      const saw = gltf.scene.getObjectByName(BLADE_ASSET_CONTRACT.nodes.saw);
+      if (hub === undefined || twoArm === undefined || fourArm === undefined || saw === undefined) {
+        diagnostics.bladeAssetStatus = "failed";
+        return;
+      }
+
+      registerLoadedSceneResources(gltf.scene, resources);
+      playerRoot.add(hub);
+      bladePivot.add(twoArm, fourArm, saw);
+      proceduralStaticGroup.visible = false;
+      proceduralRotatingGroup.visible = false;
+      const asset = { twoArm, fourArm, saw };
+      diagnostics.bladeAssetStatus = "loaded";
+      onLoaded(asset);
+    },
+    undefined,
+    () => {
+      diagnostics.bladeAssetStatus = "failed";
+    },
+  );
+}
+
+function canLoadBladeAsset(): boolean {
+  return typeof window !== "undefined" && typeof window.fetch === "function";
+}
+
+function syncLoadedBladeAsset(asset: LoadedBladeAsset | null, tier: BladeTier): void {
+  if (asset === null) {
+    return;
+  }
+  asset.twoArm.visible = tier === "two-arm";
+  asset.fourArm.visible = tier === "four-arm";
+  asset.saw.visible = tier === "saw";
+}
+
+function registerLoadedSceneResources(scene: THREE.Object3D, resources: SceneResource[]): void {
+  scene.traverse((object) => {
+    if (!(object instanceof THREE.Mesh)) {
+      return;
+    }
+    const mesh = object as THREE.Mesh<THREE.BufferGeometry, THREE.Material | THREE.Material[]>;
+    if (mesh.geometry !== undefined) {
+      resources.push(mesh.geometry);
+    }
+    const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+    for (const material of materials) {
+      resources.push(material);
+    }
+  });
 }
 
 function createCurvedBladeGeometry(): THREE.ExtrudeGeometry {

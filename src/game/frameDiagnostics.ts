@@ -20,7 +20,9 @@ export interface FrameDiagnosticsSnapshot {
   canvasHeight: number;
   canvasCssWidth: number;
   canvasCssHeight: number;
+  canvasBackingAspectRatio: number;
   displayAspectRatio: number;
+  canvasAspectMismatchRatio: number;
 }
 
 export interface FrameDiagnosticsTracker {
@@ -112,7 +114,16 @@ export function createFrameDiagnosticsTracker(
       canvasHeight: options.canvasHeight,
       canvasCssWidth: roundFrameMetric(options.canvasCssWidth),
       canvasCssHeight: roundFrameMetric(options.canvasCssHeight),
+      canvasBackingAspectRatio: roundFrameMetric(
+        deriveAspectRatio(options.canvasWidth, options.canvasHeight),
+      ),
       displayAspectRatio: roundFrameMetric(options.displayAspectRatio),
+      canvasAspectMismatchRatio: roundFrameMetric(
+        deriveAspectMismatchRatio(
+          deriveAspectRatio(options.canvasCssWidth, options.canvasCssHeight),
+          deriveAspectRatio(options.canvasWidth, options.canvasHeight),
+        ),
+      ),
     };
   }
 
@@ -139,4 +150,25 @@ function maxSample(samples: Float32Array, sampleCount: number): number {
 
 function roundFrameMetric(value: number): number {
   return Math.round(value * 1000) / 1000;
+}
+
+function deriveAspectRatio(width: number, height: number): number {
+  if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
+    return 1;
+  }
+
+  return width / height;
+}
+
+function deriveAspectMismatchRatio(displayAspectRatio: number, backingAspectRatio: number): number {
+  if (
+    !Number.isFinite(displayAspectRatio) ||
+    !Number.isFinite(backingAspectRatio) ||
+    displayAspectRatio <= 0 ||
+    backingAspectRatio <= 0
+  ) {
+    return 1;
+  }
+
+  return displayAspectRatio / backingAspectRatio;
 }

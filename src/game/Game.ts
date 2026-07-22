@@ -67,6 +67,8 @@ export class Game {
   private readonly targetProgress: TargetProgressOverlay;
   private readonly frameDiagnostics: FrameDiagnosticsTracker = createFrameDiagnosticsTracker();
   private readonly quality: QualitySettings;
+  private readonly layoutResizeObserver: ResizeObserver | null =
+    typeof ResizeObserver === "undefined" ? null : new ResizeObserver(() => this.resize());
   private readonly input: MovementInput = createMovementInput();
   private readonly keyboardInput: MovementInput = createMovementInput();
   private readonly pointerInput: MovementInput = createMovementInput();
@@ -142,6 +144,8 @@ export class Game {
     window.visualViewport?.addEventListener("resize", this.resize);
     window.visualViewport?.addEventListener("scroll", this.resize);
     document.addEventListener("fullscreenchange", this.resize);
+    this.layoutResizeObserver?.observe(this.canvas);
+    this.layoutResizeObserver?.observe(requireAppRoot(this.canvas));
     this.canvas.addEventListener("pointerdown", this.onPointerDown);
     this.canvas.addEventListener("pointermove", this.onPointerMove);
     this.canvas.addEventListener("pointerup", this.onPointerEnd);
@@ -173,6 +177,7 @@ export class Game {
     window.visualViewport?.removeEventListener("resize", this.resize);
     window.visualViewport?.removeEventListener("scroll", this.resize);
     document.removeEventListener("fullscreenchange", this.resize);
+    this.layoutResizeObserver?.disconnect();
     this.canvas.removeEventListener("pointerdown", this.onPointerDown);
     this.canvas.removeEventListener("pointermove", this.onPointerMove);
     this.canvas.removeEventListener("pointerup", this.onPointerEnd);

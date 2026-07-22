@@ -100,8 +100,10 @@ Active milestone: Phase 3 — renderer hardening: chunk culling, distance LOD, f
 - [x] Split decorative grass into 64 deterministic render chunks, added conservative camera-footprint visibility culling, and exposed visible/culled chunk diagnostics through `render_game_to_text()`.
 - [x] Expanded `?quality=low` renderer-cost scaling to disable antialiasing and shadow rendering while reporting those active settings through frame diagnostics.
 - [x] Added near/far decorative-grass distance LOD: visible chunks close to the blade keep the full default fourteen-blade tuft geometry, far visible chunks switch to the lower eight-blade tuft geometry, and `render_game_to_text()` reports near/far chunk counts plus the current visible grass blade budget.
-- [x] Fixed mobile browser play-area aspect sizing by measuring the actual canvas rectangle, listening to `visualViewport` resize/scroll changes, and using dynamic viewport height where supported; the rendered camera aspect now matches the visible canvas on phone-sized Safari/Chromium viewports.
+- [x] Fixed mobile browser play-area aspect sizing by measuring the actual canvas rectangle, listening to `visualViewport` resize/scroll changes, using dynamic viewport height where supported, and observing the canvas/root layout boxes directly; the rendered backing aspect now stays synchronized with the visible canvas on phone-sized Safari/Chromium viewports even when browser chrome changes the play area.
 - [x] Added the first world-aligned GPU cut-mask path for grass: completed CPU visual grass cuts project into a persistent 104 by 104 `DataTexture`, the instanced grass shader samples that mask by world position, and diagnostics report mask resolution, applied texels, coverage ratio, and world size.
+- [x] Added the first production blade GLB asset path: `tools/build_blade_asset.py` generates `public/assets/blades/cutter-v1.glb` with stable `GB_*` tier nodes, the runtime loads those nodes with `GLTFLoader`, and the procedural blade remains the no-network/no-asset fallback.
+- [x] Expanded frame diagnostics with CSS/backing aspect reporting so mobile squeeze regressions can be detected from `render_game_to_text()` as `canvasAspectMismatchRatio` instead of relying only on screenshots.
 
 ## Phase 1 verification evidence
 
@@ -184,10 +186,14 @@ Active milestone: Phase 3 — renderer hardening: chunk culling, distance LOD, f
 - A focused 430 by 860 mobile Playwright route verified the canvas/display aspect fix after the live mobile squeeze report: the canvas rect was `430 by 860`, `displayAspectRatio` was `0.5`, CSS diagnostic size matched the visible rect, and the inspected local artifact `output/playwright/mobile-aspect-smoke/mobile-aspect.png` showed the blade and field proportions no longer horizontally squeezed.
 - `make checkall` passes formatting verification, ESLint, strict TypeScript, 81 deterministic Vitest tests across six files, and the Vite production build after the first GPU cut-mask slice.
 - The required web-game Playwright client ran against `?seed=12345` after the cut-mask shader build and wrote `output/playwright/gpu-cut-mask-smoke/shot-0.png` plus `state-0.json` without browser error artifacts. The inspected screenshot keeps continuous grass, the cut swath, HUD, progress bars, and too-tough notice readable; the state reports `grassCutMaskResolution: 104`, `grassCutMaskAppliedTexels: 289`, `grassCutMaskCoverageRatio: 0.02671967455621302`, `grassCutMaskWorldSize: 41`, and `consumedGrassVisualCuts: 289`.
+- `make checkall` passes formatting verification, ESLint, strict TypeScript, 83 deterministic Vitest tests across seven files, and the Vite production build after the production blade asset and mobile aspect-observer slice.
+- The generated blade GLB validates as a GLB v2 asset with 36 nodes, 32 meshes, five materials, and all required stable roots: `GB_Hub_STATIC`, `GB_TwoArm_ROTATING`, `GB_FourArm_ROTATING`, and `GB_Saw_ROTATING`.
+- The required web-game Playwright client ran against `?seed=12345` after the asset/aspect build and wrote `output/playwright/mobile-aspect-standard/shot-0.png` plus `state-0.json` without browser error artifacts. The inspected state reports `bladeAssetStatus: "loaded"`, `visibleBladeCount: 2`, `canvasBackingAspectRatio: 1.778`, `displayAspectRatio: 1.778`, and `canvasAspectMismatchRatio: 1`.
+- A focused 592 by 981 mobile Playwright route verified the phone play area after the squeeze report and wrote `output/playwright/mobile-aspect-after.png`; the state reports CSS size `592 by 981`, backing size `888 by 1471`, `displayAspectRatio: 0.603`, `canvasBackingAspectRatio: 0.604`, and `canvasAspectMismatchRatio: 1`.
 
 ## Remaining TODOs
 
-- [ ] Continue Phase 3 renderer hardening with the production blade GLB path, a deeper GPU cut-mask path that replaces more per-instance completed-grass matrix updates, and captured integrated-GPU/mobile performance evidence.
+- [ ] Continue Phase 3 renderer hardening with a deeper GPU cut-mask path that replaces more per-instance completed-grass matrix updates, blade-art polish from the new GLB pipeline, and captured integrated-GPU/mobile performance evidence.
 - [ ] Retry GitHub Pages HTTPS enforcement for `grass-blade.pardev.net`; HTTP is live, but the custom-domain certificate was still pending during the last deployment check.
 
 ## Handoff rules

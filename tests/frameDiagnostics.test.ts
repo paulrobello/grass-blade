@@ -48,7 +48,9 @@ describe("frame diagnostics", () => {
       canvasHeight: 720,
       canvasCssWidth: 853.33,
       canvasCssHeight: 480,
+      canvasBackingAspectRatio: 1.778,
       displayAspectRatio: 1.778,
+      canvasAspectMismatchRatio: 1,
     });
   });
 
@@ -94,7 +96,9 @@ describe("frame diagnostics", () => {
       canvasHeight: 1,
       canvasCssWidth: 375,
       canvasCssHeight: 667,
+      canvasBackingAspectRatio: 1,
       displayAspectRatio: 0.562,
+      canvasAspectMismatchRatio: 0.562,
     });
   });
 });
