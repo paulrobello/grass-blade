@@ -77,6 +77,11 @@ interface IntroElements {
   startButton: HTMLButtonElement;
 }
 
+export interface AccessibilitySettings {
+  highContrast: boolean;
+  contrastSource: "standard" | "query" | "forced-colors" | "prefers-contrast";
+}
+
 export class Game {
   private readonly canvas: HTMLCanvasElement;
   private readonly appRoot: HTMLElement;
@@ -92,6 +97,7 @@ export class Game {
   private readonly targetProgress: TargetProgressOverlay;
   private readonly frameDiagnostics: FrameDiagnosticsTracker = createFrameDiagnosticsTracker();
   private readonly quality: QualitySettings;
+  private readonly accessibilitySettings: AccessibilitySettings;
   private readonly graphicsAdapter: GraphicsAdapterDiagnostics;
   private readonly layoutResizeObserver: ResizeObserver | null =
     typeof ResizeObserver === "undefined" ? null : new ResizeObserver(() => this.resize());
@@ -127,9 +133,15 @@ export class Game {
     this.canvas = canvas;
     this.appRoot = requireAppRoot(canvas);
     this.state = createInitialState(seed);
-    this.quality = resolveQualitySettings(
-      new URLSearchParams(window.location.search).get("quality"),
-    );
+    const searchParams = new URLSearchParams(window.location.search);
+    this.quality = resolveQualitySettings(searchParams.get("quality"));
+    this.accessibilitySettings = resolveAccessibilitySettings({
+      contrastQuery: searchParams.get("contrast"),
+      forcedColorsActive: window.matchMedia("(forced-colors: active)").matches,
+      prefersContrastMore: window.matchMedia("(prefers-contrast: more)").matches,
+    });
+    this.appRoot.dataset.contrast = this.accessibilitySettings.highContrast ? "high" : "standard";
+    this.appRoot.dataset.contrastSource = this.accessibilitySettings.contrastSource;
     this.hud = getHudElements();
     this.accessibilityStatus = requireElement("accessibility-status");
     this.intro = createIntroElements(this.appRoot);
@@ -805,6 +817,8 @@ export class Game {
       result: this.state.result,
       accessibility: {
         liveRegionText: this.lastAccessibilityAnnouncement,
+        highContrast: this.accessibilitySettings.highContrast,
+        contrastSource: this.accessibilitySettings.contrastSource,
       },
       meadow: this.meadow.density,
       presentation: {
@@ -962,6 +976,28 @@ function syncPlayableRootSize(root: HTMLElement): void {
   root.style.height = `${rootSize.height}px`;
   root.style.marginLeft = "auto";
   root.style.marginRight = "auto";
+}
+
+export function resolveAccessibilitySettings(options: {
+  contrastQuery: string | null;
+  forcedColorsActive: boolean;
+  prefersContrastMore: boolean;
+}): AccessibilitySettings {
+  const normalizedQuery = options.contrastQuery?.trim().toLowerCase() ?? "";
+  if (["1", "high", "more", "true"].includes(normalizedQuery)) {
+    return { highContrast: true, contrastSource: "query" };
+  }
+  if (["0", "false", "normal", "standard"].includes(normalizedQuery)) {
+    return { highContrast: false, contrastSource: "query" };
+  }
+  if (options.forcedColorsActive) {
+    return { highContrast: true, contrastSource: "forced-colors" };
+  }
+  if (options.prefersContrastMore) {
+    return { highContrast: true, contrastSource: "prefers-contrast" };
+  }
+
+  return { highContrast: false, contrastSource: "standard" };
 }
 
 function derivePortraitAspectRatio(width: number, height: number): number {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { derivePlayableRootSize } from "../src/game/Game";
+import { derivePlayableRootSize, resolveAccessibilitySettings } from "../src/game/Game";
 
 describe("playable root sizing", () => {
   it("constrains a phone browser viewport that is wider than the physical screen aspect", () => {
@@ -82,6 +82,60 @@ describe("playable root sizing", () => {
       width: 1440,
       height: 900,
       constrained: false,
+    });
+  });
+});
+
+describe("accessibility settings", () => {
+  it("allows query-string high contrast to override standard media settings", () => {
+    expect(
+      resolveAccessibilitySettings({
+        contrastQuery: "high",
+        forcedColorsActive: false,
+        prefersContrastMore: false,
+      }),
+    ).toEqual({
+      highContrast: true,
+      contrastSource: "query",
+    });
+  });
+
+  it("allows query-string standard contrast to override high-contrast media settings", () => {
+    expect(
+      resolveAccessibilitySettings({
+        contrastQuery: "standard",
+        forcedColorsActive: true,
+        prefersContrastMore: true,
+      }),
+    ).toEqual({
+      highContrast: false,
+      contrastSource: "query",
+    });
+  });
+
+  it("uses forced colors before prefers-contrast when no query override is present", () => {
+    expect(
+      resolveAccessibilitySettings({
+        contrastQuery: null,
+        forcedColorsActive: true,
+        prefersContrastMore: true,
+      }),
+    ).toEqual({
+      highContrast: true,
+      contrastSource: "forced-colors",
+    });
+  });
+
+  it("uses prefers-contrast when no query override or forced colors are present", () => {
+    expect(
+      resolveAccessibilitySettings({
+        contrastQuery: null,
+        forcedColorsActive: false,
+        prefersContrastMore: true,
+      }),
+    ).toEqual({
+      highContrast: true,
+      contrastSource: "prefers-contrast",
     });
   });
 });

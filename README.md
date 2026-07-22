@@ -10,7 +10,7 @@ Phase 0 is complete, and the first Phase 1 and Phase 2 contract systems are impl
 
 Phase 3 renderer hardening is implemented and verified: measurable density diagnostics, frame diagnostics, low-quality renderer-cost scaling, decorative-grass chunk culling, near/far grass distance LOD, phone viewport aspect correction, mobile browser-chrome aspect fallback, the world-aligned grass GPU cut-mask path, and the production blade GLB asset path are exposed through the debug snapshot. The grass GPU cut-mask now owns persistent completed-grass stubble state without terminal per-instance matrix rewrites after the fall lifecycle. The generated blade asset now uses a low-profile cyan orientation stripe instead of the earlier gold peg/protrusion while preserving readable rotation. Browser snapshots report WebGL adapter/vendor strings so performance evidence distinguishes hardware rendering from SwiftShader/software rendering, and the archived headed capture confirms Apple Metal hardware rendering for desktop and phone-sized scenarios. See [progress.md](progress.md) for the exact handoff state.
 
-Phase 4 presentation/accessibility work has started. A code-native onboarding card now appears first with a focused `Start Cutting` button; movement, pause, fullscreen, and simulation time stay inactive until that explicit Start action is activated. After Start, focus moves to the canvas and the normal keyboard/touch contract flow resumes.
+Phase 4 presentation/accessibility work has started. A code-native onboarding card now appears first with a focused `Start Cutting` button; movement, pause, fullscreen, and simulation time stay inactive until that explicit Start action is activated. After Start, focus moves to the canvas and the normal keyboard/touch contract flow resumes. High-contrast HUD and dialog styling is available through `?contrast=high` and also activates from `forced-colors: active` or `prefers-contrast: more`.
 
 ## Play online
 
@@ -80,7 +80,7 @@ The blade spins automatically; there is no attack button.
 
 ## Accessibility
 
-Grass Blade starts with a keyboard-focusable `Start Cutting` button before gameplay captures movement keys. It also exposes a dedicated off-screen polite live region for assistive technology. The live region announces contract start, pause/resume, level-ups, quota completion, and final contract completion while avoiding noisy per-grass-cut chatter. The same latest announcement is included in `window.render_game_to_text()` under `accessibility.liveRegionText` for automated verification.
+Grass Blade starts with a keyboard-focusable `Start Cutting` button before gameplay captures movement keys. It also exposes a dedicated off-screen polite live region for assistive technology. The live region announces contract start, pause/resume, level-ups, quota completion, and final contract completion while avoiding noisy per-grass-cut chatter. The same latest announcement is included in `window.render_game_to_text()` under `accessibility.liveRegionText` for automated verification. Add `?contrast=high` to force a high-contrast treatment for the HUD, dialogs, target progress bars, buttons, and control hint; users with `forced-colors: active` or `prefers-contrast: more` receive the same treatment automatically unless `?contrast=standard` is supplied for testing.
 
 ## Deterministic debug hooks
 
@@ -91,10 +91,11 @@ The browser-facing automation contract lets the game be observed and driven with
 - `window.render_game_to_text()` returns a concise JSON snapshot of visible game state.
 - `window.advanceTime(milliseconds)` switches automation to manual time, advances exact 60 Hz ticks, and renders.
 - `?quality=low` selects the low preset, disables antialiasing and shadow rendering, caps renderer pixel ratio at 1.0, and renders eight grass blades per visual tuft. The default preset keeps antialiasing and 1024px shadows, caps pixel ratio at 1.5, and renders fourteen grass blades per tuft.
+- `?contrast=high` forces high-contrast interface styling; `?contrast=standard` forces the standard interface during contrast-regression testing.
 - `?debug=1` exposes `window.completeContractForDebug()` for deterministic browser verification of the results flow; the hook completes the final quota through the normal fixed-step award path.
 - `?debug=1` also exposes `window.cutTargetForDebug(kind)` for visual verification of a specific authored target kind through the same fixed-step cut and reward path. Non-cuttable targets such as rocks are ignored.
 
-These hooks include the current mode, start-flow state, pause/result state, accessibility live-region text, inventory, objectives, XP, RPM, target counts, live blade-contact target IDs, too-tough notice diagnostics, partially cut target work, recent authoritative cut events, blade presentation tier, blade asset load state, orientation cue, pooled-fragment diagnostics, meadow density diagnostics, grass chunk/distance-LOD diagnostics, GPU cut-mask diagnostics including GPU-settled grass and completed-grass CPU matrix updates, playable-root layout diagnostics, canvas/backing aspect diagnostics, WebGL adapter diagnostics, and recent frame timing/pixel-ratio/quality diagnostics. See [progress.md](progress.md) for the recorded evidence.
+These hooks include the current mode, start-flow state, pause/result state, accessibility live-region text and high-contrast state, inventory, objectives, XP, RPM, target counts, live blade-contact target IDs, too-tough notice diagnostics, partially cut target work, recent authoritative cut events, blade presentation tier, blade asset load state, orientation cue, pooled-fragment diagnostics, meadow density diagnostics, grass chunk/distance-LOD diagnostics, GPU cut-mask diagnostics including GPU-settled grass and completed-grass CPU matrix updates, playable-root layout diagnostics, canvas/backing aspect diagnostics, WebGL adapter diagnostics, and recent frame timing/pixel-ratio/quality diagnostics. See [progress.md](progress.md) for the recorded evidence.
 
 Example URL:
 
