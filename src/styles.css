@@ -228,6 +228,10 @@ body {
   color: #26334d;
 }
 
+.objective-row[hidden] {
+  display: none;
+}
+
 .objective-row:first-of-type {
   border-radius: 0.68rem 0.68rem 0 0;
 }
@@ -1334,8 +1338,8 @@ body {
 
   .objective-tray {
     display: grid;
-    grid-template-columns: repeat(4, minmax(2.5rem, 1fr));
-    width: min(16.8rem, calc(100vw - 6rem));
+    grid-template-columns: repeat(var(--objective-count, 4), minmax(2.5rem, 1fr));
+    width: min(calc(var(--objective-count, 4) * 3.95rem + 1rem), calc(100vw - 6rem));
     margin-top: 0.18rem;
     margin-left: -0.42rem;
     padding: 0.34rem 0.36rem 0.36rem 0.72rem;

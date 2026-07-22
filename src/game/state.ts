@@ -92,9 +92,9 @@ export const CONTRACT_DEFINITIONS = [
   {
     id: "timed-harvest",
     title: "Timed Harvest",
-    summary: "A 60-second route challenge with lighter quotas and no room to wander.",
+    summary: "A 60-second grass, flower, and fiber route with no room to wander.",
     timeLimitSeconds: 60,
-    objectives: { grass: 22, flowers: 6, fiber: 2, wood: 2 },
+    objectives: { grass: 22, flowers: 6, fiber: 2, wood: 0 },
   },
 ] as const satisfies readonly ContractDefinition[];
 

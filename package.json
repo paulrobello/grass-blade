@@ -16,6 +16,7 @@
     "accessibility:check": "node tools/check_accessibility.mjs",
     "playthrough:check": "node tools/check_playthrough.mjs",
     "playthrough:check:headed": "node tools/check_playthrough.mjs --headed --fullscreen --out output/playwright/playthrough-check-headed",
+    "balance:timed": "bun tools/check_timed_harvest_balance.ts",
     "perf:capture": "node tools/capture_performance.mjs",
     "perf:capture:headed": "node tools/capture_performance.mjs --headed",
     "typecheck": "tsc --noEmit",

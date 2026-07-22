@@ -168,13 +168,13 @@ Authored contracts are selected by deterministic contract ID and seed. The defau
 - Collect 22 Grass.
 - Collect 6 Flowers.
 - Collect 2 Fiber.
-- Collect 2 Wood.
-- Uses a loop-shaped route challenge with lighter quotas and a countdown HUD.
+- No Wood quota; the timed contract intentionally avoids level-gating on saplings.
+- Uses a loop-shaped route challenge with lighter grass, flower, and fiber quotas plus a countdown HUD.
 - If the timer reaches zero before every quota is complete, the contract ends with a `timed-out` result. The result card shows `Time Up`, final partial inventory, targets cut, highest level, Restart, and Next Contract.
 
 Later contracts may choose two to four resource quotas from authored templates, but must remain deterministic for a given contract ID and seed. Over-collection is allowed and still grants XP. Contract completion occurs in the same simulation tick that the final quota is awarded.
 
-Flower drifts are visual patches made from multiple smaller authoritative flower targets. Cutting one edge pocket must not collect or visually topple the whole patch; fully clearing a patch requires sweeping through all of its flower sub-targets.
+Flower drifts are visual patches made from twenty smaller authoritative flower targets per drift. Cutting one edge pocket must not collect or visually topple the whole patch; fully clearing a patch requires sweeping through all of its flower sub-targets.
 
 ## Collection and feedback
 

@@ -21,6 +21,7 @@ import {
   type ContractDefinition,
   type GameState,
   type MovementInput,
+  type ObjectiveCounter,
 } from "./state";
 import { createTargetProgressOverlay, type TargetProgressOverlay } from "./targetProgress";
 
@@ -431,14 +432,24 @@ export class Game {
     setText(this.hud.time, formatElapsedTime(remainingSeconds ?? this.state.elapsedSeconds));
     setText(this.hud.level, `LV ${player.level}`);
     setText(this.hud.rpm, `${Math.round(player.rpm)} RPM`);
-    setText(this.hud.grass, String(objectives.grass.collected));
-    setText(this.hud.grassTarget, String(objectives.grass.target));
-    setText(this.hud.flowers, String(objectives.flowers.collected));
-    setText(this.hud.flowersTarget, String(objectives.flowers.target));
-    setText(this.hud.fiber, String(objectives.fiber.collected));
-    setText(this.hud.fiberTarget, String(objectives.fiber.target));
-    setText(this.hud.wood, String(objectives.wood.collected));
-    setText(this.hud.woodTarget, String(objectives.wood.target));
+    this.hud.root.style.setProperty(
+      "--objective-count",
+      String(
+        Math.max(
+          1,
+          OBJECTIVE_RESOURCES.filter((resource) => objectives[resource].target > 0).length,
+        ),
+      ),
+    );
+    updateObjectiveRow(this.hud.grassRow, this.hud.grass, this.hud.grassTarget, objectives.grass);
+    updateObjectiveRow(
+      this.hud.flowerRow,
+      this.hud.flowers,
+      this.hud.flowersTarget,
+      objectives.flowers,
+    );
+    updateObjectiveRow(this.hud.fiberRow, this.hud.fiber, this.hud.fiberTarget, objectives.fiber);
+    updateObjectiveRow(this.hud.woodRow, this.hud.wood, this.hud.woodTarget, objectives.wood);
     this.hud.root.style.setProperty("--rpm-progress", `${Math.round(rpmProgress * 100)}%`);
     this.hud.xpFill.style.width = `${xpProgress * 100}%`;
     this.updateHudFeedback();
@@ -1487,9 +1498,7 @@ function createIntroElements(
     contractSummary.className = "intro-card__contract-summary";
     contractSummary.textContent = contract.summary;
     quotas.className = "intro-card__contract-quotas";
-    quotas.textContent =
-      `${contract.objectives.grass} Grass · ${contract.objectives.flowers} Flowers · ` +
-      `${contract.objectives.fiber} Fiber · ${contract.objectives.wood} Wood`;
+    quotas.textContent = formatContractQuotas(contract.objectives);
     if (contract.timeLimitSeconds !== undefined) {
       timeLimit.className = "intro-card__contract-time";
       timeLimit.textContent = `${contract.timeLimitSeconds} sec`;
@@ -1629,6 +1638,23 @@ function setText(element: HTMLElement, value: string): void {
   if (element.textContent !== value) {
     element.textContent = value;
   }
+}
+
+function updateObjectiveRow(
+  row: HTMLElement,
+  collected: HTMLElement,
+  target: HTMLElement,
+  objective: ObjectiveCounter,
+): void {
+  row.hidden = objective.target <= 0;
+  setText(collected, String(objective.collected));
+  setText(target, String(objective.target));
+}
+
+function formatContractQuotas(objectives: ContractDefinition["objectives"]): string {
+  return OBJECTIVE_RESOURCES.filter((resource) => objectives[resource] > 0)
+    .map((resource) => `${objectives[resource]} ${OBJECTIVE_LABELS[resource]}`)
+    .join(" · ");
 }
 
 function syncRangeInput(input: HTMLInputElement, volume: number): void {

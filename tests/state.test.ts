@@ -327,26 +327,26 @@ describe("active game state", () => {
     expect(state.contract).toEqual({
       id: "timed-harvest",
       title: "Timed Harvest",
-      summary: "A 60-second route challenge with lighter quotas and no room to wander.",
+      summary: "A 60-second grass, flower, and fiber route with no room to wander.",
       timeLimitSeconds: 60,
     });
     expect(state.objectives.grass.target).toBe(22);
     expect(state.objectives.flowers.target).toBe(6);
     expect(state.objectives.fiber.target).toBe(2);
-    expect(state.objectives.wood.target).toBe(2);
+    expect(state.objectives.wood.target).toBe(0);
 
     completeContractThroughQuotaCuts(state);
 
     expect(state.mode).toBe("complete");
     expect(state.elapsedSeconds).toBeLessThan(60);
-    expect(state.inventory).toEqual({ grass: 22, flowers: 6, fiber: 2, wood: 2 });
+    expect(state.inventory).toEqual({ grass: 22, flowers: 6, fiber: 2, wood: 0 });
     expect(state.result).toMatchObject({
       status: "complete",
       timeLimitSeconds: 60,
-      cutTargets: 31,
-      highestLevel: 3,
-      finalInventory: { grass: 22, flowers: 6, fiber: 2, wood: 2 },
-      completionRevision: 31,
+      cutTargets: 30,
+      highestLevel: 2,
+      finalInventory: { grass: 22, flowers: 6, fiber: 2, wood: 0 },
+      completionRevision: 30,
     });
   });
 
@@ -450,9 +450,9 @@ describe("active game state", () => {
     for (const visual of first.flowerVisuals) {
       flowerVisualCounts[visual.targetIndex] = (flowerVisualCounts[visual.targetIndex] ?? 0) + 1;
     }
-    expect(flowerVisualCounts.every((count) => count >= 6 && count <= 7)).toBe(true);
+    expect(flowerVisualCounts.every((count) => count >= 2 && count <= 3)).toBe(true);
     expect(first.flowerTargets.filter((target) => target.id.startsWith("flower-0-"))).toHaveLength(
-      8,
+      20,
     );
 
     const denseWeedVisualCounts = Array<number>(first.denseWeedTargets.length).fill(0);
@@ -542,6 +542,9 @@ describe("active game state", () => {
     expect(woodland.grassCells.length).toBeLessThan(meadow.grassCells.length * 0.78);
     expect(timed.grassCells.length).toBeLessThan(meadow.grassCells.length * 0.5);
     expect(countVisibleGrassVisuals(meadow)).toBeLessThan(
+      GRASS_VISUAL_COLUMNS * GRASS_VISUAL_COLUMNS * 0.74,
+    );
+    expect(countVisibleGrassVisuals(meadow)).toBeLessThan(
       GRASS_VISUAL_COLUMNS * GRASS_VISUAL_COLUMNS,
     );
     expect(countVisibleGrassVisuals(flowerSweep)).toBeLessThan(
@@ -571,6 +574,36 @@ describe("active game state", () => {
     expect(timed.grassCells.length).toBeGreaterThan(timedState.objectives.grass.target);
   });
 
+  it("keeps each authored arena visibly path-shaped instead of a full square", () => {
+    const meadow = createMeadowLayout(12345, "meadow-delivery");
+    const flowerSweep = createMeadowLayout(12345, "flower-sweep");
+    const woodland = createMeadowLayout(12345, "woodland-cleanup");
+    const timed = createMeadowLayout(12345, "timed-harvest");
+
+    expect(hasGrassCellNear(meadow, 0, -18)).toBe(true);
+    expect(hasGrassCellNear(meadow, -17, 8)).toBe(true);
+    expect(hasGrassCellNear(meadow, -9, 1)).toBe(false);
+    expect(hasGrassCellNear(meadow, 9, 2)).toBe(false);
+    expect(hasGrassCellNear(meadow, 0, -11)).toBe(false);
+
+    expect(hasGrassCellNear(flowerSweep, 0, -18)).toBe(true);
+    expect(hasGrassCellNear(flowerSweep, 0, -4)).toBe(true);
+    expect(hasGrassCellNear(flowerSweep, -17, 8)).toBe(true);
+    expect(hasGrassCellNear(flowerSweep, -8, -2)).toBe(false);
+    expect(hasGrassCellNear(flowerSweep, 8, 2)).toBe(false);
+
+    expect(hasGrassCellNear(woodland, -10, -11)).toBe(true);
+    expect(hasGrassCellNear(woodland, 8, 9)).toBe(true);
+    expect(hasGrassCellNear(woodland, 0, -4)).toBe(true);
+    expect(hasGrassCellNear(woodland, -17, 8)).toBe(false);
+    expect(hasGrassCellNear(woodland, 16, 8)).toBe(false);
+
+    expect(hasGrassCellNear(timed, -8, -2)).toBe(true);
+    expect(hasGrassCellNear(timed, 8, 2)).toBe(true);
+    expect(hasGrassCellNear(timed, 0, -4)).toBe(false);
+    expect(hasGrassCellNear(timed, 0, 11)).toBe(false);
+  });
+
   it("provides at least 150 percent of each required contract resource", () => {
     const state = createInitialState(12345);
     const available = totalAvailableResources(state);
@@ -597,7 +630,7 @@ describe("active game state", () => {
       expect(report.eligibleTerrainArea).toBeLessThan(GRASS_FIELD_SIZE * GRASS_FIELD_SIZE);
       expect(report.eligibleTerrainArea).toBeGreaterThan(GRASS_FIELD_SIZE * GRASS_FIELD_SIZE * 0.7);
       expect(report.visibleGrassVisuals).toBeLessThan(GRASS_VISUAL_COLUMNS * GRASS_VISUAL_COLUMNS);
-      expect(report.visibleGrassVisuals).toBeGreaterThan(7600);
+      expect(report.visibleGrassVisuals).toBeGreaterThan(7400);
       expect(report.grassBladesPerVisual).toBe(GRASS_BLADES_PER_VISUAL);
       expect(report.grassCoverageFraction).toBe(1);
       expect(report.decorativeGrassBladesPerWorldUnitSquared).toBeCloseTo(
@@ -1135,6 +1168,31 @@ describe("active game state", () => {
     expect(state.inventory.grass).toBe(0);
     expect(state.xp).toBe(3);
     expect(state.cutRevision).toBe(1);
+  });
+
+  it("cuts only edge flowers when the blade grazes a real flower patch", () => {
+    const state = createInitialState(202);
+    const clusterFlowers = state.targets
+      .filter((target) => target.kind === "flower" && target.id.startsWith("flower-0-"))
+      .sort((first, second) => first.x - second.x);
+    const edgeFlower = clusterFlowers[0];
+    if (edgeFlower === undefined) {
+      throw new Error("Missing edge flower target");
+    }
+
+    state.targets = clusterFlowers;
+    state.player.x = edgeFlower.x;
+    state.player.z = edgeFlower.z;
+    state.player.vx = 0;
+    state.player.vz = 0;
+
+    cutCurrentTarget(state, edgeFlower);
+
+    const cutFlowers = clusterFlowers.filter((target) => target.status === "cut");
+    expect(cutFlowers.length).toBeGreaterThan(0);
+    expect(cutFlowers.length).toBeLessThan(clusterFlowers.length);
+    expect(cutFlowers.length).toBeLessThanOrEqual(6);
+    expect(state.inventory.flowers).toBe(cutFlowers.length);
   });
 
   it("cuts an isolated dense weed within its recommended-level timing range", () => {
@@ -1791,6 +1849,10 @@ function totalAvailableResources(state: GameState): {
 
 function countVisibleGrassVisuals(layout: MeadowLayout): number {
   return layout.grassVisuals.filter((visual) => visual.height > 0 && visual.scaleX > 0).length;
+}
+
+function hasGrassCellNear(layout: MeadowLayout, x: number, z: number, radius = 0.95): boolean {
+  return layout.grassCells.some((cell) => Math.hypot(cell.x - x, cell.z - z) <= radius);
 }
 
 function advanceState(state: GameState, seconds: number): void {

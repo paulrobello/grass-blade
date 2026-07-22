@@ -2,7 +2,7 @@ const TAU = Math.PI * 2;
 const GRASS_COLOR_COUNT = 4;
 const FLOWER_COLOR_COUNT = 5;
 const FLOWER_CLUSTER_COLUMNS = 4;
-const FLOWER_TARGETS_PER_CLUSTER = 8;
+const FLOWER_TARGETS_PER_CLUSTER = 20;
 const DENSE_WEED_COLOR_COUNT = 3;
 const SHRUB_COLOR_COUNT = 3;
 const SAPLING_COLOR_COUNT = 3;
@@ -362,7 +362,7 @@ function createGrassVisuals(
 
 function createFlowerTargets(random: () => number, arenaId: ArenaLayoutId): TargetSeed[] {
   const centers = createFlowerClusterCenters(random, arenaId);
-  const clusterRadius = 2.55;
+  const clusterRadius = 3.15;
   const targets: TargetSeed[] = [];
 
   for (let clusterIndex = 0; clusterIndex < FLOWER_CLUSTER_COUNT; clusterIndex += 1) {
@@ -374,14 +374,13 @@ function createFlowerTargets(random: () => number, arenaId: ArenaLayoutId): Targ
 
     for (let subIndex = 0; subIndex < FLOWER_TARGETS_PER_CLUSTER; subIndex += 1) {
       const angle = (subIndex / FLOWER_TARGETS_PER_CLUSTER) * TAU + randomRange(random, -0.3, 0.3);
-      const distance =
-        subIndex === 0 ? random() * 0.25 : Math.sqrt(random()) * clusterRadius * 0.84;
+      const distance = subIndex === 0 ? random() * 0.3 : Math.sqrt(random()) * clusterRadius * 0.9;
       targets.push({
         id: `flower-${clusterIndex}-${subIndex}`,
         kind: "flower",
         x: centerX + Math.cos(angle) * distance,
         z: centerZ + Math.sin(angle) * distance,
-        radius: 1.18 + random() * 0.14,
+        radius: 0.56 + random() * 0.08,
         solidRadius: 0,
         recommendedLevel: 1,
         requiredWork: 4,
@@ -556,46 +555,60 @@ function isPointInArenaGrowth(arenaId: ArenaLayoutId, x: number, z: number): boo
   switch (arenaId) {
     case "flower-sweep":
       return (
-        isPointInCapsule(x, z, 0, -18, 0, 18, 3.35) ||
-        isPointInCapsule(x, z, -18, 6, 1, 6, 3.15) ||
-        isPointInCapsule(x, z, -1, -6, 18, -6, 3.15) ||
-        isPointInCircle(x, z, -15, 6, 4.8) ||
-        isPointInCircle(x, z, 15, -6, 4.8) ||
-        isPointInCircle(x, z, 0, 0, 5.4)
+        (isPointInCapsule(x, z, 0, -18, 0, 18, 2.85) ||
+          isPointInCapsule(x, z, -18, 6, 1, 6, 2.65) ||
+          isPointInCapsule(x, z, -1, -6, 18, -6, 2.65) ||
+          isPointInCapsule(x, z, -9, -14, 3, -5, 2.25) ||
+          isPointInCapsule(x, z, 2, 4, 12, 15, 2.15) ||
+          isPointInCircle(x, z, -15, 6, 4.4) ||
+          isPointInCircle(x, z, 15, -6, 4.4) ||
+          isPointInCircle(x, z, 0, 0, 4.8)) &&
+        !isPointInCircle(x, z, -8, -2, 2.7) &&
+        !isPointInCircle(x, z, 8, 2, 2.6)
       );
     case "woodland-cleanup":
       return (
-        isPointInCircle(x, z, -9, -10, 5.6) ||
-        isPointInCircle(x, z, 8, -9, 5.4) ||
-        isPointInCircle(x, z, -9, 7, 5.4) ||
-        isPointInCircle(x, z, 8, 8, 5.8) ||
-        isPointInCircle(x, z, 0, 0, 6.2) ||
-        isPointInCapsule(x, z, -9, -10, 0, 0, 2.65) ||
-        isPointInCapsule(x, z, 8, -9, 0, 0, 2.65) ||
-        isPointInCapsule(x, z, -9, 7, 0, 0, 2.65) ||
-        isPointInCapsule(x, z, 8, 8, 0, 0, 2.65)
+        (isPointInCircle(x, z, -10, -11, 5.3) ||
+          isPointInCircle(x, z, 8, -10, 5.0) ||
+          isPointInCircle(x, z, -10, 7, 5.0) ||
+          isPointInCircle(x, z, 8, 8, 5.5) ||
+          isPointInCircle(x, z, 0, 0, 5.7) ||
+          isPointInCircle(x, z, -1, 14, 3.9) ||
+          isPointInCapsule(x, z, -10, -11, 0, 0, 2.35) ||
+          isPointInCapsule(x, z, 8, -10, 0, 0, 2.35) ||
+          isPointInCapsule(x, z, -10, 7, 0, 0, 2.35) ||
+          isPointInCapsule(x, z, 8, 8, 0, 0, 2.35) ||
+          isPointInCapsule(x, z, 0, 0, -1, 14, 2.05)) &&
+        !isPointInCapsule(x, z, -17, -1, 17, 2, 1.65)
       );
     case "timed-harvest":
       return (
-        isPointInCapsule(x, z, 0, -13, 9, -4, 3.05) ||
-        isPointInCapsule(x, z, 9, -4, 6, 7, 3.05) ||
-        isPointInCapsule(x, z, 6, 7, -7, 7, 3.05) ||
-        isPointInCapsule(x, z, -7, 7, -11, -4, 3.05) ||
-        isPointInCapsule(x, z, -11, -4, 0, -13, 3.05) ||
-        isPointInCapsule(x, z, -6, 0, 6, 0, 2.5) ||
-        isPointInCircle(x, z, 0, 0, 4.2)
+        (isPointInCapsule(x, z, 0, -14, 10, -4, 2.65) ||
+          isPointInCapsule(x, z, 10, -4, 6, 8, 2.65) ||
+          isPointInCapsule(x, z, 6, 8, -7, 8, 2.65) ||
+          isPointInCapsule(x, z, -7, 8, -12, -4, 2.65) ||
+          isPointInCapsule(x, z, -12, -4, 0, -14, 2.65) ||
+          isPointInCapsule(x, z, -6, 0, 6, 0, 2.05) ||
+          isPointInCircle(x, z, 0, 0, 3.6)) &&
+        !isPointInCircle(x, z, 0, -4, 2.35) &&
+        !isPointInCircle(x, z, 0, 11, 2.1)
       );
     case "meadow-delivery":
       return (
-        isPointInCapsule(x, z, 0, -18, 0, 18, 6.7) ||
-        isPointInCapsule(x, z, -16, -4, 16, -4, 5.4) ||
-        isPointInCapsule(x, z, -17, 8, 17, 8, 5.6) ||
-        isPointInCapsule(x, z, -13, 15, 13, 15, 4.2) ||
-        isPointInCircle(x, z, 0, 0, 7.4) ||
-        isPointInCircle(x, z, -15, -4, 5.8) ||
-        isPointInCircle(x, z, 15, -4, 5.8) ||
-        isPointInCircle(x, z, -16, 8, 5.9) ||
-        isPointInCircle(x, z, 16, 8, 5.9)
+        (isPointInCapsule(x, z, 0, -18, 0, 18, 5.85) ||
+          isPointInCapsule(x, z, -16, -5, 16, -5, 4.75) ||
+          isPointInCapsule(x, z, -18, 8, 17, 8, 4.8) ||
+          isPointInCapsule(x, z, -13, 15, 13, 15, 3.65) ||
+          isPointInCapsule(x, z, -16, -14, -3, -2, 3.0) ||
+          isPointInCapsule(x, z, 14, -1, 3, 12, 3.0) ||
+          isPointInCircle(x, z, 0, 0, 6.8) ||
+          isPointInCircle(x, z, -15, -5, 5.1) ||
+          isPointInCircle(x, z, 15, -5, 5.1) ||
+          isPointInCircle(x, z, -16, 8, 5.2) ||
+          isPointInCircle(x, z, 16, 8, 5.2)) &&
+        !isPointInCircle(x, z, -9, 1, 2.35) &&
+        !isPointInCircle(x, z, 9, 2, 2.35) &&
+        !isPointInCircle(x, z, 0, -11, 2.05)
       );
   }
 }
