@@ -3,7 +3,7 @@ Original prompt: "i want create a threejs based game where you are a spinning bl
 # Grass Blade Progress
 
 Last updated: 2026-07-21
-Active milestone: Phase 3 — density and frame diagnostics before renderer chunking
+Active milestone: Phase 3 — density, frame, and quality diagnostics before renderer chunking
 
 ## Completed foundation intent
 
@@ -93,6 +93,7 @@ Active milestone: Phase 3 — density and frame diagnostics before renderer chun
 - [x] Replaced direct target contact/collision scans with a deterministic uniform-grid candidate query that preserves target iteration order, keeps solid blocking on the same swept path, and rebuilds automatically when debug/test code changes the target array or authored target positions.
 - [x] Increased authored wildflower drifts from 420 to 880 decorative blossoms, widened their coherent drift radius, and exposed a deterministic meadow density report through `render_game_to_text()` for Phase 3 grass/flower density thresholds.
 - [x] Added a fixed-size frame diagnostics tracker, clamped renderer pixel ratio to 1.5, and exposed recent frame timing, accumulator, pixel-ratio, and canvas-size diagnostics through `render_game_to_text()` for Phase 3 performance work.
+- [x] Added the first quality preset seam: default caps renderer pixel ratio at 1.5, `?quality=low` caps it at 1.0, and `render_game_to_text()` reports the active preset and cap.
 
 ## Phase 1 verification evidence
 
@@ -154,10 +155,12 @@ Active milestone: Phase 3 — density and frame diagnostics before renderer chun
 - The required web-game Playwright client ran against `?seed=12345` after the flower-density build and wrote `output/playwright/flower-density-smoke/shot-0.png` plus `state-0.json` without browser error artifacts; the inspected screenshot shows visibly fuller flower clusters embedded in the dense grass canopy, and the state reports 880 flower instances with all density-threshold flags true.
 - `make checkall` passes formatting verification, ESLint, strict TypeScript, 77 deterministic Vitest tests across five files, and the Vite production build after the initial frame-diagnostics slice.
 - The required web-game Playwright client ran against `?seed=12345` after the frame-diagnostics build and wrote `output/playwright/frame-diagnostics-smoke/shot-0.png` plus `state-0.json` without browser error artifacts; the inspected state includes the new fixed-size frame diagnostics, reported pixel ratio, canvas size, and accumulator, and the screenshot keeps dense flowers, cut trails, HUD, progress bars, and too-tough feedback readable.
+- `make checkall` passes formatting verification, ESLint, strict TypeScript, 79 deterministic Vitest tests across six files, and the Vite production build after the initial quality-preset seam.
+- The required web-game Playwright client ran against `?seed=12345&quality=low` after the quality-preset build and wrote `output/playwright/quality-low-smoke/shot-0.png` plus `state-0.json` without browser error artifacts; the inspected state reports `qualityPreset: "low"`, `maxPixelRatio: 1`, and the screenshot remains visually readable with dense flowers, cut trails, HUD, progress bars, and too-tough feedback intact.
 
 ## Remaining TODOs
 
-- [ ] Continue Phase 3 renderer hardening with chunk culling, quality presets, frame diagnostics, or the production blade GLB path.
+- [ ] Continue Phase 3 renderer hardening with chunk culling, broader quality scaling, or the production blade GLB path.
 
 ## Handoff rules
 

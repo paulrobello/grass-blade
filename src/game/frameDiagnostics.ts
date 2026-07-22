@@ -10,6 +10,8 @@ export interface FrameDiagnosticsSnapshot {
   maxFrameMs: number;
   accumulatorMs: number;
   pixelRatio: number;
+  qualityPreset: string;
+  maxPixelRatio: number;
   canvasWidth: number;
   canvasHeight: number;
 }
@@ -19,6 +21,8 @@ export interface FrameDiagnosticsTracker {
   snapshot: (options: {
     accumulatorSeconds: number;
     pixelRatio: number;
+    qualityPreset: string;
+    maxPixelRatio: number;
     canvasWidth: number;
     canvasHeight: number;
   }) => FrameDiagnosticsSnapshot;
@@ -62,6 +66,8 @@ export function createFrameDiagnosticsTracker(
   function snapshot(options: {
     accumulatorSeconds: number;
     pixelRatio: number;
+    qualityPreset: string;
+    maxPixelRatio: number;
     canvasWidth: number;
     canvasHeight: number;
   }): FrameDiagnosticsSnapshot {
@@ -75,6 +81,8 @@ export function createFrameDiagnosticsTracker(
       maxFrameMs: roundFrameMetric(sampleMaxMs),
       accumulatorMs: roundFrameMetric(options.accumulatorSeconds * 1000),
       pixelRatio: roundFrameMetric(options.pixelRatio),
+      qualityPreset: options.qualityPreset,
+      maxPixelRatio: roundFrameMetric(options.maxPixelRatio),
       canvasWidth: options.canvasWidth,
       canvasHeight: options.canvasHeight,
     };

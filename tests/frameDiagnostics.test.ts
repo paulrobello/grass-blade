@@ -16,6 +16,8 @@ describe("frame diagnostics", () => {
       tracker.snapshot({
         accumulatorSeconds: 0.0045,
         pixelRatio: 1.5,
+        qualityPreset: "default",
+        maxPixelRatio: 1.5,
         canvasWidth: 1280,
         canvasHeight: 720,
       }),
@@ -29,6 +31,8 @@ describe("frame diagnostics", () => {
       maxFrameMs: 50,
       accumulatorMs: 4.5,
       pixelRatio: 1.5,
+      qualityPreset: "default",
+      maxPixelRatio: 1.5,
       canvasWidth: 1280,
       canvasHeight: 720,
     });
@@ -44,6 +48,8 @@ describe("frame diagnostics", () => {
       tracker.snapshot({
         accumulatorSeconds: 0,
         pixelRatio: 2,
+        qualityPreset: "low",
+        maxPixelRatio: 1,
         canvasWidth: 1,
         canvasHeight: 1,
       }),
@@ -57,6 +63,8 @@ describe("frame diagnostics", () => {
       maxFrameMs: 0,
       accumulatorMs: 0,
       pixelRatio: 2,
+      qualityPreset: "low",
+      maxPixelRatio: 1,
       canvasWidth: 1,
       canvasHeight: 1,
     });

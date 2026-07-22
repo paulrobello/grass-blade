@@ -3,6 +3,7 @@ import * as THREE from "three";
 import { createCollectionMotes, type CollectionMotes } from "./collectionMotes";
 import { createScene, type MeadowScene } from "./createScene";
 import { createFrameDiagnosticsTracker, type FrameDiagnosticsTracker } from "./frameDiagnostics";
+import { resolveQualitySettings, type QualitySettings } from "./quality";
 import {
   CUMULATIVE_XP_THRESHOLDS,
   FIXED_TIME_STEP_SECONDS,
@@ -16,7 +17,6 @@ import {
 import { createTargetProgressOverlay, type TargetProgressOverlay } from "./targetProgress";
 
 const MILLISECONDS_PER_SECOND = 1000;
-const MAX_PIXEL_RATIO = 1.5;
 
 interface HudElements {
   root: HTMLElement;
@@ -66,6 +66,7 @@ export class Game {
   private readonly collectionMotes: CollectionMotes;
   private readonly targetProgress: TargetProgressOverlay;
   private readonly frameDiagnostics: FrameDiagnosticsTracker = createFrameDiagnosticsTracker();
+  private readonly quality: QualitySettings;
   private readonly input: MovementInput = {
     left: false,
     right: false,
@@ -83,6 +84,9 @@ export class Game {
   public constructor(canvas: HTMLCanvasElement, seed?: number) {
     this.canvas = canvas;
     this.state = createInitialState(seed);
+    this.quality = resolveQualitySettings(
+      new URLSearchParams(window.location.search).get("quality"),
+    );
     this.hud = getHudElements();
     this.results = createResultsElements(requireAppRoot(canvas));
     this.pause = createPauseElements(requireAppRoot(canvas));
@@ -334,7 +338,7 @@ export class Game {
   private readonly resize = (): void => {
     const width = Math.max(1, this.canvas.clientWidth || window.innerWidth);
     const height = Math.max(1, this.canvas.clientHeight || window.innerHeight);
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, MAX_PIXEL_RATIO));
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, this.quality.maxPixelRatio));
     this.renderer.setSize(width, height, false);
     this.meadow.resize(width / height);
     this.render();
@@ -583,6 +587,8 @@ export class Game {
         pixelRatio: this.renderer.getPixelRatio(),
         canvasWidth: this.canvas.width,
         canvasHeight: this.canvas.height,
+        qualityPreset: this.quality.preset,
+        maxPixelRatio: this.quality.maxPixelRatio,
       }),
       player: {
         position: { x: round(player.x), z: round(player.z) },
