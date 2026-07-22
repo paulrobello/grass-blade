@@ -489,6 +489,9 @@ describe("active game state", () => {
     expect(first.grassVisuals).toHaveLength(GRASS_VISUAL_COLUMNS * GRASS_VISUAL_COLUMNS);
     expect(first.flowerTargets).toHaveLength(FLOWER_TARGET_COUNT);
     expect(first.flowerVisuals).toHaveLength(FLOWER_VISUAL_COUNT);
+    expect(first.boundaryMarkers.length).toBeGreaterThan(100);
+    expect(first.boundaryMarkers.every((marker) => Number.isFinite(marker.x))).toBe(true);
+    expect(first.boundaryMarkers.every((marker) => Number.isFinite(marker.z))).toBe(true);
     expect(first.denseWeedTargets).toHaveLength(DENSE_WEED_COUNT);
     expect(first.denseWeedVisuals).toHaveLength(DENSE_WEED_VISUAL_COUNT);
     expect(first.shrubTargets).toHaveLength(SHRUB_COUNT);
@@ -628,6 +631,14 @@ describe("active game state", () => {
     expect(woodland.flowerTargets).toHaveLength(FLOWER_TARGET_COUNT);
     expect(timed.flowerTargets).toHaveLength(FLOWER_TARGET_COUNT);
     expect(sprint.flowerTargets).toHaveLength(FLOWER_TARGET_COUNT);
+    expect(meadow.boundaryMarkers.length).toBeGreaterThan(100);
+    expect(flowerSweep.boundaryMarkers.length).toBeGreaterThan(80);
+    expect(woodland.boundaryMarkers.length).toBeGreaterThan(80);
+    expect(timed.boundaryMarkers.length).toBeGreaterThan(75);
+    expect(sprint.boundaryMarkers.length).toBeGreaterThan(80);
+    expect(createMeadowLayout(12345, "clear-every-patch").boundaryMarkers).toEqual(
+      meadow.boundaryMarkers,
+    );
     expect(flowerSweep.grassVisuals).toHaveLength(GRASS_VISUAL_COLUMNS * GRASS_VISUAL_COLUMNS);
     expect(woodland.grassVisuals).toHaveLength(GRASS_VISUAL_COLUMNS * GRASS_VISUAL_COLUMNS);
     expect(timed.grassVisuals).toHaveLength(GRASS_VISUAL_COLUMNS * GRASS_VISUAL_COLUMNS);
@@ -786,6 +797,8 @@ describe("active game state", () => {
       scene.sync(state, 0);
 
       const visibleAtCenter = scene.presentation.grassVisibleChunks;
+      expect(scene.density.boundaryInstances).toBeGreaterThan(100);
+      expect(scene.presentation.arenaBoundaryMarkers).toBe(scene.density.boundaryInstances);
       expect(scene.presentation.grassTotalChunks).toBe(64);
       expect(scene.presentation.grassNearBladesPerVisual).toBe(14);
       expect(scene.presentation.grassFarBladesPerVisual).toBe(8);

@@ -147,6 +147,14 @@ export interface RockVisual {
   targetIndex: number;
 }
 
+export interface ArenaBoundaryMarker {
+  x: number;
+  z: number;
+  rotation: number;
+  scale: number;
+  colorIndex: number;
+}
+
 export type TargetKind =
   "grass" | "flower" | "denseWeed" | "shrub" | "sapling" | "matureTree" | "rock";
 
@@ -181,6 +189,7 @@ export interface MeadowLayout {
   matureTreeVisuals: MatureTreeVisual[];
   rockTargets: TargetSeed[];
   rockVisuals: RockVisual[];
+  boundaryMarkers: ArenaBoundaryMarker[];
 }
 
 export interface MeadowDensityReport {
@@ -206,6 +215,7 @@ export function createMeadowLayout(
   const resolvedArenaId = resolveArenaLayoutId(arenaId);
   const arenaShape = resolveArenaShape(resolvedArenaId);
   const grass = createGrassCells(resolvedArenaId);
+  const boundaryMarkers = createArenaBoundaryMarkers(resolvedArenaId);
   const grassVisuals = createGrassVisuals(
     createSeededRandom(seed ^ 0x9e3779b9),
     resolvedArenaId,
@@ -247,6 +257,7 @@ export function createMeadowLayout(
     matureTreeVisuals,
     rockTargets,
     rockVisuals,
+    boundaryMarkers,
   };
 }
 
@@ -401,6 +412,70 @@ function createFlowerTargets(random: () => number, arenaId: ArenaLayoutId): Targ
   }
 
   return targets;
+}
+
+function createArenaBoundaryMarkers(arenaId: ArenaLayoutId): ArenaBoundaryMarker[] {
+  const cellSize = GRASS_FIELD_SIZE / GRASS_LOGICAL_COLUMNS;
+  const halfField = GRASS_FIELD_SIZE / 2;
+  const markers: ArenaBoundaryMarker[] = [];
+  const directions = [
+    { columnOffset: 1, rowOffset: 0, xOffset: 0.5, zOffset: 0, rotation: 0 },
+    { columnOffset: -1, rowOffset: 0, xOffset: -0.5, zOffset: 0, rotation: Math.PI },
+    { columnOffset: 0, rowOffset: 1, xOffset: 0, zOffset: 0.5, rotation: Math.PI / 2 },
+    { columnOffset: 0, rowOffset: -1, xOffset: 0, zOffset: -0.5, rotation: -Math.PI / 2 },
+  ] as const;
+
+  for (let row = 0; row < GRASS_LOGICAL_COLUMNS; row += 1) {
+    for (let column = 0; column < GRASS_LOGICAL_COLUMNS; column += 1) {
+      const x = -halfField + (column + 0.5) * cellSize;
+      const z = -halfField + (row + 0.5) * cellSize;
+      if (!isPointInArenaGrowth(arenaId, x, z)) {
+        continue;
+      }
+
+      for (const [directionIndex, direction] of directions.entries()) {
+        const neighborColumn = column + direction.columnOffset;
+        const neighborRow = row + direction.rowOffset;
+        const neighborX = -halfField + (neighborColumn + 0.5) * cellSize;
+        const neighborZ = -halfField + (neighborRow + 0.5) * cellSize;
+        const neighborInside =
+          neighborColumn >= 0 &&
+          neighborColumn < GRASS_LOGICAL_COLUMNS &&
+          neighborRow >= 0 &&
+          neighborRow < GRASS_LOGICAL_COLUMNS &&
+          isPointInArenaGrowth(arenaId, neighborX, neighborZ);
+        if (neighborInside) {
+          continue;
+        }
+
+        const markerKey = row * 97 + column * 53 + directionIndex * 19;
+        if (markerKey % 3 === 0) {
+          continue;
+        }
+        const alongJitter = (((markerKey * 17) % 11) - 5) * cellSize * 0.035;
+        const normalJitter = (((markerKey * 23) % 7) - 3) * cellSize * 0.025;
+        const tangentX = direction.rowOffset;
+        const tangentZ = direction.columnOffset;
+        markers.push({
+          x:
+            x +
+            direction.xOffset * cellSize +
+            tangentX * alongJitter +
+            direction.columnOffset * normalJitter,
+          z:
+            z +
+            direction.zOffset * cellSize +
+            tangentZ * alongJitter +
+            direction.rowOffset * normalJitter,
+          rotation: direction.rotation + (((markerKey * 29) % 17) - 8) * 0.035,
+          scale: 0.72 + (markerKey % 5) * 0.07,
+          colorIndex: markerKey % 4,
+        });
+      }
+    }
+  }
+
+  return markers;
 }
 
 function resolveArenaLayoutId(arenaId: string): ArenaLayoutId {

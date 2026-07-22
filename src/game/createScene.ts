@@ -115,6 +115,7 @@ export interface MeadowPresentationDiagnostics {
   cameraViewWidth: number;
   cameraViewHeight: number;
   cameraViewAspectRatio: number;
+  arenaBoundaryMarkers: number;
   fallingGrassTufts: number;
   fallingFlowerInstances: number;
   fallingWeedInstances: number;
@@ -176,6 +177,7 @@ export interface MeadowScene {
     saplingInstances: number;
     treeInstances: number;
     rockInstances: number;
+    boundaryInstances: number;
     report: MeadowDensityReport;
   };
   presentation: MeadowPresentationDiagnostics;
@@ -228,6 +230,17 @@ export function createScene(
     scratchPosition,
     scratchRotation,
     scratchScale,
+  );
+  addArenaBoundaryMarkers(
+    scene,
+    resources,
+    layout,
+    scratchMatrix,
+    scratchPosition,
+    scratchRotation,
+    scratchScale,
+    scratchColor,
+    yAxis,
   );
   const grass = addGrass(
     scene,
@@ -342,6 +355,7 @@ export function createScene(
     cameraViewWidth: camera.right - camera.left,
     cameraViewHeight: camera.top - camera.bottom,
     cameraViewAspectRatio: (camera.right - camera.left) / (camera.top - camera.bottom),
+    arenaBoundaryMarkers: layout.boundaryMarkers.length,
     fallingGrassTufts: 0,
     fallingFlowerInstances: 0,
     fallingWeedInstances: 0,
@@ -483,6 +497,7 @@ export function createScene(
       saplingInstances: layout.saplingVisuals.length,
       treeInstances: layout.matureTreeVisuals.length,
       rockInstances: layout.rockVisuals.length,
+      boundaryInstances: layout.boundaryMarkers.length,
       report: densityReport,
     },
     presentation,
@@ -538,6 +553,54 @@ function addGroundPatches(
   patches.receiveShadow = true;
   patches.instanceMatrix.needsUpdate = true;
   scene.add(patches);
+}
+
+function addArenaBoundaryMarkers(
+  scene: THREE.Scene,
+  resources: SceneResource[],
+  layout: MeadowLayout,
+  matrix: THREE.Matrix4,
+  position: THREE.Vector3,
+  rotation: THREE.Quaternion,
+  scale: THREE.Vector3,
+  color: THREE.Color,
+  yAxis: THREE.Vector3,
+): void {
+  const count = layout.boundaryMarkers.length;
+  const geometry = track(resources, new THREE.DodecahedronGeometry(0.22, 0));
+  const material = track(
+    resources,
+    new THREE.MeshStandardMaterial({
+      color: 0xffffff,
+      roughness: 0.98,
+      metalness: 0,
+      flatShading: true,
+    }),
+  );
+  const markers = new THREE.InstancedMesh(geometry, material, count);
+  const palette = [0xe9d79f, 0xbdd482, 0x9ac66c, 0xd7c288] as const;
+
+  for (let index = 0; index < count; index += 1) {
+    const marker = layout.boundaryMarkers[index];
+    if (marker === undefined) {
+      continue;
+    }
+    position.set(marker.x, 0.115, marker.z);
+    rotation.setFromAxisAngle(yAxis, marker.rotation);
+    scale.set(marker.scale * 1.18, marker.scale * 0.34, marker.scale * 0.68);
+    matrix.compose(position, rotation, scale);
+    markers.setMatrixAt(index, matrix);
+    color.setHex(palette[marker.colorIndex] ?? palette[0]);
+    markers.setColorAt(index, color);
+  }
+
+  markers.castShadow = true;
+  markers.receiveShadow = true;
+  markers.instanceMatrix.needsUpdate = true;
+  if (markers.instanceColor !== null) {
+    markers.instanceColor.needsUpdate = true;
+  }
+  scene.add(markers);
 }
 
 function addGrass(
