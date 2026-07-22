@@ -58,6 +58,19 @@ const negativeXInput: MovementInput = {
   backward: false,
 };
 
+const COMPLETION_VALIDATION_SEEDS = [
+  MEADOW_SEED,
+  1,
+  42,
+  707,
+  12345,
+  98765,
+  314159,
+  2654448114,
+  3456789012,
+  4000000000,
+] as const;
+
 interface ContractSnapshot {
   mode: GameState["mode"];
   inventory: GameState["inventory"];
@@ -357,6 +370,31 @@ describe("active game state", () => {
       .filter((target) => target.kind === "sapling")
       .reduce((sum, target) => sum + target.yield, 0);
     expect(saplingWood).toBeGreaterThanOrEqual(state.objectives.wood.target);
+  });
+
+  it("completes quota contracts deterministically across ten authored seeds", () => {
+    for (const seed of COMPLETION_VALIDATION_SEEDS) {
+      const first = createInitialState(seed);
+      const replay = createInitialState(seed);
+
+      expect(totalAvailableResources(first)).toEqual(totalAvailableResources(replay));
+      completeContractThroughQuotaCuts(first);
+      completeContractThroughQuotaCuts(replay);
+
+      expect(contractSnapshot(first)).toEqual(contractSnapshot(replay));
+      expect(first.mode).toBe("complete");
+      expect(first.inventory).toEqual({ grass: 50, flowers: 10, fiber: 6, wood: 6 });
+      expect(first.objectives.status).toBe("complete");
+      expect(first.result).toMatchObject({
+        cutTargets: 69,
+        highestLevel: 5,
+        finalInventory: { grass: 50, flowers: 10, fiber: 6, wood: 6 },
+        completionRevision: 69,
+      });
+      expect(first.cutEvents).toHaveLength(69);
+      expect(first.cutEvents.every((event) => !event.targetId.startsWith("rock-"))).toBe(true);
+      expect(new Set(first.cutEvents.map((event) => event.targetId)).size).toBe(69);
+    }
   });
 
   it("marks deterministic grass visuals individually inside the swept blade capsule", () => {
@@ -1328,6 +1366,32 @@ function contractSnapshot(state: GameState): ContractSnapshot {
       cutEvents: state.cutEvents,
     }),
   ) as ContractSnapshot;
+}
+
+function completeContractThroughQuotaCuts(state: GameState): void {
+  const quotaTargets = [
+    ...targetsForKind(state, "grass", state.objectives.grass.target),
+    ...targetsForKind(state, "flower", state.objectives.flowers.target),
+    ...targetsForKind(state, "denseWeed", state.objectives.fiber.target),
+    ...targetsForKind(state, "sapling", state.objectives.wood.target / 2),
+  ];
+  state.targets = quotaTargets;
+
+  for (const target of quotaTargets) {
+    target.x = state.player.x;
+    target.z = state.player.z;
+    target.status = "cutting";
+    target.accumulatedWork = target.requiredWork - 0.001;
+
+    stepState(state, idleInput, FIXED_TIME_STEP_SECONDS);
+    expect(target.status).toBe("cut");
+  }
+}
+
+function targetsForKind(state: GameState, kind: TargetKind, count: number): TargetState[] {
+  const targets = state.targets.filter((target) => target.kind === kind).slice(0, count);
+  expect(targets).toHaveLength(count);
+  return targets;
 }
 
 function placeTargetAtPositiveXContact(state: GameState, target: TargetState): void {
