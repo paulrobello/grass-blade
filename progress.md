@@ -106,6 +106,7 @@ Active milestone: Phase 3 — renderer hardening: chunk culling, distance LOD, G
 - [x] Expanded frame diagnostics with CSS/backing aspect reporting so mobile squeeze regressions can be detected from `render_game_to_text()` as `canvasAspectMismatchRatio` instead of relying only on screenshots.
 - [x] Deepened the grass GPU cut-mask path so completed grass no longer allocates or rewrites a terminal per-instance stubble matrix; after the renderer-owned fall animation completes, the persistent world-aligned mask owns the settled stubble state and diagnostics report zero completed-grass CPU matrix updates.
 - [x] Polished the generated blade asset and procedural fallback by replacing the visible gold orientation peg with a low-profile cyan orientation stripe on the rotating cutter tiers.
+- [x] Added WebGL adapter diagnostics to `render_game_to_text()` so performance snapshots identify whether browser evidence came from hardware rendering or SwiftShader/software rendering.
 
 ## Phase 1 verification evidence
 
@@ -197,10 +198,12 @@ Active milestone: Phase 3 — renderer hardening: chunk culling, distance LOD, G
 - `make checkall` passes formatting verification, ESLint, strict TypeScript, 83 deterministic Vitest tests across seven files, and the Vite production build after the blade orientation-stripe polish.
 - The regenerated `public/assets/blades/cutter-v1.glb` validates as GLB v2 with 36 nodes, 32 meshes, five materials, `GB_Orientation_Cyan`, no `GB_Orientation_Gold`, and three stripe nodes: `GB_TwoArm_Orientation_Stripe`, `GB_FourArm_Orientation_Stripe`, and `GB_Saw_Orientation_Stripe`.
 - The required web-game Playwright client ran against `?seed=12345` after the blade stripe build and wrote `output/playwright/blade-stripe-polish-smoke/shot-0.png` plus `state-0.json` without browser error artifacts. The inspected screenshot shows no gold peg/protrusion on the blade, and the state reports `bladeAssetStatus: "loaded"`, `visibleBladeCount: 2`, `orientationCueCount: 1`, and `canvasAspectMismatchRatio: 1`.
+- `make checkall` passes formatting verification, ESLint, strict TypeScript, 83 deterministic Vitest tests across seven files, and the Vite production build after the WebGL adapter-diagnostics slice.
+- A focused Playwright performance-adapter route wrote `output/playwright/performance-adapter-smoke/summary.json` plus desktop default, desktop low, and 430 by 860 phone screenshots. The local headless Chromium adapter reports `ANGLE ... SwiftShader driver`, so these artifacts are useful automation/sizing evidence but do not satisfy the real integrated-GPU/mobile hardware performance exit criterion. The phone snapshot reports `canvasAspectMismatchRatio: 1`, `pixelRatio: 1.5`, `visibleBladeBudget: 70304`, `bladeAssetStatus: "loaded"`, no browser errors, and a visually inspected cut swath with the cyan blade stripe.
 
 ## Remaining TODOs
 
-- [ ] Continue Phase 3 renderer hardening with captured integrated-GPU/mobile performance evidence.
+- [ ] Capture real-hardware integrated-GPU/mobile performance evidence; current automated headless evidence identifies SwiftShader/software rendering and is not a substitute for this exit criterion.
 - [ ] Retry GitHub Pages HTTPS enforcement for `grass-blade.pardev.net`; HTTP is live, but the custom-domain certificate was still pending during the last deployment check.
 
 ## Handoff rules

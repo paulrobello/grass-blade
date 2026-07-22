@@ -23,6 +23,13 @@ export interface FrameDiagnosticsSnapshot {
   canvasBackingAspectRatio: number;
   displayAspectRatio: number;
   canvasAspectMismatchRatio: number;
+  graphicsAdapter: GraphicsAdapterDiagnostics;
+}
+
+export interface GraphicsAdapterDiagnostics {
+  debugRendererAvailable: boolean;
+  vendor: string;
+  renderer: string;
 }
 
 export interface FrameDiagnosticsTracker {
@@ -41,6 +48,7 @@ export interface FrameDiagnosticsTracker {
     canvasCssWidth: number;
     canvasCssHeight: number;
     displayAspectRatio: number;
+    graphicsAdapter: GraphicsAdapterDiagnostics;
   }) => FrameDiagnosticsSnapshot;
 }
 
@@ -93,6 +101,7 @@ export function createFrameDiagnosticsTracker(
     canvasCssWidth: number;
     canvasCssHeight: number;
     displayAspectRatio: number;
+    graphicsAdapter: GraphicsAdapterDiagnostics;
   }): FrameDiagnosticsSnapshot {
     return {
       sampleCapacity,
@@ -124,6 +133,7 @@ export function createFrameDiagnosticsTracker(
           deriveAspectRatio(options.canvasWidth, options.canvasHeight),
         ),
       ),
+      graphicsAdapter: options.graphicsAdapter,
     };
   }
 

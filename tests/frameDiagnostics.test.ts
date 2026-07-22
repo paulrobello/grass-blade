@@ -27,6 +27,11 @@ describe("frame diagnostics", () => {
         canvasCssWidth: 853.33,
         canvasCssHeight: 480,
         displayAspectRatio: 16 / 9,
+        graphicsAdapter: {
+          debugRendererAvailable: true,
+          vendor: "Test GPU Vendor",
+          renderer: "Test GPU Renderer",
+        },
       }),
     ).toEqual({
       sampleCapacity: 4,
@@ -51,6 +56,11 @@ describe("frame diagnostics", () => {
       canvasBackingAspectRatio: 1.778,
       displayAspectRatio: 1.778,
       canvasAspectMismatchRatio: 1,
+      graphicsAdapter: {
+        debugRendererAvailable: true,
+        vendor: "Test GPU Vendor",
+        renderer: "Test GPU Renderer",
+      },
     });
   });
 
@@ -75,6 +85,11 @@ describe("frame diagnostics", () => {
         canvasCssWidth: 375,
         canvasCssHeight: 667,
         displayAspectRatio: 375 / 667,
+        graphicsAdapter: {
+          debugRendererAvailable: false,
+          vendor: "unavailable",
+          renderer: "unavailable",
+        },
       }),
     ).toEqual({
       sampleCapacity: 3,
@@ -99,6 +114,11 @@ describe("frame diagnostics", () => {
       canvasBackingAspectRatio: 1,
       displayAspectRatio: 0.562,
       canvasAspectMismatchRatio: 0.562,
+      graphicsAdapter: {
+        debugRendererAvailable: false,
+        vendor: "unavailable",
+        renderer: "unavailable",
+      },
     });
   });
 });

@@ -2,7 +2,11 @@ import * as THREE from "three";
 
 import { createCollectionMotes, type CollectionMotes } from "./collectionMotes";
 import { createScene, type MeadowScene } from "./createScene";
-import { createFrameDiagnosticsTracker, type FrameDiagnosticsTracker } from "./frameDiagnostics";
+import {
+  createFrameDiagnosticsTracker,
+  type FrameDiagnosticsTracker,
+  type GraphicsAdapterDiagnostics,
+} from "./frameDiagnostics";
 import { resolveQualitySettings, type QualitySettings } from "./quality";
 import {
   CUMULATIVE_XP_THRESHOLDS,
@@ -67,6 +71,7 @@ export class Game {
   private readonly targetProgress: TargetProgressOverlay;
   private readonly frameDiagnostics: FrameDiagnosticsTracker = createFrameDiagnosticsTracker();
   private readonly quality: QualitySettings;
+  private readonly graphicsAdapter: GraphicsAdapterDiagnostics;
   private readonly layoutResizeObserver: ResizeObserver | null =
     typeof ResizeObserver === "undefined" ? null : new ResizeObserver(() => this.resize());
   private readonly input: MovementInput = createMovementInput();
@@ -120,6 +125,7 @@ export class Game {
     this.renderer.toneMappingExposure = 1.08;
     this.renderer.shadowMap.enabled = this.quality.shadowsEnabled;
     this.renderer.shadowMap.type = THREE.PCFShadowMap;
+    this.graphicsAdapter = detectGraphicsAdapter(this.renderer);
 
     window.render_game_to_text = this.renderGameToText;
     window.advanceTime = this.advanceTime;
@@ -674,6 +680,7 @@ export class Game {
         canvasCssWidth: this.canvasCssWidth,
         canvasCssHeight: this.canvasCssHeight,
         displayAspectRatio: this.displayAspectRatio,
+        graphicsAdapter: this.graphicsAdapter,
         qualityPreset: this.quality.preset,
         antialias: this.quality.antialias,
         maxPixelRatio: this.quality.maxPixelRatio,
@@ -898,6 +905,30 @@ function measureCanvasDisplaySize(canvas: HTMLCanvasElement): { width: number; h
     width: Math.max(1, Math.round(bounds.width || canvas.clientWidth || fallbackWidth)),
     height: Math.max(1, Math.round(bounds.height || canvas.clientHeight || fallbackHeight)),
   };
+}
+
+function detectGraphicsAdapter(renderer: THREE.WebGLRenderer): GraphicsAdapterDiagnostics {
+  const context = renderer.getContext();
+  const extension = context.getExtension("WEBGL_debug_renderer_info");
+  if (extension === null) {
+    return {
+      debugRendererAvailable: false,
+      vendor: "unavailable",
+      renderer: "unavailable",
+    };
+  }
+
+  const vendor: unknown = context.getParameter(extension.UNMASKED_VENDOR_WEBGL);
+  const rendererName: unknown = context.getParameter(extension.UNMASKED_RENDERER_WEBGL);
+  return {
+    debugRendererAvailable: true,
+    vendor: stringifyGraphicsParameter(vendor),
+    renderer: stringifyGraphicsParameter(rendererName),
+  };
+}
+
+function stringifyGraphicsParameter(value: unknown): string {
+  return typeof value === "string" && value.length > 0 ? value : "unavailable";
 }
 
 function clearMovementInput(input: MovementInput): void {
