@@ -33,6 +33,8 @@ const BLADE_VISUAL_SPIN_SCALE = 0.0775;
 const GRASS_RENDER_CHUNKS_PER_AXIS = 8;
 const GRASS_VISUALS_PER_CHUNK_EDGE = GRASS_VISUAL_COLUMNS / GRASS_RENDER_CHUNKS_PER_AXIS;
 const GRASS_CHUNK_CULL_MARGIN = 3.5;
+const GRASS_FAR_LOD_RATIO = 0.58;
+const GRASS_MIN_FAR_BLADES_PER_VISUAL = 5;
 
 interface VegetationSync {
   syncTargets: (state: GameState, simulationTimeSeconds: number) => void;
@@ -50,14 +52,22 @@ interface GrassVegetationSync extends VegetationSync {
     totalChunks: number;
     visibleChunks: number;
     culledChunks: number;
+    nearChunks: number;
+    farChunks: number;
     visibleInstances: number;
+    visibleBladeBudget: number;
+    nearBladesPerVisual: number;
+    farBladesPerVisual: number;
   };
-  syncVisibility: (camera: THREE.OrthographicCamera) => void;
+  syncVisibility: (camera: THREE.OrthographicCamera, focusX: number, focusZ: number) => void;
 }
 
 interface GrassChunk {
-  mesh: THREE.InstancedMesh;
+  nearMesh: THREE.InstancedMesh;
+  farMesh: THREE.InstancedMesh;
   count: number;
+  centerX: number;
+  centerZ: number;
   minX: number;
   maxX: number;
   minZ: number;
@@ -81,7 +91,12 @@ export interface MeadowPresentationDiagnostics {
   grassTotalChunks: number;
   grassVisibleChunks: number;
   grassCulledChunks: number;
+  grassNearChunks: number;
+  grassFarChunks: number;
   grassVisibleInstances: number;
+  grassVisibleBladeBudget: number;
+  grassNearBladesPerVisual: number;
+  grassFarBladesPerVisual: number;
   activeFragments: number;
   consumedCutRevision: number;
   consumedGrassVisualCuts: number;
@@ -274,7 +289,12 @@ export function createScene(seed: number, quality: QualitySettings): MeadowScene
     grassTotalChunks: grass.diagnostics.totalChunks,
     grassVisibleChunks: grass.diagnostics.visibleChunks,
     grassCulledChunks: grass.diagnostics.culledChunks,
+    grassNearChunks: grass.diagnostics.nearChunks,
+    grassFarChunks: grass.diagnostics.farChunks,
     grassVisibleInstances: grass.diagnostics.visibleInstances,
+    grassVisibleBladeBudget: grass.diagnostics.visibleBladeBudget,
+    grassNearBladesPerVisual: grass.diagnostics.nearBladesPerVisual,
+    grassFarBladesPerVisual: grass.diagnostics.farBladesPerVisual,
     activeFragments: 0,
     consumedCutRevision: 0,
     consumedGrassVisualCuts: 0,
@@ -315,7 +335,7 @@ export function createScene(seed: number, quality: QualitySettings): MeadowScene
     camera.lookAt(cameraTarget);
     camera.updateMatrixWorld();
 
-    grass.syncVisibility(camera);
+    grass.syncVisibility(camera, state.player.x, state.player.z);
     grass.syncTargets(state, simulationTimeSeconds);
     flowers.syncTargets(state, simulationTimeSeconds);
     weeds.syncTargets(state, simulationTimeSeconds);
@@ -338,7 +358,12 @@ export function createScene(seed: number, quality: QualitySettings): MeadowScene
     presentation.grassTotalChunks = grass.diagnostics.totalChunks;
     presentation.grassVisibleChunks = grass.diagnostics.visibleChunks;
     presentation.grassCulledChunks = grass.diagnostics.culledChunks;
+    presentation.grassNearChunks = grass.diagnostics.nearChunks;
+    presentation.grassFarChunks = grass.diagnostics.farChunks;
     presentation.grassVisibleInstances = grass.diagnostics.visibleInstances;
+    presentation.grassVisibleBladeBudget = grass.diagnostics.visibleBladeBudget;
+    presentation.grassNearBladesPerVisual = grass.diagnostics.nearBladesPerVisual;
+    presentation.grassFarBladesPerVisual = grass.diagnostics.farBladesPerVisual;
     presentation.activeFragments = cutEffects.diagnostics.activeFragments;
     presentation.consumedCutRevision = cutEffects.diagnostics.consumedCutRevision;
     presentation.consumedGrassVisualCuts = cutEffects.diagnostics.consumedGrassVisualCuts;
@@ -440,7 +465,9 @@ function addGrass(
   grassBladesPerVisual: number,
 ): GrassVegetationSync {
   const count = layout.grassVisuals.length;
-  const geometry = track(resources, createGrassClumpGeometry(grassBladesPerVisual));
+  const farGrassBladesPerVisual = deriveFarGrassBladesPerVisual(grassBladesPerVisual);
+  const nearGeometry = track(resources, createGrassClumpGeometry(grassBladesPerVisual));
+  const farGeometry = track(resources, createGrassClumpGeometry(farGrassBladesPerVisual));
   const material = track(
     resources,
     new THREE.MeshStandardMaterial({
@@ -452,7 +479,7 @@ function addGrass(
     }),
   );
   const chunkInstanceCount = GRASS_VISUALS_PER_CHUNK_EDGE * GRASS_VISUALS_PER_CHUNK_EDGE;
-  const chunks = createGrassChunks(scene, geometry, material, chunkInstanceCount);
+  const chunks = createGrassChunks(scene, nearGeometry, farGeometry, material, chunkInstanceCount);
   const visualChunkIndices = new Uint8Array(count);
   const visualLocalIndices = new Uint16Array(count);
   const palette = [0x227a38, 0x2f9640, 0x43ad48, 0x62c94f] as const;
@@ -476,7 +503,12 @@ function addGrass(
     totalChunks: chunks.length,
     visibleChunks: chunks.length,
     culledChunks: 0,
+    nearChunks: chunks.length,
+    farChunks: 0,
     visibleInstances: count,
+    visibleBladeBudget: count * grassBladesPerVisual,
+    nearBladesPerVisual: grassBladesPerVisual,
+    farBladesPerVisual: farGrassBladesPerVisual,
   };
   const groundBounds = {
     minX: -Infinity,
@@ -515,7 +547,8 @@ function addGrass(
     rotation.setFromAxisAngle(yAxis, visual.rotation);
     scale.set(visual.scaleX, visual.height, visual.scaleZ);
     matrix.compose(position, rotation, scale);
-    chunk.mesh.setMatrixAt(localIndex, matrix);
+    chunk.nearMesh.setMatrixAt(localIndex, matrix);
+    chunk.farMesh.setMatrixAt(localIndex, matrix);
 
     position.y = 0.018;
     rotation.setFromAxisAngle(yAxis, visual.rotation + 0.38);
@@ -524,22 +557,31 @@ function addGrass(
     writeMatrix(cutMatrices, index, matrix);
 
     color.setHex(palette[visual.colorIndex] ?? palette[0]);
-    chunk.mesh.setColorAt(localIndex, color);
+    chunk.nearMesh.setColorAt(localIndex, color);
+    chunk.farMesh.setColorAt(localIndex, color);
   }
 
   for (const chunk of chunks) {
-    chunk.mesh.instanceMatrix.needsUpdate = true;
-    if (chunk.mesh.instanceColor !== null) {
-      chunk.mesh.instanceColor.needsUpdate = true;
+    chunk.nearMesh.instanceMatrix.needsUpdate = true;
+    chunk.farMesh.instanceMatrix.needsUpdate = true;
+    if (chunk.nearMesh.instanceColor !== null) {
+      chunk.nearMesh.instanceColor.needsUpdate = true;
+    }
+    if (chunk.farMesh.instanceColor !== null) {
+      chunk.farMesh.instanceColor.needsUpdate = true;
     }
   }
 
   return {
     diagnostics,
-    syncVisibility(camera: THREE.OrthographicCamera): void {
+    syncVisibility(camera: THREE.OrthographicCamera, focusX: number, focusZ: number): void {
       updateCameraGroundBounds(camera, nearPoint, farPoint, groundPoint, groundBounds);
+      const nearRadius = deriveGrassNearLodRadius(camera);
       let visibleChunks = 0;
+      let nearChunks = 0;
+      let farChunks = 0;
       let visibleInstances = 0;
+      let visibleBladeBudget = 0;
       for (const chunk of chunks) {
         const visible = boundsIntersect(
           chunk.minX,
@@ -548,15 +590,29 @@ function addGrass(
           chunk.maxZ,
           groundBounds,
         );
-        chunk.mesh.visible = visible;
+        const distanceFromFocus = Math.hypot(chunk.centerX - focusX, chunk.centerZ - focusZ);
+        const near = visible && distanceFromFocus <= nearRadius;
+        const far = visible && !near;
+        chunk.nearMesh.visible = near;
+        chunk.farMesh.visible = far;
         if (visible) {
           visibleChunks += 1;
           visibleInstances += chunk.count;
+          if (near) {
+            nearChunks += 1;
+            visibleBladeBudget += chunk.count * grassBladesPerVisual;
+          } else {
+            farChunks += 1;
+            visibleBladeBudget += chunk.count * farGrassBladesPerVisual;
+          }
         }
       }
       diagnostics.visibleChunks = visibleChunks;
       diagnostics.culledChunks = chunks.length - visibleChunks;
+      diagnostics.nearChunks = nearChunks;
+      diagnostics.farChunks = farChunks;
       diagnostics.visibleInstances = visibleInstances;
+      diagnostics.visibleBladeBudget = visibleBladeBudget;
     },
     syncTargets(state: GameState, simulationTimeSeconds: number): void {
       dirtyChunkIndices.length = 0;
@@ -605,7 +661,8 @@ function addGrass(
         }
         if (fallSample.stage === "complete") {
           readMatrix(matrix, cutMatrices, visualIndex);
-          chunk.mesh.setMatrixAt(localIndex, matrix);
+          chunk.nearMesh.setMatrixAt(localIndex, matrix);
+          chunk.farMesh.setMatrixAt(localIndex, matrix);
           markDirtyChunk(chunkIndex, dirtyChunkFlags, dirtyChunkIndices);
           continue;
         }
@@ -626,7 +683,8 @@ function addGrass(
           visual.scaleZ * (1 - stubbleProgress * 0.22),
         );
         matrix.compose(position, rotation, scale);
-        chunk.mesh.setMatrixAt(localIndex, matrix);
+        chunk.nearMesh.setMatrixAt(localIndex, matrix);
+        chunk.farMesh.setMatrixAt(localIndex, matrix);
         fallingVisualIndices[activeWriteIndex] = visualIndex;
         activeWriteIndex += 1;
         markDirtyChunk(chunkIndex, dirtyChunkFlags, dirtyChunkIndices);
@@ -637,7 +695,8 @@ function addGrass(
       for (const chunkIndex of dirtyChunkIndices) {
         const chunk = chunks[chunkIndex];
         if (chunk !== undefined) {
-          chunk.mesh.instanceMatrix.needsUpdate = true;
+          chunk.nearMesh.instanceMatrix.needsUpdate = true;
+          chunk.farMesh.instanceMatrix.needsUpdate = true;
         }
         dirtyChunkFlags[chunkIndex] = 0;
       }
@@ -659,7 +718,8 @@ function markDirtyChunk(
 
 function createGrassChunks(
   scene: THREE.Scene,
-  geometry: THREE.BufferGeometry,
+  nearGeometry: THREE.BufferGeometry,
+  farGeometry: THREE.BufferGeometry,
   material: THREE.Material,
   chunkInstanceCount: number,
 ): GrassChunk[] {
@@ -670,20 +730,49 @@ function createGrassChunks(
 
   for (let row = 0; row < GRASS_RENDER_CHUNKS_PER_AXIS; row += 1) {
     for (let column = 0; column < GRASS_RENDER_CHUNKS_PER_AXIS; column += 1) {
-      const mesh = new THREE.InstancedMesh(geometry, material, chunkInstanceCount);
+      const nearMesh = new THREE.InstancedMesh(nearGeometry, material, chunkInstanceCount);
+      const farMesh = new THREE.InstancedMesh(farGeometry, material, chunkInstanceCount);
       const minX = -halfField + column * chunkWorldSize - GRASS_CHUNK_CULL_MARGIN;
       const maxX = minX + chunkWorldSize + GRASS_CHUNK_CULL_MARGIN * 2;
       const minZ = -halfField + row * chunkWorldSize - GRASS_CHUNK_CULL_MARGIN;
       const maxZ = minZ + chunkWorldSize + GRASS_CHUNK_CULL_MARGIN * 2;
+      const centerX = -halfField + (column + 0.5) * chunkWorldSize;
+      const centerZ = -halfField + (row + 0.5) * chunkWorldSize;
 
-      mesh.receiveShadow = true;
-      mesh.frustumCulled = false;
-      scene.add(mesh);
-      chunks.push({ mesh, count: chunkInstanceCount, minX, maxX, minZ, maxZ });
+      nearMesh.receiveShadow = true;
+      nearMesh.frustumCulled = false;
+      farMesh.receiveShadow = true;
+      farMesh.frustumCulled = false;
+      farMesh.visible = false;
+      scene.add(nearMesh, farMesh);
+      chunks.push({
+        nearMesh,
+        farMesh,
+        count: chunkInstanceCount,
+        centerX,
+        centerZ,
+        minX,
+        maxX,
+        minZ,
+        maxZ,
+      });
     }
   }
 
   return chunks;
+}
+
+function deriveFarGrassBladesPerVisual(grassBladesPerVisual: number): number {
+  return Math.max(
+    GRASS_MIN_FAR_BLADES_PER_VISUAL,
+    Math.min(grassBladesPerVisual, Math.round(grassBladesPerVisual * GRASS_FAR_LOD_RATIO)),
+  );
+}
+
+function deriveGrassNearLodRadius(camera: THREE.OrthographicCamera): number {
+  const viewWidth = camera.right - camera.left;
+  const viewHeight = camera.top - camera.bottom;
+  return Math.max(viewWidth, viewHeight) * 0.52;
 }
 
 function updateCameraGroundBounds(

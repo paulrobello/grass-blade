@@ -430,12 +430,23 @@ describe("active game state", () => {
 
       const visibleAtCenter = scene.presentation.grassVisibleChunks;
       expect(scene.presentation.grassTotalChunks).toBe(64);
+      expect(scene.presentation.grassNearBladesPerVisual).toBe(14);
+      expect(scene.presentation.grassFarBladesPerVisual).toBe(8);
       expect(visibleAtCenter).toBeGreaterThan(0);
       expect(visibleAtCenter).toBeLessThanOrEqual(scene.presentation.grassTotalChunks);
       expect(scene.presentation.grassCulledChunks).toBe(
         scene.presentation.grassTotalChunks - visibleAtCenter,
       );
+      expect(scene.presentation.grassNearChunks).toBeGreaterThan(0);
+      expect(scene.presentation.grassFarChunks).toBeGreaterThan(0);
+      expect(scene.presentation.grassNearChunks + scene.presentation.grassFarChunks).toBe(
+        visibleAtCenter,
+      );
       expect(scene.presentation.grassVisibleInstances).toBe(visibleAtCenter * 169);
+      expect(scene.presentation.grassVisibleBladeBudget).toBe(
+        scene.presentation.grassNearChunks * 169 * scene.presentation.grassNearBladesPerVisual +
+          scene.presentation.grassFarChunks * 169 * scene.presentation.grassFarBladesPerVisual,
+      );
 
       state.player.x = WORLD_HALF_EXTENT;
       state.player.z = WORLD_HALF_EXTENT;
@@ -445,8 +456,15 @@ describe("active game state", () => {
       expect(scene.presentation.grassVisibleChunks).toBeLessThan(
         scene.presentation.grassTotalChunks,
       );
+      expect(scene.presentation.grassNearChunks + scene.presentation.grassFarChunks).toBe(
+        scene.presentation.grassVisibleChunks,
+      );
       expect(scene.presentation.grassCulledChunks).toBe(
         scene.presentation.grassTotalChunks - scene.presentation.grassVisibleChunks,
+      );
+      expect(scene.presentation.grassVisibleBladeBudget).toBe(
+        scene.presentation.grassNearChunks * 169 * scene.presentation.grassNearBladesPerVisual +
+          scene.presentation.grassFarChunks * 169 * scene.presentation.grassFarBladesPerVisual,
       );
     } finally {
       scene.dispose();
