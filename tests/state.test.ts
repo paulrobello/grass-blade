@@ -142,6 +142,9 @@ describe("active game state", () => {
     expect(first.grassVisualCutMask).toBeInstanceOf(Uint8Array);
     expect(first.cutGrassVisualIndices).toEqual([]);
     expect(first.cutEvents).toEqual([]);
+    expect(first.tooToughNotice).toBeNull();
+    expect(first.tooToughRevision).toBe(0);
+    expect(first.tooToughNoticeCooldowns).toEqual({});
   });
 
   it("shows progress only after durable targets take initial damage", () => {
@@ -856,6 +859,64 @@ describe("active game state", () => {
     expect(state.objectives.wood.collected).toBe(0);
   });
 
+  it("emits a throttled too-tough notice when a higher-level target stalls the blade", () => {
+    const state = createInitialState(314);
+    const target = isolateTarget(state, "matureTree");
+    placeTargetAtPositiveXContact(state, target);
+
+    for (let frame = 0; frame < 300 && state.tooToughNotice === null; frame += 1) {
+      stepState(state, positiveXInput, FIXED_TIME_STEP_SECONDS);
+    }
+
+    expect(state.player.rpm).toBeLessThan(180);
+    expect(state.tooToughNotice).toMatchObject({
+      targetId: target.id,
+      kind: "matureTree",
+      recommendedLevel: 6,
+      currentLevel: 1,
+    });
+    const firstNoticeRevision = state.tooToughNotice?.revision ?? 0;
+
+    for (let frame = 0; frame < 10; frame += 1) {
+      stepState(state, positiveXInput, FIXED_TIME_STEP_SECONDS);
+    }
+
+    expect(state.tooToughRevision).toBe(firstNoticeRevision);
+  });
+
+  it("clears too-tough feedback after backing away from the stalled target", () => {
+    const state = createInitialState(315);
+    const target = isolateTarget(state, "matureTree");
+    placeTargetAtPositiveXContact(state, target);
+
+    for (let frame = 0; frame < 300 && state.tooToughNotice === null; frame += 1) {
+      stepState(state, positiveXInput, FIXED_TIME_STEP_SECONDS);
+    }
+    expect(state.tooToughNotice?.targetId).toBe(target.id);
+
+    for (let frame = 0; frame < 90 && state.bladeContactTargetIds.length > 0; frame += 1) {
+      stepState(state, negativeXInput, FIXED_TIME_STEP_SECONDS);
+    }
+
+    expect(state.bladeContactTargetIds).toEqual([]);
+    expect(state.tooToughNotice).toBeNull();
+  });
+
+  it("does not show too-tough feedback when the blade level can reasonably cut the target", () => {
+    const state = createInitialState(316);
+    const target = isolateTarget(state, "matureTree");
+    placeTargetAtPositiveXContact(state, target);
+    prepareLevelSixBlade(state);
+
+    for (let frame = 0; frame < 120; frame += 1) {
+      stepState(state, positiveXInput, FIXED_TIME_STEP_SECONDS);
+    }
+
+    expect(target.accumulatedWork).toBeGreaterThan(0);
+    expect(state.tooToughNotice).toBeNull();
+    expect(state.tooToughRevision).toBe(0);
+  });
+
   it("allows the blade hub to back away from a solid target", () => {
     const state = createInitialState(323);
     const target = isolateTarget(state, "matureTree");
@@ -1051,6 +1112,13 @@ function prepareLevelFourBlade(state: GameState): void {
   state.player.level = 4;
   state.player.rpm = 840;
   state.player.targetRpm = 840;
+}
+
+function prepareLevelSixBlade(state: GameState): void {
+  state.xp = 300;
+  state.player.level = 6;
+  state.player.rpm = 920;
+  state.player.targetRpm = 920;
 }
 
 function hasGrassTierValues(target: {

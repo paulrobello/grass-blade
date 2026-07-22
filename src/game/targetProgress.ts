@@ -1,6 +1,6 @@
 import * as THREE from "three";
 
-import type { TargetState } from "./state";
+import type { TargetState, TooToughNotice } from "./state";
 import type { TargetKind } from "./world";
 
 export const MAX_TARGET_PROGRESS_BARS = 16;
@@ -9,6 +9,7 @@ const DURABLE_TARGET_KINDS = new Set<TargetKind>(["denseWeed", "shrub", "sapling
 
 export interface TargetProgressDiagnostics {
   activeBars: number;
+  tooToughVisible: boolean;
 }
 
 export interface TargetProgressEntry {
@@ -22,7 +23,12 @@ export interface TargetProgressEntry {
 
 export interface TargetProgressOverlay {
   diagnostics: TargetProgressDiagnostics;
-  sync: (targets: readonly TargetState[], camera: THREE.Camera, canvas: HTMLCanvasElement) => void;
+  sync: (
+    targets: readonly TargetState[],
+    tooToughNotice: TooToughNotice | null,
+    camera: THREE.Camera,
+    canvas: HTMLCanvasElement,
+  ) => void;
   dispose: () => void;
 }
 
@@ -87,12 +93,20 @@ export function collectTargetProgressEntries(
 export function createTargetProgressOverlay(root: HTMLElement): TargetProgressOverlay {
   const layer = document.createElement("div");
   const worldPoint = new THREE.Vector3();
-  const diagnostics: TargetProgressDiagnostics = { activeBars: 0 };
+  const diagnostics: TargetProgressDiagnostics = { activeBars: 0, tooToughVisible: false };
   const slots: TargetProgressSlot[] = [];
+  const tooToughElement = document.createElement("div");
+  const tooToughLabel = document.createElement("span");
 
   layer.className = "target-progress-layer";
   layer.setAttribute("aria-hidden", "true");
   root.append(layer);
+
+  tooToughElement.className = "too-tough-notice";
+  tooToughElement.hidden = true;
+  tooToughLabel.className = "too-tough-notice__label";
+  tooToughElement.append(tooToughLabel);
+  layer.append(tooToughElement);
 
   for (let index = 0; index < MAX_TARGET_PROGRESS_BARS; index += 1) {
     const element = document.createElement("div");
@@ -111,6 +125,7 @@ export function createTargetProgressOverlay(root: HTMLElement): TargetProgressOv
 
   function sync(
     targets: readonly TargetState[],
+    tooToughNotice: TooToughNotice | null,
     camera: THREE.Camera,
     canvas: HTMLCanvasElement,
   ): void {
@@ -118,6 +133,12 @@ export function createTargetProgressOverlay(root: HTMLElement): TargetProgressOv
     const rootBounds = root.getBoundingClientRect();
     const canvasBounds = canvas.getBoundingClientRect();
     diagnostics.activeBars = 0;
+    diagnostics.tooToughVisible = syncTooToughNotice(
+      tooToughNotice,
+      camera,
+      rootBounds,
+      canvasBounds,
+    );
 
     for (let index = 0; index < slots.length; index += 1) {
       const slot = slots[index];
@@ -154,6 +175,42 @@ export function createTargetProgressOverlay(root: HTMLElement): TargetProgressOv
       slot.fill.style.width = `${Math.round(entry.progress * 100)}%`;
       diagnostics.activeBars += 1;
     }
+  }
+
+  function syncTooToughNotice(
+    notice: TooToughNotice | null,
+    camera: THREE.Camera,
+    rootBounds: DOMRect,
+    canvasBounds: DOMRect,
+  ): boolean {
+    if (notice === null) {
+      tooToughElement.hidden = true;
+      return false;
+    }
+
+    worldPoint.set(notice.x, targetProgressHeight(notice.kind) + 0.75, notice.z).project(camera);
+    if (
+      worldPoint.z < -1 ||
+      worldPoint.z > 1 ||
+      worldPoint.x < -1.08 ||
+      worldPoint.x > 1.08 ||
+      worldPoint.y < -1.08 ||
+      worldPoint.y > 1.08
+    ) {
+      tooToughElement.hidden = true;
+      return false;
+    }
+
+    const screenX =
+      canvasBounds.left - rootBounds.left + (worldPoint.x + 1) * 0.5 * canvasBounds.width;
+    const screenY =
+      canvasBounds.top - rootBounds.top + (1 - worldPoint.y) * 0.5 * canvasBounds.height;
+    tooToughElement.hidden = false;
+    tooToughElement.dataset.kind = notice.kind;
+    tooToughElement.dataset.revision = String(notice.revision);
+    tooToughLabel.textContent = `NEED LV ${notice.recommendedLevel}`;
+    tooToughElement.style.transform = `translate3d(${screenX}px, ${screenY}px, 0) translate(-50%, -100%)`;
+    return true;
   }
 
   function dispose(): void {

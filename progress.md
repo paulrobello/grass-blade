@@ -3,7 +3,7 @@ Original prompt: "i want create a threejs based game where you are a spinning bl
 # Grass Blade Progress
 
 Last updated: 2026-07-21
-Active milestone: Phase 2 — completion/results flow verified; too-tough feedback, rocks, and pause flow next
+Active milestone: Phase 2 — too-tough feedback verified; rocks and pause flow next
 
 ## Completed foundation intent
 
@@ -62,6 +62,7 @@ Active milestone: Phase 2 — completion/results flow verified; too-tough feedba
 - [x] Added live Grass, Flower, Fiber, and Wood quota, level, RPM, elapsed-time, and XP HUD state without introducing a failure countdown.
 - [x] Added resource-matched HUD counter pulses and a consolidated `LEVEL N` notification, with reduced-motion fallbacks that do not gate accounting or movement.
 - [x] Added target-local progress bars for damaged durable targets so weeds, saplings, and mature trees show persistent remaining work after first contact until they are cut.
+- [x] Added target-local too-tough feedback for higher-level durable targets that pull the blade below cutting RPM; the label is throttled per target, reads `NEED LV N`, and stays anchored above the resisting plant while contact remains.
 - [x] Rendered the five saplings with slim trunks and layered rounded foliage; exact live contact produces a deterministic lean/shudder, while completion reveals a stump and topples the severed top around the cut plane without ground clipping.
 - [x] Separated transient blade-contact authority from persistent partial cut work, so released saplings immediately stop shuddering while retaining their accumulated work.
 - [x] Replaced broad polygon clumps with 10,816 instanced fourteen-blade tufts, totaling 151,424 narrow tapered grass blades, and connected fine cut state to persistent stubble/clipping trails.
@@ -79,6 +80,7 @@ Active milestone: Phase 2 — completion/results flow verified; too-tough feedba
 - [x] Added reduced-motion vegetation timing and live fall diagnostics without per-frame allocation or new gameplay authority.
 - [x] Verified the fresh level-1 presentation as exactly two opposing blades with no saw teeth; four blades still begin only at level 2.
 - [x] Expanded `render_game_to_text` with inventory, XP, loaded RPM, target counts, live blade contacts, cut revision, persistent partial-work diagnostics, recent cut events, blade tier, orientation-cue count, and fragment-pool state.
+- [x] Expanded `render_game_to_text` with the current too-tough notice and overlay diagnostics so browser automation can verify target ID, kind, required level, current level, and visibility.
 - [x] Added authoritative same-tick Meadow Delivery completion when the final quota is awarded, including a stable result snapshot with elapsed time, targets cut, highest level, final inventory, and completion revision.
 - [x] Added a calm results card with elapsed time, targets cut, highest level, Restart, and Next Contract actions; `R` restarts the current seed and `N` opens the next deterministic seed from results.
 - [x] Added a query-gated `?debug=1` browser hook, `window.completeContractForDebug()`, that completes the final quota through the normal fixed-step award path for deterministic results-flow verification.
@@ -121,12 +123,14 @@ Active milestone: Phase 2 — completion/results flow verified; too-tough feedba
 - The required web-game Playwright client ran against `?seed=12345` and wrote `output/playwright/results-flow-smoke/shot-0.png` without browser error artifacts.
 - A debug-gated browser verification at `?seed=12345&debug=1` called `window.completeContractForDebug()`, confirmed `mode: "complete"`, all four objectives `status: "complete"`, final inventory `50/10/6/6`, a stable result snapshot, visible Restart and Next Contract buttons, and no console/page errors. The inspected screenshot is `output/playwright/results-flow-smoke/results-card.png`.
 - Result-card button checks verified Next Contract navigates to `?seed=2654448114` and Restart returns to `?seed=12345`, with no browser errors.
+- `make checkall` passes formatting verification, ESLint, strict TypeScript, 64 deterministic Vitest tests across four files, and the Vite production build after the too-tough presentation slice.
+- The required web-game Playwright client ran against `?seed=12345`, drove the level-1 cutter into a higher-level shrub, and wrote `output/playwright/too-tough-smoke/shot-0.png` plus `state-0.json` without browser error artifacts. The inspected screenshot shows a red `NEED LV 3` label above the resisting shrub with its draining work bar below it; the snapshot reports `tooToughVisible: true`, `targetId: "shrub-1"`, `recommendedLevel: 3`, `currentLevel: 1`, player RPM `57.6`, and zero Wood/Fiber awarded early.
 
 ## Remaining Phase 1 TODOs
 
 - [ ] Add deterministic coverage for RPM recovery, simultaneous aggregate load, final available quotas, and repeated contract snapshots.
 - [ ] Replace the linear target scan with the planned spatial query before discrete target counts grow beyond this bounded first slice.
-- [ ] In Phase 2, add final sapling art/material feedback, non-cuttable rocks, too-tough feedback, pause flow, and ten-seed completion validation.
+- [ ] In Phase 2, add final sapling art/material feedback, non-cuttable rocks, pause flow, and ten-seed completion validation.
 
 ## Handoff rules
 

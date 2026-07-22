@@ -73,6 +73,17 @@ export interface CutCompletionEvent {
   levelAfter: number;
 }
 
+export interface TooToughNotice {
+  revision: number;
+  targetId: string;
+  kind: TargetSeed["kind"];
+  x: number;
+  z: number;
+  recommendedLevel: number;
+  currentLevel: number;
+  issuedAtSeconds: number;
+}
+
 export interface PlayerState {
   x: number;
   z: number;
@@ -109,6 +120,9 @@ export interface GameState {
   cutGrassVisualIndices: number[];
   cutEvents: CutCompletionEvent[];
   cutRevision: number;
+  tooToughNotice: TooToughNotice | null;
+  tooToughRevision: number;
+  tooToughNoticeCooldowns: Record<string, number>;
 }
 
 export function createInitialState(seed = MEADOW_SEED): GameState {
@@ -160,6 +174,9 @@ export function createInitialState(seed = MEADOW_SEED): GameState {
     cutGrassVisualIndices: [],
     cutEvents: [],
     cutRevision: 0,
+    tooToughNotice: null,
+    tooToughRevision: 0,
+    tooToughNoticeCooldowns: {},
   };
 }
 
@@ -254,6 +271,7 @@ function stepCutting(
   for (const contact of contacts) {
     state.bladeContactTargetIds.push(contact.target.id);
   }
+  refreshTooToughNoticeVisibility(state, contacts);
   const totalLoad = contacts.reduce(
     (sum, contact) => sum + contact.target.resistance * contact.contactFraction,
     0,
@@ -273,6 +291,8 @@ function stepCutting(
 
   if (normalizedRpm > 0) {
     markCutGrassVisuals(state, startX, startZ, endX, endZ, state.player.radius);
+  } else {
+    emitTooToughNoticeIfNeeded(state, contacts);
   }
 
   for (const contact of contacts) {
@@ -297,6 +317,63 @@ function stepCutting(
 
   applyProgression(state);
   updateContractCompletion(state);
+}
+
+function refreshTooToughNoticeVisibility(
+  state: GameState,
+  contacts: readonly TargetContact[],
+): void {
+  const notice = state.tooToughNotice;
+  if (notice === null) {
+    return;
+  }
+
+  const stillInContact = contacts.some((contact) => contact.target.id === notice.targetId);
+  const stillVisible = state.elapsedSeconds - notice.issuedAtSeconds <= 0.95;
+  if (!stillInContact || !stillVisible) {
+    state.tooToughNotice = null;
+  }
+}
+
+function emitTooToughNoticeIfNeeded(state: GameState, contacts: readonly TargetContact[]): void {
+  const currentLevel = state.player.level;
+  let candidate: TargetState | null = null;
+
+  for (const contact of contacts) {
+    const target = contact.target;
+    if (
+      target.status === "cut" ||
+      target.accumulatedWork >= target.requiredWork ||
+      target.recommendedLevel <= currentLevel
+    ) {
+      continue;
+    }
+    if (candidate === null || target.recommendedLevel > candidate.recommendedLevel) {
+      candidate = target;
+    }
+  }
+
+  if (candidate === null) {
+    return;
+  }
+
+  const nextAllowedAt = state.tooToughNoticeCooldowns[candidate.id] ?? -Infinity;
+  if (state.elapsedSeconds < nextAllowedAt) {
+    return;
+  }
+
+  state.tooToughNoticeCooldowns[candidate.id] = state.elapsedSeconds + 1.5;
+  state.tooToughRevision += 1;
+  state.tooToughNotice = {
+    revision: state.tooToughRevision,
+    targetId: candidate.id,
+    kind: candidate.kind,
+    x: candidate.x,
+    z: candidate.z,
+    recommendedLevel: candidate.recommendedLevel,
+    currentLevel,
+    issuedAtSeconds: state.elapsedSeconds,
+  };
 }
 
 function markCutGrassVisuals(
@@ -493,6 +570,7 @@ function updateContractCompletion(state: GameState): void {
   state.player.vx = 0;
   state.player.vz = 0;
   state.bladeContactTargetIds.length = 0;
+  state.tooToughNotice = null;
   state.objectives.status = "complete";
   state.objectives.grass.status = "complete";
   state.objectives.flowers.status = "complete";

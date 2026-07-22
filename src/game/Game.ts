@@ -204,7 +204,12 @@ export class Game {
     this.updateHud();
     this.meadow.sync(this.state, this.simulationTimeSeconds);
     this.renderer.render(this.meadow.scene, this.meadow.camera);
-    this.targetProgress.sync(this.state.targets, this.meadow.camera, this.canvas);
+    this.targetProgress.sync(
+      this.state.targets,
+      this.state.tooToughNotice,
+      this.meadow.camera,
+      this.canvas,
+    );
     this.collectionMotes.sync(this.simulationTimeSeconds, this.meadow.camera, this.canvas);
   }
 
@@ -508,6 +513,7 @@ export class Game {
         ...targetCounts,
         active: activeTargets,
         bladeContacts: this.state.bladeContactTargetIds,
+        tooToughNotice: this.state.tooToughNotice,
         solids: solidTargets,
         visuallyCutGrassTufts: this.state.cutGrassVisualIndices.length,
         cutRevision: this.state.cutRevision,
