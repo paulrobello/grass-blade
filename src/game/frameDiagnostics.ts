@@ -12,6 +12,7 @@ export interface FrameDiagnosticsSnapshot {
   pixelRatio: number;
   qualityPreset: string;
   maxPixelRatio: number;
+  grassBladesPerVisual: number;
   canvasWidth: number;
   canvasHeight: number;
 }
@@ -23,6 +24,7 @@ export interface FrameDiagnosticsTracker {
     pixelRatio: number;
     qualityPreset: string;
     maxPixelRatio: number;
+    grassBladesPerVisual: number;
     canvasWidth: number;
     canvasHeight: number;
   }) => FrameDiagnosticsSnapshot;
@@ -68,6 +70,7 @@ export function createFrameDiagnosticsTracker(
     pixelRatio: number;
     qualityPreset: string;
     maxPixelRatio: number;
+    grassBladesPerVisual: number;
     canvasWidth: number;
     canvasHeight: number;
   }): FrameDiagnosticsSnapshot {
@@ -83,6 +86,7 @@ export function createFrameDiagnosticsTracker(
       pixelRatio: roundFrameMetric(options.pixelRatio),
       qualityPreset: options.qualityPreset,
       maxPixelRatio: roundFrameMetric(options.maxPixelRatio),
+      grassBladesPerVisual: options.grassBladesPerVisual,
       canvasWidth: options.canvasWidth,
       canvasHeight: options.canvasHeight,
     };

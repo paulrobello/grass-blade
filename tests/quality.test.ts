@@ -7,14 +7,17 @@ describe("quality settings", () => {
     expect(resolveQualitySettings(null)).toEqual({
       preset: "default",
       maxPixelRatio: 1.5,
+      grassBladesPerVisual: 14,
     });
     expect(resolveQualitySettings("default")).toEqual({
       preset: "default",
       maxPixelRatio: 1.5,
+      grassBladesPerVisual: 14,
     });
     expect(resolveQualitySettings("unknown")).toEqual({
       preset: "default",
       maxPixelRatio: 1.5,
+      grassBladesPerVisual: 14,
     });
   });
 
@@ -22,6 +25,7 @@ describe("quality settings", () => {
     expect(resolveQualitySettings("low")).toEqual({
       preset: "low",
       maxPixelRatio: 1,
+      grassBladesPerVisual: 8,
     });
   });
 });

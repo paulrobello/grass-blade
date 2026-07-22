@@ -18,6 +18,7 @@ describe("frame diagnostics", () => {
         pixelRatio: 1.5,
         qualityPreset: "default",
         maxPixelRatio: 1.5,
+        grassBladesPerVisual: 14,
         canvasWidth: 1280,
         canvasHeight: 720,
       }),
@@ -33,6 +34,7 @@ describe("frame diagnostics", () => {
       pixelRatio: 1.5,
       qualityPreset: "default",
       maxPixelRatio: 1.5,
+      grassBladesPerVisual: 14,
       canvasWidth: 1280,
       canvasHeight: 720,
     });
@@ -50,6 +52,7 @@ describe("frame diagnostics", () => {
         pixelRatio: 2,
         qualityPreset: "low",
         maxPixelRatio: 1,
+        grassBladesPerVisual: 8,
         canvasWidth: 1,
         canvasHeight: 1,
       }),
@@ -65,6 +68,7 @@ describe("frame diagnostics", () => {
       pixelRatio: 2,
       qualityPreset: "low",
       maxPixelRatio: 1,
+      grassBladesPerVisual: 8,
       canvasWidth: 1,
       canvasHeight: 1,
     });

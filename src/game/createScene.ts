@@ -1,6 +1,7 @@
 import * as THREE from "three";
 
 import { createCutEffects } from "./cutEffects";
+import type { QualitySettings } from "./quality";
 import type { GameState } from "./state";
 import { WORLD_HALF_EXTENT } from "./state";
 import {
@@ -17,7 +18,6 @@ import {
 import {
   createMeadowLayout,
   createMeadowDensityReport,
-  GRASS_BLADES_PER_VISUAL,
   FLOWER_VISUAL_COUNT,
   GRASS_VISUAL_COLUMNS,
   type MeadowLayout,
@@ -91,7 +91,7 @@ export interface MeadowScene {
   dispose: () => void;
 }
 
-export function createScene(seed: number): MeadowScene {
+export function createScene(seed: number, quality: QualitySettings): MeadowScene {
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0xb5df8b);
   scene.fog = new THREE.Fog(0xb5df8b, 28, 58);
@@ -99,7 +99,7 @@ export function createScene(seed: number): MeadowScene {
   const camera = new THREE.OrthographicCamera(-10, 10, 10, -10, 0.1, 100);
   const resources: Array<THREE.BufferGeometry | THREE.Material> = [];
   const layout = createMeadowLayout(seed);
-  const densityReport = createMeadowDensityReport(layout);
+  const densityReport = createMeadowDensityReport(layout, quality.grassBladesPerVisual);
   const random = createSeededRandom(seed);
   const scratchMatrix = new THREE.Matrix4();
   const scratchPosition = new THREE.Vector3();
@@ -144,6 +144,7 @@ export function createScene(seed: number): MeadowScene {
     scratchColor,
     yAxis,
     reducedMotion,
+    quality.grassBladesPerVisual,
   );
   const flowers = addFlowers(
     scene,
@@ -325,7 +326,7 @@ export function createScene(seed: number): MeadowScene {
     camera,
     density: {
       grassInstances: GRASS_VISUAL_COLUMNS * GRASS_VISUAL_COLUMNS,
-      grassBlades: GRASS_VISUAL_COLUMNS * GRASS_VISUAL_COLUMNS * GRASS_BLADES_PER_VISUAL,
+      grassBlades: GRASS_VISUAL_COLUMNS * GRASS_VISUAL_COLUMNS * quality.grassBladesPerVisual,
       flowerInstances: FLOWER_VISUAL_COUNT,
       weedInstances: layout.denseWeedVisuals.length,
       shrubInstances: layout.shrubVisuals.length,
@@ -396,9 +397,10 @@ function addGrass(
   color: THREE.Color,
   yAxis: THREE.Vector3,
   reducedMotion: boolean,
+  grassBladesPerVisual: number,
 ): FallingVegetationSync {
   const count = layout.grassVisuals.length;
-  const geometry = track(resources, createGrassClumpGeometry());
+  const geometry = track(resources, createGrassClumpGeometry(grassBladesPerVisual));
   const material = track(
     resources,
     new THREE.MeshStandardMaterial({
@@ -534,12 +536,12 @@ function addGrass(
   };
 }
 
-function createGrassClumpGeometry(): THREE.BufferGeometry {
+function createGrassClumpGeometry(grassBladesPerVisual: number): THREE.BufferGeometry {
   const positions: number[] = [];
 
-  for (let index = 0; index < GRASS_BLADES_PER_VISUAL; index += 1) {
+  for (let index = 0; index < grassBladesPerVisual; index += 1) {
     const angle = index * 2.399963229728653;
-    const radius = Math.sqrt((index + 0.5) / GRASS_BLADES_PER_VISUAL) * 0.21;
+    const radius = Math.sqrt((index + 0.5) / grassBladesPerVisual) * 0.21;
     appendGrassBlade(positions, {
       angle,
       x: Math.cos(angle) * radius,

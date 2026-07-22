@@ -90,7 +90,7 @@ export class Game {
     this.hud = getHudElements();
     this.results = createResultsElements(requireAppRoot(canvas));
     this.pause = createPauseElements(requireAppRoot(canvas));
-    this.meadow = createScene(this.state.seed);
+    this.meadow = createScene(this.state.seed, this.quality);
     this.collectionMotes = createCollectionMotes(
       requireAppRoot(canvas),
       {
@@ -589,6 +589,7 @@ export class Game {
         canvasHeight: this.canvas.height,
         qualityPreset: this.quality.preset,
         maxPixelRatio: this.quality.maxPixelRatio,
+        grassBladesPerVisual: this.quality.grassBladesPerVisual,
       }),
       player: {
         position: { x: round(player.x), z: round(player.z) },

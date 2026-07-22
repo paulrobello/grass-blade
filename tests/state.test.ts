@@ -381,8 +381,10 @@ describe("active game state", () => {
     for (const seed of COMPLETION_VALIDATION_SEEDS) {
       const layout = createMeadowLayout(seed);
       const report = createMeadowDensityReport(layout);
+      const lowQualityReport = createMeadowDensityReport(layout, 8);
 
       expect(report.eligibleTerrainArea).toBe(GRASS_FIELD_SIZE * GRASS_FIELD_SIZE);
+      expect(report.grassBladesPerVisual).toBe(GRASS_BLADES_PER_VISUAL);
       expect(report.grassCoverageFraction).toBe(1);
       expect(report.decorativeGrassBladesPerWorldUnitSquared).toBeCloseTo(
         (GRASS_VISUAL_COLUMNS * GRASS_VISUAL_COLUMNS * GRASS_BLADES_PER_VISUAL) /
@@ -394,8 +396,16 @@ describe("active game state", () => {
       expect(report.flowerBlossomsPerDriftWorldUnitSquared).toBeLessThanOrEqual(4);
       expect(report.meetsDefaultGrassCoverage).toBe(true);
       expect(report.meetsDefaultGrassDensity).toBe(true);
+      expect(report.meetsLowGrassDensity).toBe(true);
       expect(report.meetsFlowerDriftCoverage).toBe(true);
       expect(report.meetsFlowerBlossomDensity).toBe(true);
+
+      expect(lowQualityReport.grassBladesPerVisual).toBe(8);
+      expect(lowQualityReport.decorativeGrassBladesPerWorldUnitSquared).toBeCloseTo(
+        (GRASS_VISUAL_COLUMNS * GRASS_VISUAL_COLUMNS * 8) / (GRASS_FIELD_SIZE * GRASS_FIELD_SIZE),
+      );
+      expect(lowQualityReport.meetsDefaultGrassDensity).toBe(false);
+      expect(lowQualityReport.meetsLowGrassDensity).toBe(true);
     }
   });
 

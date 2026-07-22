@@ -167,12 +167,14 @@ export interface MeadowLayout {
 
 export interface MeadowDensityReport {
   eligibleTerrainArea: number;
+  grassBladesPerVisual: number;
   grassCoverageFraction: number;
   decorativeGrassBladesPerWorldUnitSquared: number;
   flowerDriftCoverageFraction: number;
   flowerBlossomsPerDriftWorldUnitSquared: number;
   meetsDefaultGrassCoverage: boolean;
   meetsDefaultGrassDensity: boolean;
+  meetsLowGrassDensity: boolean;
   meetsFlowerDriftCoverage: boolean;
   meetsFlowerBlossomDensity: boolean;
 }
@@ -217,19 +219,23 @@ export function createMeadowLayout(seed: number): MeadowLayout {
   };
 }
 
-export function createMeadowDensityReport(layout: MeadowLayout): MeadowDensityReport {
+export function createMeadowDensityReport(
+  layout: MeadowLayout,
+  grassBladesPerVisual = GRASS_BLADES_PER_VISUAL,
+): MeadowDensityReport {
   const eligibleTerrainArea = GRASS_FIELD_SIZE * GRASS_FIELD_SIZE;
   const grassCoverageFraction =
     (layout.grassCells.length * (GRASS_FIELD_SIZE / GRASS_LOGICAL_COLUMNS) ** 2) /
     eligibleTerrainArea;
   const decorativeGrassBladesPerWorldUnitSquared =
-    (layout.grassVisuals.length * GRASS_BLADES_PER_VISUAL) / eligibleTerrainArea;
+    (layout.grassVisuals.length * grassBladesPerVisual) / eligibleTerrainArea;
   const flowerDriftArea = estimateFlowerDriftArea(layout.flowerTargets);
   const flowerDriftCoverageFraction = flowerDriftArea / eligibleTerrainArea;
   const flowerBlossomsPerDriftWorldUnitSquared = layout.flowerVisuals.length / flowerDriftArea;
 
   return {
     eligibleTerrainArea: roundDensityMetric(eligibleTerrainArea),
+    grassBladesPerVisual,
     grassCoverageFraction: roundDensityMetric(grassCoverageFraction),
     decorativeGrassBladesPerWorldUnitSquared: roundDensityMetric(
       decorativeGrassBladesPerWorldUnitSquared,
@@ -240,6 +246,7 @@ export function createMeadowDensityReport(layout: MeadowLayout): MeadowDensityRe
     ),
     meetsDefaultGrassCoverage: grassCoverageFraction >= 0.85,
     meetsDefaultGrassDensity: decorativeGrassBladesPerWorldUnitSquared >= 90,
+    meetsLowGrassDensity: decorativeGrassBladesPerWorldUnitSquared >= 45,
     meetsFlowerDriftCoverage:
       flowerDriftCoverageFraction >= 0.2 && flowerDriftCoverageFraction <= 0.3,
     meetsFlowerBlossomDensity:
