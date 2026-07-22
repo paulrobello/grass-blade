@@ -159,6 +159,7 @@ Active milestone: Phase 3 — density, frame, and quality diagnostics before ren
 - `make checkall` passes formatting verification, ESLint, strict TypeScript, 79 deterministic Vitest tests across six files, and the Vite production build after the initial quality-preset seam.
 - The required web-game Playwright client ran against `?seed=12345&quality=low` after the quality-preset build and wrote `output/playwright/quality-low-smoke/shot-0.png` plus `state-0.json` without browser error artifacts; the inspected state reports `qualityPreset: "low"`, `maxPixelRatio: 1`, and the screenshot remains visually readable with dense flowers, cut trails, HUD, progress bars, and too-tough feedback intact.
 - Custom-domain setup note: repo-local Pages artifact configuration is `public/CNAME`. GitHub Pages settings have accepted `grass-blade.pardev.net` as the custom domain, but DNS must resolve the hostname to GitHub Pages (`paulrobello.github.io`) before the domain becomes live and GitHub can issue/enforce the HTTPS certificate.
+- Cloudflare DNS now has an explicit DNS-only CNAME `grass-blade.pardev.net -> paulrobello.github.io`, overriding the previous wildcard A-record behavior. `dig` resolves the hostname to GitHub Pages, and `curl -I http://grass-blade.pardev.net/` returns `200 OK` from `Server: GitHub.com`. HTTPS enforcement is still pending because GitHub's API reports `The certificate does not exist yet`; retry enabling HTTPS after GitHub issues the custom-domain certificate.
 
 ## Remaining TODOs
 
