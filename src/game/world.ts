@@ -24,7 +24,12 @@ export const MATURE_TREE_COUNT = 8;
 export const ROCK_COUNT = 8;
 
 export type ArenaLayoutId =
-  "meadow-delivery" | "flower-sweep" | "woodland-cleanup" | "timed-harvest" | "field-sprint";
+  | "meadow-delivery"
+  | "flower-sweep"
+  | "woodland-cleanup"
+  | "timed-harvest"
+  | "field-sprint"
+  | "clear-every-patch";
 export type ArenaShape =
   | "starter-meadow-paths"
   | "branching-flower-corridors"
@@ -404,6 +409,7 @@ function resolveArenaLayoutId(arenaId: string): ArenaLayoutId {
     case "woodland-cleanup":
     case "timed-harvest":
     case "field-sprint":
+    case "clear-every-patch":
       return arenaId;
     default:
       return "meadow-delivery";
@@ -420,6 +426,7 @@ function resolveArenaShape(arenaId: ArenaLayoutId): ArenaShape {
       return "timed-loop";
     case "field-sprint":
       return "sprint-lanes";
+    case "clear-every-patch":
     case "meadow-delivery":
       return "starter-meadow-paths";
   }
@@ -529,7 +536,7 @@ function createFlowerClusterCenters(
     );
   }
 
-  if (arenaId === "meadow-delivery") {
+  if (arenaId === "meadow-delivery" || arenaId === "clear-every-patch") {
     return jitterAnchors(
       [
         [0, -15],
@@ -638,6 +645,7 @@ function isPointInArenaGrowth(arenaId: ArenaLayoutId, x: number, z: number): boo
         !isPointInCircle(x, z, -2, -2, 1.9) &&
         !isPointInCircle(x, z, 5, 7, 2.0)
       );
+    case "clear-every-patch":
     case "meadow-delivery":
       return (
         (isPointInCapsule(x, z, 0, -18, 0, 18, 5.85) ||

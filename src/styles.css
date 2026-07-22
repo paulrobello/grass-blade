@@ -1503,13 +1503,13 @@ body {
   }
 
   .intro-card__contract-list {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.32rem;
   }
 
   .intro-card__contract {
     min-height: 0;
-    padding: 0.36rem 0.45rem;
+    padding: 0.32rem 0.36rem;
   }
 
   .intro-card__contract-title {
@@ -1518,7 +1518,8 @@ body {
   }
 
   .intro-card__contract-name {
-    font-size: 0.78rem;
+    font-size: 0.66rem;
+    line-height: 1.04;
   }
 
   .intro-card__contract-summary {
@@ -1526,7 +1527,7 @@ body {
   }
 
   .intro-card__contract-quotas {
-    font-size: 0.47rem;
+    font-size: 0.4rem;
     line-height: 1.08;
   }
 

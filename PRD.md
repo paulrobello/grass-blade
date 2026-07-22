@@ -182,7 +182,15 @@ Authored contracts are selected by deterministic contract ID and seed. The defau
 - Uses narrow connected lanes with flower-heavy pockets and a countdown HUD.
 - If the timer reaches zero before every quota is complete, the contract ends with the same `timed-out` result semantics as Timed Harvest.
 
-Later contracts may choose two to four resource quotas from authored templates, but must remain deterministic for a given contract ID and seed. Over-collection is allowed and still grants XP. Contract completion occurs in the same simulation tick that the final quota is awarded.
+### Clear Every Patch
+
+- Contract ID: `clear-every-patch`
+- No time limit.
+- Clear every generated Grass and Flower target in the starter meadow.
+- Fiber and Wood are not required and are hidden from the active HUD.
+- This contract uses `clear-patches` completion mode: Grass and Flower counters are generated from the seeded world counts, and completion requires every matching authoritative target to reach `cut`, not merely matching counter totals.
+
+Later contracts may choose quota delivery or authored clear-patch goals from deterministic templates. Over-collection is allowed and still grants XP. Contract completion occurs in the same simulation tick that the final quota is awarded or the final clear-patch target is cut.
 
 Flower drifts are visual patches made from twenty smaller authoritative flower targets per drift. Cutting one edge pocket must not collect or visually topple the whole patch; fully clearing a patch requires sweeping through all of its flower sub-targets.
 

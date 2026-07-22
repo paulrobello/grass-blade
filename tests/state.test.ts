@@ -128,6 +128,7 @@ describe("active game state", () => {
       title: "Meadow Delivery",
       summary: "Clear a balanced starter meadow contract.",
       timeLimitSeconds: null,
+      completionMode: "quota",
     });
     expect(first.elapsedSeconds).toBe(0);
     expect(first.player).toMatchObject({
@@ -277,6 +278,7 @@ describe("active game state", () => {
       title: "Flower Sweep",
       summary: "Harvest every flower drift while keeping lighter Fiber and Wood quotas.",
       timeLimitSeconds: null,
+      completionMode: "quota",
     });
     expect(state.objectives.grass.target).toBe(34);
     expect(state.objectives.flowers.target).toBe(16);
@@ -303,6 +305,7 @@ describe("active game state", () => {
       title: "Woodland Cleanup",
       summary: "Focus on weeds and saplings for a heavier Fiber and Wood delivery.",
       timeLimitSeconds: null,
+      completionMode: "quota",
     });
     expect(state.objectives.grass.target).toBe(30);
     expect(state.objectives.flowers.target).toBe(6);
@@ -329,6 +332,7 @@ describe("active game state", () => {
       title: "Timed Harvest",
       summary: "A 60-second grass, flower, and fiber route with no room to wander.",
       timeLimitSeconds: 60,
+      completionMode: "quota",
     });
     expect(state.objectives.grass.target).toBe(22);
     expect(state.objectives.flowers.target).toBe(6);
@@ -358,6 +362,7 @@ describe("active game state", () => {
       title: "Field Sprint",
       summary: "A 45-second flower-lane sprint with only soft targets.",
       timeLimitSeconds: 45,
+      completionMode: "quota",
     });
     expect(state.objectives.grass.target).toBe(18);
     expect(state.objectives.flowers.target).toBe(10);
@@ -376,6 +381,60 @@ describe("active game state", () => {
       highestLevel: 2,
       finalInventory: { grass: 18, flowers: 10, fiber: 0, wood: 0 },
       completionRevision: 28,
+    });
+  });
+
+  it("creates and completes the authored Clear Every Patch contract only after all soft patches are cut", () => {
+    const state = createInitialState(12345, "clear-every-patch");
+    const expectedGrassTargets = state.targets.filter((target) => target.kind === "grass").length;
+    const expectedFlowerTargets = state.targets.filter((target) => target.kind === "flower").length;
+
+    expect(state.contract).toEqual({
+      id: "clear-every-patch",
+      title: "Clear Every Patch",
+      summary: "Sweep the full starter meadow clean instead of stopping at delivery quotas.",
+      timeLimitSeconds: null,
+      completionMode: "clear-patches",
+    });
+    expect(state.objectives.grass.target).toBe(expectedGrassTargets);
+    expect(state.objectives.flowers.target).toBe(expectedFlowerTargets);
+    expect(state.objectives.fiber.target).toBe(0);
+    expect(state.objectives.wood.target).toBe(0);
+
+    state.inventory = {
+      grass: state.objectives.grass.target,
+      flowers: state.objectives.flowers.target,
+      fiber: 0,
+      wood: 0,
+    };
+    state.objectives.grass.collected = state.objectives.grass.target;
+    state.objectives.flowers.collected = state.objectives.flowers.target;
+    stepState(state, idleInput, FIXED_TIME_STEP_SECONDS);
+
+    expect(state.mode).toBe("active");
+    expect(state.objectives.status).toBe("active");
+
+    completeContractThroughQuotaCuts(state);
+
+    expect(state.mode).toBe("complete");
+    expect(state.inventory).toEqual({
+      grass: expectedGrassTargets,
+      flowers: expectedFlowerTargets,
+      fiber: 0,
+      wood: 0,
+    });
+    expect(state.result).toMatchObject({
+      status: "complete",
+      timeLimitSeconds: null,
+      cutTargets: expectedGrassTargets + expectedFlowerTargets,
+      highestLevel: 8,
+      finalInventory: {
+        grass: expectedGrassTargets,
+        flowers: expectedFlowerTargets,
+        fiber: 0,
+        wood: 0,
+      },
+      completionRevision: expectedGrassTargets + expectedFlowerTargets,
     });
   });
 
@@ -408,8 +467,13 @@ describe("active game state", () => {
 
         expect(state.mode).toBe("complete");
         expect(state.objectives.status).toBe("complete");
-        expect(state.inventory).toEqual(contract.objectives);
-        expect(state.result?.finalInventory).toEqual(contract.objectives);
+        expect(state.inventory).toEqual({
+          grass: state.objectives.grass.target,
+          flowers: state.objectives.flowers.target,
+          fiber: state.objectives.fiber.target,
+          wood: state.objectives.wood.target,
+        });
+        expect(state.result?.finalInventory).toEqual(state.inventory);
       }
     }
   });
@@ -1938,12 +2002,23 @@ function contractSnapshot(state: GameState): ContractSnapshot {
 }
 
 function completeContractThroughQuotaCuts(state: GameState): void {
-  const quotaTargets = [
-    ...targetsForKind(state, "grass", state.objectives.grass.target),
-    ...targetsForKind(state, "flower", state.objectives.flowers.target),
-    ...targetsForKind(state, "denseWeed", state.objectives.fiber.target),
-    ...targetsForKind(state, "sapling", state.objectives.wood.target / 2),
-  ];
+  const quotaTargets =
+    state.contract.completionMode === "clear-patches"
+      ? [
+          ...targetsForKind(state, "grass", state.objectives.grass.target),
+          ...targetsForKind(state, "flower", state.objectives.flowers.target),
+        ]
+      : [
+          ...targetsForKind(state, "grass", state.objectives.grass.target),
+          ...targetsForKind(state, "flower", state.objectives.flowers.target),
+          ...targetsForKind(state, "denseWeed", state.objectives.fiber.target),
+          ...targetsForKind(state, "sapling", state.objectives.wood.target / 2),
+        ];
+  state.inventory = { grass: 0, flowers: 0, fiber: 0, wood: 0 };
+  state.objectives.grass.collected = 0;
+  state.objectives.flowers.collected = 0;
+  state.objectives.fiber.collected = 0;
+  state.objectives.wood.collected = 0;
   state.targets = quotaTargets;
 
   for (let index = 0; index < quotaTargets.length; index += 1) {

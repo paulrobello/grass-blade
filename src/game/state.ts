@@ -3,6 +3,7 @@ import {
   GRASS_VISUAL_COLUMNS,
   createMeadowLayout,
   type GrassVisual,
+  type MeadowLayout,
   type TargetSeed,
 } from "./world";
 
@@ -49,10 +50,17 @@ export interface ObjectivesState {
 }
 
 export interface ContractDefinition {
-  id: "meadow-delivery" | "flower-sweep" | "woodland-cleanup" | "timed-harvest" | "field-sprint";
+  id:
+    | "meadow-delivery"
+    | "flower-sweep"
+    | "woodland-cleanup"
+    | "timed-harvest"
+    | "field-sprint"
+    | "clear-every-patch";
   title: string;
   summary: string;
   timeLimitSeconds?: number;
+  completionMode?: "quota" | "clear-patches";
   objectives: {
     grass: number;
     flowers: number;
@@ -66,6 +74,7 @@ export interface ContractState {
   title: string;
   summary: string;
   timeLimitSeconds: number | null;
+  completionMode: "quota" | "clear-patches";
 }
 
 export const DEFAULT_CONTRACT_ID: ContractDefinition["id"] = "meadow-delivery";
@@ -102,6 +111,13 @@ export const CONTRACT_DEFINITIONS = [
     summary: "A 45-second flower-lane sprint with only soft targets.",
     timeLimitSeconds: 45,
     objectives: { grass: 18, flowers: 10, fiber: 0, wood: 0 },
+  },
+  {
+    id: "clear-every-patch",
+    title: "Clear Every Patch",
+    summary: "Sweep the full starter meadow clean instead of stopping at delivery quotas.",
+    completionMode: "clear-patches",
+    objectives: { grass: 0, flowers: 0, fiber: 0, wood: 0 },
   },
 ] as const satisfies readonly ContractDefinition[];
 
@@ -206,6 +222,7 @@ export function createInitialState(
 ): GameState {
   const contract = resolveContractDefinition(contractId);
   const layout = createMeadowLayout(seed, contract.id);
+  const objectives = createContractObjectives(contract, layout);
   const targetSeeds = [
     ...layout.grassCells,
     ...layout.flowerTargets,
@@ -226,6 +243,7 @@ export function createInitialState(
       title: contract.title,
       summary: contract.summary,
       timeLimitSeconds: contract.timeLimitSeconds ?? null,
+      completionMode: contract.completionMode ?? "quota",
     },
     elapsedSeconds: 0,
     player: {
@@ -247,10 +265,10 @@ export function createInitialState(
     },
     objectives: {
       status: "active",
-      grass: { status: "active", collected: 0, target: contract.objectives.grass },
-      flowers: { status: "active", collected: 0, target: contract.objectives.flowers },
-      fiber: { status: "active", collected: 0, target: contract.objectives.fiber },
-      wood: { status: "active", collected: 0, target: contract.objectives.wood },
+      grass: { status: "active", collected: 0, target: objectives.grass },
+      flowers: { status: "active", collected: 0, target: objectives.flowers },
+      fiber: { status: "active", collected: 0, target: objectives.fiber },
+      wood: { status: "active", collected: 0, target: objectives.wood },
     },
     result: null,
     xp: 0,
@@ -265,6 +283,22 @@ export function createInitialState(
     tooToughNotice: null,
     tooToughRevision: 0,
     tooToughNoticeCooldowns: {},
+  };
+}
+
+function createContractObjectives(
+  contract: ContractDefinition,
+  layout: MeadowLayout,
+): ContractDefinition["objectives"] {
+  if (contract.completionMode !== "clear-patches") {
+    return contract.objectives;
+  }
+
+  return {
+    grass: layout.grassCells.length,
+    flowers: layout.flowerTargets.length,
+    fiber: 0,
+    wood: 0,
   };
 }
 
@@ -784,12 +818,7 @@ function updateContractCompletion(state: GameState): void {
     return;
   }
 
-  const objectivesComplete =
-    state.objectives.grass.collected >= state.objectives.grass.target &&
-    state.objectives.flowers.collected >= state.objectives.flowers.target &&
-    state.objectives.fiber.collected >= state.objectives.fiber.target &&
-    state.objectives.wood.collected >= state.objectives.wood.target;
-  if (!objectivesComplete) {
+  if (!isContractComplete(state)) {
     return;
   }
 
@@ -799,6 +828,26 @@ function updateContractCompletion(state: GameState): void {
   state.objectives.flowers.status = "complete";
   state.objectives.fiber.status = "complete";
   state.objectives.wood.status = "complete";
+}
+
+function isContractComplete(state: GameState): boolean {
+  const objectivesComplete =
+    state.objectives.grass.collected >= state.objectives.grass.target &&
+    state.objectives.flowers.collected >= state.objectives.flowers.target &&
+    state.objectives.fiber.collected >= state.objectives.fiber.target &&
+    state.objectives.wood.collected >= state.objectives.wood.target;
+
+  if (!objectivesComplete) {
+    return false;
+  }
+
+  if (state.contract.completionMode !== "clear-patches") {
+    return true;
+  }
+
+  return state.targets.every(
+    (target) => (target.kind !== "grass" && target.kind !== "flower") || target.status === "cut",
+  );
 }
 
 function updateContractTimeout(state: GameState): void {

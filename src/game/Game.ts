@@ -987,22 +987,51 @@ export class Game {
     }
     this.beginContract();
 
-    const finalTarget = this.state.targets.find(
-      (target) => target.kind === "grass" && target.status !== "cut",
-    );
+    const clearPatchMode = this.state.contract.completionMode === "clear-patches";
+    const finalTarget = this.state.targets.find((target) => {
+      if (target.status === "cut") {
+        return false;
+      }
+      return clearPatchMode ? target.kind === "flower" : target.kind === "grass";
+    });
     if (finalTarget === undefined) {
       return;
     }
 
-    const grassBeforeFinalCut = Math.max(0, this.state.objectives.grass.target - 1);
-    this.state.inventory = {
-      grass: grassBeforeFinalCut,
-      flowers: this.state.objectives.flowers.target,
-      fiber: this.state.objectives.fiber.target,
-      wood: this.state.objectives.wood.target,
-    };
-    this.state.objectives.grass.collected = grassBeforeFinalCut;
-    this.state.objectives.flowers.collected = this.state.objectives.flowers.target;
+    if (clearPatchMode) {
+      let preclearedXp = 0;
+      for (const target of this.state.targets) {
+        if (target !== finalTarget && (target.kind === "grass" || target.kind === "flower")) {
+          target.status = "cut";
+          target.accumulatedWork = target.requiredWork;
+          preclearedXp += target.xp;
+        }
+      }
+      this.state.xp = preclearedXp;
+      this.state.player.level = levelForDebugXp(preclearedXp);
+      this.state.player.targetRpm = Math.min(1000, 720 + 40 * (this.state.player.level - 1));
+      this.state.inventory = {
+        grass: this.state.objectives.grass.target,
+        flowers: Math.max(0, this.state.objectives.flowers.target - 1),
+        fiber: this.state.objectives.fiber.target,
+        wood: this.state.objectives.wood.target,
+      };
+      this.state.objectives.grass.collected = this.state.objectives.grass.target;
+      this.state.objectives.flowers.collected = Math.max(
+        0,
+        this.state.objectives.flowers.target - 1,
+      );
+    } else {
+      const grassBeforeFinalCut = Math.max(0, this.state.objectives.grass.target - 1);
+      this.state.inventory = {
+        grass: grassBeforeFinalCut,
+        flowers: this.state.objectives.flowers.target,
+        fiber: this.state.objectives.fiber.target,
+        wood: this.state.objectives.wood.target,
+      };
+      this.state.objectives.grass.collected = grassBeforeFinalCut;
+      this.state.objectives.flowers.collected = this.state.objectives.flowers.target;
+    }
     this.state.objectives.fiber.collected = this.state.objectives.fiber.target;
     this.state.objectives.wood.collected = this.state.objectives.wood.target;
     finalTarget.x = this.state.player.x;
@@ -1245,6 +1274,17 @@ export function nextAuthoredContractTitle(currentContractId: string): string {
   );
 }
 
+function levelForDebugXp(xp: number): number {
+  let level = 1;
+  for (const threshold of CUMULATIVE_XP_THRESHOLDS) {
+    if (xp < threshold) {
+      break;
+    }
+    level += 1;
+  }
+  return Math.min(8, level);
+}
+
 export interface PlayableRootSize {
   width: number;
   height: number;
@@ -1473,7 +1513,7 @@ function createIntroElements(
   summary.id = "intro-summary";
   summary.className = "intro-card__summary";
   summary.textContent =
-    "Clear grass, flowers, fiber, and wood quotas with a spinning blade that levels up as you cut.";
+    "Clear delivery quotas or sweep every patch with a spinning blade that levels up as you cut.";
   contractPicker.className = "intro-card__contracts";
   contractPicker.setAttribute("role", "group");
   contractPicker.setAttribute("aria-labelledby", "intro-contract-picker-title");
@@ -1498,7 +1538,7 @@ function createIntroElements(
     contractSummary.className = "intro-card__contract-summary";
     contractSummary.textContent = contract.summary;
     quotas.className = "intro-card__contract-quotas";
-    quotas.textContent = formatContractQuotas(contract.objectives);
+    quotas.textContent = formatContractGoal(contract);
     if (contract.timeLimitSeconds !== undefined) {
       timeLimit.className = "intro-card__contract-time";
       timeLimit.textContent = `${contract.timeLimitSeconds} sec`;
@@ -1651,9 +1691,13 @@ function updateObjectiveRow(
   setText(target, String(objective.target));
 }
 
-function formatContractQuotas(objectives: ContractDefinition["objectives"]): string {
-  return OBJECTIVE_RESOURCES.filter((resource) => objectives[resource] > 0)
-    .map((resource) => `${objectives[resource]} ${OBJECTIVE_LABELS[resource]}`)
+function formatContractGoal(contract: ContractDefinition): string {
+  if (contract.completionMode === "clear-patches") {
+    return "Clear every Grass · Flower patch";
+  }
+
+  return OBJECTIVE_RESOURCES.filter((resource) => contract.objectives[resource] > 0)
+    .map((resource) => `${contract.objectives[resource]} ${OBJECTIVE_LABELS[resource]}`)
     .join(" · ");
 }
 
