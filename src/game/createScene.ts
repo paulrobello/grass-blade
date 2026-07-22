@@ -31,6 +31,7 @@ const CAMERA_OFFSET_X = 8.5;
 const CAMERA_OFFSET_Y = 22;
 const CAMERA_OFFSET_Z = 8.5;
 const CAMERA_VIEW_HEIGHT = 15.5;
+const CAMERA_PORTRAIT_MIN_VIEW_WIDTH = CAMERA_VIEW_HEIGHT;
 const BLADE_VISUAL_SPIN_SCALE = 0.0775;
 const GRASS_RENDER_CHUNKS_PER_AXIS = 8;
 const GRASS_VISUALS_PER_CHUNK_EDGE = GRASS_VISUAL_COLUMNS / GRASS_RENDER_CHUNKS_PER_AXIS;
@@ -110,6 +111,9 @@ export interface MeadowPresentationDiagnostics {
   bladeAssetStatus: BladeAssetLoadState;
   bladeAssetSweptRadius: number;
   bladeAssetSpinAxis: string;
+  cameraViewWidth: number;
+  cameraViewHeight: number;
+  cameraViewAspectRatio: number;
   fallingGrassTufts: number;
   fallingFlowerInstances: number;
   fallingWeedInstances: number;
@@ -330,6 +334,9 @@ export function createScene(seed: number, quality: QualitySettings): MeadowScene
     bladeAssetStatus: blade.diagnostics.bladeAssetStatus,
     bladeAssetSweptRadius: blade.diagnostics.bladeAssetSweptRadius,
     bladeAssetSpinAxis: blade.diagnostics.bladeAssetSpinAxis,
+    cameraViewWidth: camera.right - camera.left,
+    cameraViewHeight: camera.top - camera.bottom,
+    cameraViewAspectRatio: (camera.right - camera.left) / (camera.top - camera.bottom),
     fallingGrassTufts: 0,
     fallingFlowerInstances: 0,
     fallingWeedInstances: 0,
@@ -434,13 +441,22 @@ export function createScene(seed: number, quality: QualitySettings): MeadowScene
   }
 
   function resize(aspect: number): void {
-    const halfHeight = CAMERA_VIEW_HEIGHT / 2;
-    const halfWidth = halfHeight * aspect;
+    const safeAspect = Math.max(0.01, aspect);
+    const fixedHalfHeight = CAMERA_VIEW_HEIGHT / 2;
+    const fixedHalfWidth = fixedHalfHeight * safeAspect;
+    const halfWidth =
+      safeAspect < 1
+        ? Math.max(fixedHalfWidth, CAMERA_PORTRAIT_MIN_VIEW_WIDTH / 2)
+        : fixedHalfWidth;
+    const halfHeight = halfWidth / safeAspect;
     camera.left = -halfWidth;
     camera.right = halfWidth;
     camera.top = halfHeight;
     camera.bottom = -halfHeight;
     camera.updateProjectionMatrix();
+    presentation.cameraViewWidth = camera.right - camera.left;
+    presentation.cameraViewHeight = camera.top - camera.bottom;
+    presentation.cameraViewAspectRatio = safeAspect;
   }
 
   function dispose(): void {

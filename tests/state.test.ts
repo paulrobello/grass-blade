@@ -475,6 +475,40 @@ describe("active game state", () => {
     }
   });
 
+  it("keeps a minimum playable world width in portrait camera framing", () => {
+    const originalWindow = globalThis.window;
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      value: {
+        matchMedia: () => ({ matches: false }),
+      },
+    });
+    const scene = createScene(12345, resolveQualitySettings(null));
+    try {
+      scene.resize(16 / 9);
+      const landscapeWidth = scene.camera.right - scene.camera.left;
+      const landscapeHeight = scene.camera.top - scene.camera.bottom;
+
+      scene.resize(592 / 981);
+      const portraitWidth = scene.camera.right - scene.camera.left;
+      const portraitHeight = scene.camera.top - scene.camera.bottom;
+
+      expect(landscapeHeight).toBeCloseTo(15.5);
+      expect(landscapeWidth).toBeCloseTo((15.5 * 16) / 9);
+      expect(portraitWidth).toBeCloseTo(15.5);
+      expect(portraitHeight).toBeCloseTo(15.5 / (592 / 981));
+      expect(scene.presentation.cameraViewWidth).toBeCloseTo(portraitWidth);
+      expect(scene.presentation.cameraViewHeight).toBeCloseTo(portraitHeight);
+      expect(scene.presentation.cameraViewAspectRatio).toBeCloseTo(592 / 981);
+    } finally {
+      scene.dispose();
+      Object.defineProperty(globalThis, "window", {
+        configurable: true,
+        value: originalWindow,
+      });
+    }
+  });
+
   it("projects completed grass visuals into the world-aligned render cut mask", () => {
     const originalWindow = globalThis.window;
     Object.defineProperty(globalThis, "window", {
