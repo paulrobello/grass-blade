@@ -473,6 +473,7 @@ export class Game {
     setText(this.results.elapsed, formatElapsedTime(result.completedAtSeconds));
     setText(this.results.cutTargets, String(result.cutTargets));
     setText(this.results.highestLevel, `LV ${result.highestLevel}`);
+    setText(this.results.nextButton, `Next: ${nextAuthoredContractTitle(this.state.contract.id)}`);
     if (!this.resultsFocusPlaced) {
       this.resultsFocusPlaced = true;
       this.results.nextButton.focus({ preventScroll: true });
@@ -1128,6 +1129,14 @@ export function nextAuthoredContractId(currentContractId: string): ContractDefin
 
   const nextIndex = (currentIndex + 1) % CONTRACT_DEFINITIONS.length;
   return CONTRACT_DEFINITIONS[nextIndex]?.id ?? DEFAULT_CONTRACT_ID;
+}
+
+export function nextAuthoredContractTitle(currentContractId: string): string {
+  const nextContractId = nextAuthoredContractId(currentContractId);
+  return (
+    CONTRACT_DEFINITIONS.find((contract) => contract.id === nextContractId)?.title ??
+    "Next Contract"
+  );
 }
 
 export interface PlayableRootSize {

@@ -11,6 +11,7 @@ import {
   contractNavigationSearch,
   derivePlayableRootSize,
   nextAuthoredContractId,
+  nextAuthoredContractTitle,
   resolveAccessibilitySettings,
   resolveMotionSettings,
 } from "../src/game/Game";
@@ -137,6 +138,9 @@ describe("contract navigation URLs", () => {
     expect(nextAuthoredContractId("meadow-delivery")).toBe("flower-sweep");
     expect(nextAuthoredContractId("flower-sweep")).toBe("meadow-delivery");
     expect(nextAuthoredContractId("unknown-contract")).toBe("meadow-delivery");
+    expect(nextAuthoredContractTitle("meadow-delivery")).toBe("Flower Sweep");
+    expect(nextAuthoredContractTitle("flower-sweep")).toBe("Meadow Delivery");
+    expect(nextAuthoredContractTitle("unknown-contract")).toBe("Meadow Delivery");
   });
 
   it("opens the next authored contract while preserving diagnostics", () => {
