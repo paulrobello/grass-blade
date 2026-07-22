@@ -14,6 +14,8 @@ export interface AudioDiagnostics extends AudioSettings {
   rpmFrequencyHz: number;
   rpmHumGain: number;
   processedCutEvents: number;
+  processedRockDeflections: number;
+  lastRockDeflectionTargetId: string | null;
 }
 
 export interface AudioSyncState {
@@ -85,6 +87,8 @@ export class GameAudio {
   private rpmFrequencyHz = deriveRpmFrequencyHz(0, 720);
   private rpmHumGain = 0;
   private processedCutEvents = 0;
+  private processedRockDeflections = 0;
+  private lastRockDeflectionTargetId: string | null = null;
 
   public constructor(settings: AudioSettings) {
     this.settings = { ...settings };
@@ -100,6 +104,8 @@ export class GameAudio {
       rpmFrequencyHz: this.rpmFrequencyHz,
       rpmHumGain: Number(this.rpmHumGain.toFixed(4)),
       processedCutEvents: this.processedCutEvents,
+      processedRockDeflections: this.processedRockDeflections,
+      lastRockDeflectionTargetId: this.lastRockDeflectionTargetId,
     };
   }
 
@@ -154,6 +160,28 @@ export class GameAudio {
       durationSeconds: event.kind === "sapling" || event.kind === "matureTree" ? 0.14 : 0.07,
       gain: event.kind === "sapling" || event.kind === "matureTree" ? 0.12 : 0.075,
       type: event.kind === "flower" ? "triangle" : "square",
+    });
+  }
+
+  public playRockDeflection(targetId: string): void {
+    this.processedRockDeflections += 1;
+    this.lastRockDeflectionTargetId = targetId;
+    if (this.settings.muted || !this.ensureContext() || !this.context || !this.effectsGain) {
+      return;
+    }
+
+    this.playTone({
+      frequency: 740,
+      durationSeconds: 0.045,
+      gain: 0.085,
+      type: "square",
+    });
+    this.playTone({
+      frequency: 1180,
+      durationSeconds: 0.035,
+      gain: 0.045,
+      type: "triangle",
+      delaySeconds: 0.018,
     });
   }
 

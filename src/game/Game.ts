@@ -149,6 +149,7 @@ export class Game {
   private lastFrameTimeMs: number | null = null;
   private processedHudCutEvents = 0;
   private processedAudioCutEvents = 0;
+  private readonly activeAudioRockContactIds = new Set<string>();
   private lastAnnouncedMode: GameState["mode"] = "active";
   private lastAudioMode: GameState["mode"] = "active";
   private lastAnnouncedLevel = 1;
@@ -580,6 +581,26 @@ export class Game {
   }
 
   private updateAudioFeedback(): void {
+    const currentRockContactIds = new Set<string>();
+    for (const targetId of this.state.bladeContactTargetIds) {
+      const target = this.state.targets.find((candidate) => candidate.id === targetId);
+      if (target?.kind !== "rock") {
+        continue;
+      }
+
+      currentRockContactIds.add(targetId);
+      if (!this.activeAudioRockContactIds.has(targetId)) {
+        this.audio.playRockDeflection(targetId);
+        this.activeAudioRockContactIds.add(targetId);
+      }
+    }
+
+    for (const targetId of this.activeAudioRockContactIds) {
+      if (!currentRockContactIds.has(targetId)) {
+        this.activeAudioRockContactIds.delete(targetId);
+      }
+    }
+
     while (this.processedAudioCutEvents < this.state.cutEvents.length) {
       const event = this.state.cutEvents[this.processedAudioCutEvents];
       this.processedAudioCutEvents += 1;

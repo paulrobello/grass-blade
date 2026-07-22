@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  GameAudio,
   clampVolume,
   deriveRpmFrequencyHz,
   resolveAudioSettings,
@@ -339,5 +340,19 @@ describe("audio settings", () => {
     expect(deriveRpmFrequencyHz(0, 720)).toBe(82);
     expect(deriveRpmFrequencyHz(360, 720)).toBeGreaterThan(deriveRpmFrequencyHz(180, 720));
     expect(deriveRpmFrequencyHz(2000, 720)).toBe(273);
+  });
+
+  it("reports rock deflection audio diagnostics even without WebAudio support", () => {
+    const audio = new GameAudio(resolveAudioSettings(new URLSearchParams("muted=1")));
+
+    expect(audio.diagnostics.processedRockDeflections).toBe(0);
+    expect(audio.diagnostics.lastRockDeflectionTargetId).toBeNull();
+
+    audio.playRockDeflection("rock-5");
+
+    expect(audio.diagnostics.processedRockDeflections).toBe(1);
+    expect(audio.diagnostics.lastRockDeflectionTargetId).toBe("rock-5");
+
+    audio.dispose();
   });
 });
