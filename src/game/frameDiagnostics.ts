@@ -18,6 +18,9 @@ export interface FrameDiagnosticsSnapshot {
   shadowMapSize: number;
   canvasWidth: number;
   canvasHeight: number;
+  canvasCssWidth: number;
+  canvasCssHeight: number;
+  displayAspectRatio: number;
 }
 
 export interface FrameDiagnosticsTracker {
@@ -33,6 +36,9 @@ export interface FrameDiagnosticsTracker {
     shadowMapSize: number;
     canvasWidth: number;
     canvasHeight: number;
+    canvasCssWidth: number;
+    canvasCssHeight: number;
+    displayAspectRatio: number;
   }) => FrameDiagnosticsSnapshot;
 }
 
@@ -82,6 +88,9 @@ export function createFrameDiagnosticsTracker(
     shadowMapSize: number;
     canvasWidth: number;
     canvasHeight: number;
+    canvasCssWidth: number;
+    canvasCssHeight: number;
+    displayAspectRatio: number;
   }): FrameDiagnosticsSnapshot {
     return {
       sampleCapacity,
@@ -101,6 +110,9 @@ export function createFrameDiagnosticsTracker(
       shadowMapSize: options.shadowMapSize,
       canvasWidth: options.canvasWidth,
       canvasHeight: options.canvasHeight,
+      canvasCssWidth: roundFrameMetric(options.canvasCssWidth),
+      canvasCssHeight: roundFrameMetric(options.canvasCssHeight),
+      displayAspectRatio: roundFrameMetric(options.displayAspectRatio),
     };
   }
 

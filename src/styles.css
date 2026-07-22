@@ -23,6 +23,14 @@ body,
   overflow: hidden;
 }
 
+@supports (height: 100dvh) {
+  html,
+  body,
+  #app {
+    height: 100dvh;
+  }
+}
+
 body {
   background: #9bdc6a;
 }

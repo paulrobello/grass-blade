@@ -24,6 +24,9 @@ describe("frame diagnostics", () => {
         shadowMapSize: 1024,
         canvasWidth: 1280,
         canvasHeight: 720,
+        canvasCssWidth: 853.33,
+        canvasCssHeight: 480,
+        displayAspectRatio: 16 / 9,
       }),
     ).toEqual({
       sampleCapacity: 4,
@@ -43,6 +46,9 @@ describe("frame diagnostics", () => {
       shadowMapSize: 1024,
       canvasWidth: 1280,
       canvasHeight: 720,
+      canvasCssWidth: 853.33,
+      canvasCssHeight: 480,
+      displayAspectRatio: 1.778,
     });
   });
 
@@ -64,6 +70,9 @@ describe("frame diagnostics", () => {
         shadowMapSize: 0,
         canvasWidth: 1,
         canvasHeight: 1,
+        canvasCssWidth: 375,
+        canvasCssHeight: 667,
+        displayAspectRatio: 375 / 667,
       }),
     ).toEqual({
       sampleCapacity: 3,
@@ -83,6 +92,9 @@ describe("frame diagnostics", () => {
       shadowMapSize: 0,
       canvasWidth: 1,
       canvasHeight: 1,
+      canvasCssWidth: 375,
+      canvasCssHeight: 667,
+      displayAspectRatio: 0.562,
     });
   });
 });

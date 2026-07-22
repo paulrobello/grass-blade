@@ -74,6 +74,9 @@ export class Game {
   private pointerAnchorX = 0;
   private pointerAnchorY = 0;
   private readonly pointerDeadZonePixels = 14;
+  private canvasCssWidth = 1;
+  private canvasCssHeight = 1;
+  private displayAspectRatio = 1;
 
   private simulationTimeSeconds = 0;
   private accumulatorSeconds = 0;
@@ -136,6 +139,8 @@ export class Game {
     window.addEventListener("keyup", this.onKeyUp);
     window.addEventListener("blur", this.resetInput);
     window.addEventListener("resize", this.resize);
+    window.visualViewport?.addEventListener("resize", this.resize);
+    window.visualViewport?.addEventListener("scroll", this.resize);
     document.addEventListener("fullscreenchange", this.resize);
     this.canvas.addEventListener("pointerdown", this.onPointerDown);
     this.canvas.addEventListener("pointermove", this.onPointerMove);
@@ -165,6 +170,8 @@ export class Game {
     window.removeEventListener("keyup", this.onKeyUp);
     window.removeEventListener("blur", this.resetInput);
     window.removeEventListener("resize", this.resize);
+    window.visualViewport?.removeEventListener("resize", this.resize);
+    window.visualViewport?.removeEventListener("scroll", this.resize);
     document.removeEventListener("fullscreenchange", this.resize);
     this.canvas.removeEventListener("pointerdown", this.onPointerDown);
     this.canvas.removeEventListener("pointermove", this.onPointerMove);
@@ -355,11 +362,13 @@ export class Game {
   }
 
   private readonly resize = (): void => {
-    const width = Math.max(1, this.canvas.clientWidth || window.innerWidth);
-    const height = Math.max(1, this.canvas.clientHeight || window.innerHeight);
+    const { width, height } = measureCanvasDisplaySize(this.canvas);
+    this.canvasCssWidth = width;
+    this.canvasCssHeight = height;
+    this.displayAspectRatio = width / height;
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, this.quality.maxPixelRatio));
     this.renderer.setSize(width, height, false);
-    this.meadow.resize(width / height);
+    this.meadow.resize(this.displayAspectRatio);
     this.render();
   };
 
@@ -657,6 +666,9 @@ export class Game {
         pixelRatio: this.renderer.getPixelRatio(),
         canvasWidth: this.canvas.width,
         canvasHeight: this.canvas.height,
+        canvasCssWidth: this.canvasCssWidth,
+        canvasCssHeight: this.canvasCssHeight,
+        displayAspectRatio: this.displayAspectRatio,
         qualityPreset: this.quality.preset,
         antialias: this.quality.antialias,
         maxPixelRatio: this.quality.maxPixelRatio,
@@ -869,6 +881,17 @@ function createMovementInput(): MovementInput {
     right: false,
     forward: false,
     backward: false,
+  };
+}
+
+function measureCanvasDisplaySize(canvas: HTMLCanvasElement): { width: number; height: number } {
+  const bounds = canvas.getBoundingClientRect();
+  const viewport = window.visualViewport;
+  const fallbackWidth = viewport?.width ?? window.innerWidth;
+  const fallbackHeight = viewport?.height ?? window.innerHeight;
+  return {
+    width: Math.max(1, Math.round(bounds.width || canvas.clientWidth || fallbackWidth)),
+    height: Math.max(1, Math.round(bounds.height || canvas.clientHeight || fallbackHeight)),
   };
 }
 
