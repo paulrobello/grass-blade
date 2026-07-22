@@ -188,6 +188,7 @@ export function createScene(
   seed: number,
   quality: QualitySettings,
   reducedMotion = resolveReducedMotionPreference(),
+  arenaId = "meadow-delivery",
 ): MeadowScene {
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0xb5df8b);
@@ -195,7 +196,7 @@ export function createScene(
 
   const camera = new THREE.OrthographicCamera(-10, 10, 10, -10, 0.1, 100);
   const resources: SceneResource[] = [];
-  const layout = createMeadowLayout(seed);
+  const layout = createMeadowLayout(seed, arenaId);
   const densityReport = createMeadowDensityReport(layout, quality.grassBladesPerVisual);
   const random = createSeededRandom(seed);
   const scratchMatrix = new THREE.Matrix4();

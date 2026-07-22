@@ -44,6 +44,7 @@ import {
   SHRUB_VISUAL_COUNT,
   createMeadowDensityReport,
   createMeadowLayout,
+  type MeadowLayout,
   type TargetKind,
 } from "../src/game/world";
 
@@ -350,6 +351,8 @@ describe("active game state", () => {
     expect(first.matureTreeTargets).toHaveLength(MATURE_TREE_COUNT);
     expect(first.rockTargets).toHaveLength(ROCK_COUNT);
     expect(first.rockVisuals).toHaveLength(ROCK_COUNT);
+    expect(first.arenaId).toBe("meadow-delivery");
+    expect(first.arenaShape).toBe("full-meadow");
     expect(first.denseWeedTargets.map((target) => target.id)).toEqual(
       interleaved.denseWeedTargets.map((target) => target.id),
     );
@@ -450,6 +453,42 @@ describe("active game state", () => {
     }
   });
 
+  it("builds contract-specific non-square growth arenas", () => {
+    const meadow = createMeadowLayout(12345, "meadow-delivery");
+    const flowerSweep = createMeadowLayout(12345, "flower-sweep");
+    const woodland = createMeadowLayout(12345, "woodland-cleanup");
+    const unknown = createMeadowLayout(12345, "unknown-contract");
+
+    expect(unknown.arenaShape).toBe("full-meadow");
+    expect(flowerSweep.arenaShape).toBe("branching-flower-corridors");
+    expect(woodland.arenaShape).toBe("woodland-clearings");
+    expect(flowerSweep.flowerTargets).toHaveLength(FLOWER_TARGET_COUNT);
+    expect(woodland.flowerTargets).toHaveLength(FLOWER_TARGET_COUNT);
+    expect(flowerSweep.grassVisuals).toHaveLength(GRASS_VISUAL_COLUMNS * GRASS_VISUAL_COLUMNS);
+    expect(woodland.grassVisuals).toHaveLength(GRASS_VISUAL_COLUMNS * GRASS_VISUAL_COLUMNS);
+    expect(flowerSweep.grassCells.length).toBeGreaterThan(120);
+    expect(woodland.grassCells.length).toBeGreaterThan(160);
+    expect(flowerSweep.grassCells.length).toBeLessThan(meadow.grassCells.length * 0.72);
+    expect(woodland.grassCells.length).toBeLessThan(meadow.grassCells.length * 0.78);
+    expect(countVisibleGrassVisuals(flowerSweep)).toBeLessThan(
+      GRASS_VISUAL_COLUMNS * GRASS_VISUAL_COLUMNS * 0.72,
+    );
+    expect(countVisibleGrassVisuals(woodland)).toBeLessThan(
+      GRASS_VISUAL_COLUMNS * GRASS_VISUAL_COLUMNS * 0.78,
+    );
+
+    const flowerState = createInitialState(12345, "flower-sweep");
+    const woodlandState = createInitialState(12345, "woodland-cleanup");
+    expect(flowerState.targets.filter((target) => target.kind === "grass")).toHaveLength(
+      flowerSweep.grassCells.length,
+    );
+    expect(woodlandState.targets.filter((target) => target.kind === "grass")).toHaveLength(
+      woodland.grassCells.length,
+    );
+    expect(flowerSweep.grassCells.length).toBeGreaterThan(flowerState.objectives.grass.target);
+    expect(woodland.grassCells.length).toBeGreaterThan(woodlandState.objectives.grass.target);
+  });
+
   it("provides at least 150 percent of each required contract resource", () => {
     const state = createInitialState(12345);
     const available = totalAvailableResources(state);
@@ -472,6 +511,7 @@ describe("active game state", () => {
       const lowQualityReport = createMeadowDensityReport(layout, 8);
 
       expect(report.eligibleTerrainArea).toBe(GRASS_FIELD_SIZE * GRASS_FIELD_SIZE);
+      expect(report.visibleGrassVisuals).toBe(GRASS_VISUAL_COLUMNS * GRASS_VISUAL_COLUMNS);
       expect(report.grassBladesPerVisual).toBe(GRASS_BLADES_PER_VISUAL);
       expect(report.grassCoverageFraction).toBe(1);
       expect(report.decorativeGrassBladesPerWorldUnitSquared).toBeCloseTo(
@@ -489,6 +529,9 @@ describe("active game state", () => {
       expect(report.meetsFlowerBlossomDensity).toBe(true);
 
       expect(lowQualityReport.grassBladesPerVisual).toBe(8);
+      expect(lowQualityReport.visibleGrassVisuals).toBe(
+        GRASS_VISUAL_COLUMNS * GRASS_VISUAL_COLUMNS,
+      );
       expect(lowQualityReport.decorativeGrassBladesPerWorldUnitSquared).toBeCloseTo(
         (GRASS_VISUAL_COLUMNS * GRASS_VISUAL_COLUMNS * 8) / (GRASS_FIELD_SIZE * GRASS_FIELD_SIZE),
       );
@@ -1659,6 +1702,10 @@ function totalAvailableResources(state: GameState): {
     }
   }
   return totals;
+}
+
+function countVisibleGrassVisuals(layout: MeadowLayout): number {
+  return layout.grassVisuals.filter((visual) => visual.height > 0 && visual.scaleX > 0).length;
 }
 
 function prepareOneCutFromCompletion(state: GameState): void {

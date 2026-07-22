@@ -182,7 +182,12 @@ export class Game {
     this.intro = createIntroElements(this.appRoot, CONTRACT_DEFINITIONS);
     this.results = createResultsElements(this.appRoot);
     this.pause = createPauseElements(this.appRoot);
-    this.meadow = createScene(this.state.seed, this.quality, this.motionSettings.reducedMotion);
+    this.meadow = createScene(
+      this.state.seed,
+      this.quality,
+      this.motionSettings.reducedMotion,
+      this.state.contract.id,
+    );
     this.collectionMotes = createCollectionMotes(
       this.appRoot,
       {

@@ -187,7 +187,7 @@ export function createInitialState(
   contractId: string | null = DEFAULT_CONTRACT_ID,
 ): GameState {
   const contract = resolveContractDefinition(contractId);
-  const layout = createMeadowLayout(seed);
+  const layout = createMeadowLayout(seed, contract.id);
   const targetSeeds = [
     ...layout.grassCells,
     ...layout.flowerTargets,

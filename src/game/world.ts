@@ -23,6 +23,9 @@ export const SAPLING_COUNT = 5;
 export const MATURE_TREE_COUNT = 8;
 export const ROCK_COUNT = 8;
 
+export type ArenaLayoutId = "meadow-delivery" | "flower-sweep" | "woodland-cleanup";
+export type ArenaShape = "full-meadow" | "branching-flower-corridors" | "woodland-clearings";
+
 const DENSE_WEED_CLUSTER_CENTERS = [
   [-4.8, -3.5],
   [4.5, -4.2],
@@ -151,6 +154,8 @@ export interface TargetSeed {
 }
 
 export interface MeadowLayout {
+  arenaId: ArenaLayoutId;
+  arenaShape: ArenaShape;
   grassCells: TargetSeed[];
   grassVisuals: GrassVisual[];
   flowerTargets: TargetSeed[];
@@ -168,7 +173,9 @@ export interface MeadowLayout {
 }
 
 export interface MeadowDensityReport {
+  arenaShape: ArenaShape;
   eligibleTerrainArea: number;
+  visibleGrassVisuals: number;
   grassBladesPerVisual: number;
   grassCoverageFraction: number;
   decorativeGrassBladesPerWorldUnitSquared: number;
@@ -181,10 +188,19 @@ export interface MeadowDensityReport {
   meetsFlowerBlossomDensity: boolean;
 }
 
-export function createMeadowLayout(seed: number): MeadowLayout {
-  const grassCells = createGrassCells();
-  const grassVisuals = createGrassVisuals(createSeededRandom(seed ^ 0x9e3779b9));
-  const flowerTargets = createFlowerTargets(createSeededRandom(seed ^ 0x243f6a88));
+export function createMeadowLayout(
+  seed: number,
+  arenaId: string = "meadow-delivery",
+): MeadowLayout {
+  const resolvedArenaId = resolveArenaLayoutId(arenaId);
+  const arenaShape = resolveArenaShape(resolvedArenaId);
+  const grass = createGrassCells(resolvedArenaId);
+  const grassVisuals = createGrassVisuals(
+    createSeededRandom(seed ^ 0x9e3779b9),
+    resolvedArenaId,
+    grass.logicalCellIndexToCellIndex,
+  );
+  const flowerTargets = createFlowerTargets(createSeededRandom(seed ^ 0x243f6a88), resolvedArenaId);
   const flowerVisuals = createFlowerVisuals(flowerTargets, createSeededRandom(seed ^ 0xb7e15162));
   const denseWeedTargets = createDenseWeedTargets(createSeededRandom(seed ^ 0x13198a2e));
   const denseWeedVisuals = createDenseWeedVisuals(
@@ -204,7 +220,9 @@ export function createMeadowLayout(seed: number): MeadowLayout {
   const rockVisuals = createRockVisuals(createSeededRandom(seed ^ 0x082efa98));
 
   return {
-    grassCells,
+    arenaId: resolvedArenaId,
+    arenaShape,
+    grassCells: grass.cells,
     grassVisuals,
     flowerTargets,
     flowerVisuals,
@@ -226,17 +244,20 @@ export function createMeadowDensityReport(
   grassBladesPerVisual = GRASS_BLADES_PER_VISUAL,
 ): MeadowDensityReport {
   const eligibleTerrainArea = GRASS_FIELD_SIZE * GRASS_FIELD_SIZE;
+  const visibleGrassVisuals = countVisibleGrassVisuals(layout);
   const grassCoverageFraction =
     (layout.grassCells.length * (GRASS_FIELD_SIZE / GRASS_LOGICAL_COLUMNS) ** 2) /
     eligibleTerrainArea;
   const decorativeGrassBladesPerWorldUnitSquared =
-    (layout.grassVisuals.length * grassBladesPerVisual) / eligibleTerrainArea;
+    (visibleGrassVisuals * grassBladesPerVisual) / eligibleTerrainArea;
   const flowerDriftArea = estimateFlowerDriftArea(layout.flowerTargets);
   const flowerDriftCoverageFraction = flowerDriftArea / eligibleTerrainArea;
   const flowerBlossomsPerDriftWorldUnitSquared = layout.flowerVisuals.length / flowerDriftArea;
 
   return {
+    arenaShape: layout.arenaShape,
     eligibleTerrainArea: roundDensityMetric(eligibleTerrainArea),
+    visibleGrassVisuals,
     grassBladesPerVisual,
     grassCoverageFraction: roundDensityMetric(grassCoverageFraction),
     decorativeGrassBladesPerWorldUnitSquared: roundDensityMetric(
@@ -256,20 +277,34 @@ export function createMeadowDensityReport(
   };
 }
 
-function createGrassCells(): TargetSeed[] {
+function countVisibleGrassVisuals(layout: MeadowLayout): number {
+  return layout.grassVisuals.filter((visual) => visual.height > 0 && visual.scaleX > 0).length;
+}
+
+function createGrassCells(arenaId: ArenaLayoutId): {
+  cells: TargetSeed[];
+  logicalCellIndexToCellIndex: Map<number, number>;
+} {
   const cellSize = GRASS_FIELD_SIZE / GRASS_LOGICAL_COLUMNS;
   const halfField = GRASS_FIELD_SIZE / 2;
   const radius = cellSize * 0.54;
   const cells: TargetSeed[] = [];
+  const logicalCellIndexToCellIndex = new Map<number, number>();
 
   for (let row = 0; row < GRASS_LOGICAL_COLUMNS; row += 1) {
     for (let column = 0; column < GRASS_LOGICAL_COLUMNS; column += 1) {
       const index = row * GRASS_LOGICAL_COLUMNS + column;
+      const x = -halfField + (column + 0.5) * cellSize;
+      const z = -halfField + (row + 0.5) * cellSize;
+      if (!isPointInArenaGrowth(arenaId, x, z)) {
+        continue;
+      }
+      logicalCellIndexToCellIndex.set(index, cells.length);
       cells.push({
         id: `grass-${index}`,
         kind: "grass",
-        x: -halfField + (column + 0.5) * cellSize,
-        z: -halfField + (row + 0.5) * cellSize,
+        x,
+        z,
         radius,
         solidRadius: 0,
         recommendedLevel: 1,
@@ -281,10 +316,14 @@ function createGrassCells(): TargetSeed[] {
     }
   }
 
-  return cells;
+  return { cells, logicalCellIndexToCellIndex };
 }
 
-function createGrassVisuals(random: () => number): GrassVisual[] {
+function createGrassVisuals(
+  random: () => number,
+  arenaId: ArenaLayoutId,
+  logicalCellIndexToCellIndex: Map<number, number>,
+): GrassVisual[] {
   const visualCellSize = GRASS_FIELD_SIZE / GRASS_VISUAL_COLUMNS;
   const halfField = GRASS_FIELD_SIZE / 2;
   const jitter = visualCellSize * 0.42;
@@ -294,14 +333,19 @@ function createGrassVisuals(random: () => number): GrassVisual[] {
     for (let column = 0; column < GRASS_VISUAL_COLUMNS; column += 1) {
       const logicalRow = Math.floor(row / 4);
       const logicalColumn = Math.floor(column / 4);
+      const logicalIndex = logicalRow * GRASS_LOGICAL_COLUMNS + logicalColumn;
+      const cellIndex = logicalCellIndexToCellIndex.get(logicalIndex);
+      const x = -halfField + (column + 0.5) * visualCellSize + randomRange(random, -jitter, jitter);
+      const z = -halfField + (row + 0.5) * visualCellSize + randomRange(random, -jitter, jitter);
+      const visible = cellIndex !== undefined && isPointInArenaGrowth(arenaId, x, z);
       visuals.push({
-        x: -halfField + (column + 0.5) * visualCellSize + randomRange(random, -jitter, jitter),
-        z: -halfField + (row + 0.5) * visualCellSize + randomRange(random, -jitter, jitter),
-        height: 0.68 + random() * 0.72,
+        x,
+        z,
+        height: visible ? 0.68 + random() * 0.72 : 0,
         rotation: random() * TAU,
-        scaleX: 0.82 + random() * 0.62,
-        scaleZ: 0.82 + random() * 0.62,
-        cellIndex: logicalRow * GRASS_LOGICAL_COLUMNS + logicalColumn,
+        scaleX: visible ? 0.82 + random() * 0.62 : 0,
+        scaleZ: visible ? 0.82 + random() * 0.62 : 0,
+        cellIndex: cellIndex ?? -1,
         colorIndex: Math.floor(random() * GRASS_COLOR_COUNT),
       });
     }
@@ -310,21 +354,17 @@ function createGrassVisuals(random: () => number): GrassVisual[] {
   return visuals;
 }
 
-function createFlowerTargets(random: () => number): TargetSeed[] {
-  const usableFieldSize = 34;
-  const clusterCellSize = usableFieldSize / FLOWER_CLUSTER_COLUMNS;
-  const halfUsableField = usableFieldSize / 2;
-  const jitter = clusterCellSize * 0.24;
+function createFlowerTargets(random: () => number, arenaId: ArenaLayoutId): TargetSeed[] {
+  const centers = createFlowerClusterCenters(random, arenaId);
   const clusterRadius = 2.55;
   const targets: TargetSeed[] = [];
 
   for (let clusterIndex = 0; clusterIndex < FLOWER_CLUSTER_COUNT; clusterIndex += 1) {
-    const column = clusterIndex % FLOWER_CLUSTER_COLUMNS;
-    const row = Math.floor(clusterIndex / FLOWER_CLUSTER_COLUMNS);
-    const centerX =
-      -halfUsableField + (column + 0.5) * clusterCellSize + randomRange(random, -jitter, jitter);
-    const centerZ =
-      -halfUsableField + (row + 0.5) * clusterCellSize + randomRange(random, -jitter, jitter);
+    const center = centers[clusterIndex];
+    if (center === undefined) {
+      continue;
+    }
+    const [centerX, centerZ] = center;
 
     for (let subIndex = 0; subIndex < FLOWER_TARGETS_PER_CLUSTER; subIndex += 1) {
       const angle = (subIndex / FLOWER_TARGETS_PER_CLUSTER) * TAU + randomRange(random, -0.3, 0.3);
@@ -347,6 +387,170 @@ function createFlowerTargets(random: () => number): TargetSeed[] {
   }
 
   return targets;
+}
+
+function resolveArenaLayoutId(arenaId: string): ArenaLayoutId {
+  switch (arenaId) {
+    case "flower-sweep":
+    case "woodland-cleanup":
+      return arenaId;
+    default:
+      return "meadow-delivery";
+  }
+}
+
+function resolveArenaShape(arenaId: ArenaLayoutId): ArenaShape {
+  switch (arenaId) {
+    case "flower-sweep":
+      return "branching-flower-corridors";
+    case "woodland-cleanup":
+      return "woodland-clearings";
+    case "meadow-delivery":
+      return "full-meadow";
+  }
+}
+
+function createFlowerClusterCenters(
+  random: () => number,
+  arenaId: ArenaLayoutId,
+): Array<readonly [number, number]> {
+  if (arenaId === "flower-sweep") {
+    return jitterAnchors(
+      [
+        [0, -15],
+        [0, -10],
+        [0, -5],
+        [0, 0],
+        [0, 5],
+        [0, 10],
+        [0, 15],
+        [-5, 6],
+        [-10, 6],
+        [-15, 6],
+        [5, -6],
+        [10, -6],
+        [15, -6],
+        [-7, -12],
+        [7, 12],
+        [0, 17],
+      ],
+      random,
+      0.7,
+    );
+  }
+
+  if (arenaId === "woodland-cleanup") {
+    return jitterAnchors(
+      [
+        [-9, -11],
+        [-5, -8],
+        [0, -4],
+        [5, -7],
+        [9, -10],
+        [-10, 4],
+        [-6, 7],
+        [0, 4],
+        [6, 8],
+        [10, 5],
+        [-3, 13],
+        [3, 13],
+        [-14, -2],
+        [14, 0],
+        [-1, 0],
+        [1, 9],
+      ],
+      random,
+      0.85,
+    );
+  }
+
+  const usableFieldSize = 34;
+  const clusterCellSize = usableFieldSize / FLOWER_CLUSTER_COLUMNS;
+  const halfUsableField = usableFieldSize / 2;
+  const jitter = clusterCellSize * 0.24;
+  const centers: Array<readonly [number, number]> = [];
+
+  for (let clusterIndex = 0; clusterIndex < FLOWER_CLUSTER_COUNT; clusterIndex += 1) {
+    const column = clusterIndex % FLOWER_CLUSTER_COLUMNS;
+    const row = Math.floor(clusterIndex / FLOWER_CLUSTER_COLUMNS);
+    centers.push([
+      -halfUsableField + (column + 0.5) * clusterCellSize + randomRange(random, -jitter, jitter),
+      -halfUsableField + (row + 0.5) * clusterCellSize + randomRange(random, -jitter, jitter),
+    ]);
+  }
+
+  return centers;
+}
+
+function jitterAnchors(
+  anchors: ReadonlyArray<readonly [number, number]>,
+  random: () => number,
+  amount: number,
+): Array<readonly [number, number]> {
+  return anchors.map(([x, z]) => [
+    x + randomRange(random, -amount, amount),
+    z + randomRange(random, -amount, amount),
+  ]);
+}
+
+function isPointInArenaGrowth(arenaId: ArenaLayoutId, x: number, z: number): boolean {
+  switch (arenaId) {
+    case "flower-sweep":
+      return (
+        isPointInCapsule(x, z, 0, -18, 0, 18, 3.35) ||
+        isPointInCapsule(x, z, -18, 6, 1, 6, 3.15) ||
+        isPointInCapsule(x, z, -1, -6, 18, -6, 3.15) ||
+        isPointInCircle(x, z, -15, 6, 4.8) ||
+        isPointInCircle(x, z, 15, -6, 4.8) ||
+        isPointInCircle(x, z, 0, 0, 5.4)
+      );
+    case "woodland-cleanup":
+      return (
+        isPointInCircle(x, z, -9, -10, 5.6) ||
+        isPointInCircle(x, z, 8, -9, 5.4) ||
+        isPointInCircle(x, z, -9, 7, 5.4) ||
+        isPointInCircle(x, z, 8, 8, 5.8) ||
+        isPointInCircle(x, z, 0, 0, 6.2) ||
+        isPointInCapsule(x, z, -9, -10, 0, 0, 2.65) ||
+        isPointInCapsule(x, z, 8, -9, 0, 0, 2.65) ||
+        isPointInCapsule(x, z, -9, 7, 0, 0, 2.65) ||
+        isPointInCapsule(x, z, 8, 8, 0, 0, 2.65)
+      );
+    case "meadow-delivery":
+      return true;
+  }
+}
+
+function isPointInCircle(
+  x: number,
+  z: number,
+  centerX: number,
+  centerZ: number,
+  radius: number,
+): boolean {
+  return distanceSquared(x, z, centerX, centerZ) <= radius ** 2;
+}
+
+function isPointInCapsule(
+  x: number,
+  z: number,
+  ax: number,
+  az: number,
+  bx: number,
+  bz: number,
+  radius: number,
+): boolean {
+  const abX = bx - ax;
+  const abZ = bz - az;
+  const abLengthSquared = abX * abX + abZ * abZ;
+  if (abLengthSquared === 0) {
+    return isPointInCircle(x, z, ax, az, radius);
+  }
+  const projection = ((x - ax) * abX + (z - az) * abZ) / abLengthSquared;
+  const clampedProjection = Math.min(1, Math.max(0, projection));
+  const closestX = ax + abX * clampedProjection;
+  const closestZ = az + abZ * clampedProjection;
+  return distanceSquared(x, z, closestX, closestZ) <= radius ** 2;
 }
 
 function createFlowerVisuals(targets: TargetSeed[], random: () => number): FlowerVisual[] {
