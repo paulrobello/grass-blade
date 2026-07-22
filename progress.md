@@ -242,7 +242,7 @@ Active milestone: Phase 4 — cozy presentation and accessibility, with GitHub P
 
 ## Remaining TODOs
 
-- [ ] Retry GitHub Pages HTTPS enforcement for `grass-blade.pardev.net`; HTTP is live, but the custom-domain certificate was still pending during the last deployment check.
+- [ ] Retry GitHub Pages HTTPS enforcement for `grass-blade.pardev.net`; HTTP is live, but the custom-domain certificate is still pending. Latest check on 2026-07-22 after the `687d710` Pages deployment: GitHub Pages reports `https_enforced: false`, `curl -I http://grass-blade.pardev.net/` returns `200 OK`, and `curl -I https://grass-blade.pardev.net/` fails with `SSL: no alternative certificate subject name matches target host name`.
 
 ## Handoff rules
 
