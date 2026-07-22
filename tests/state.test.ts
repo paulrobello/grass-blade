@@ -9,6 +9,7 @@ import {
   PLAYER_RADIUS,
   WORLD_HALF_EXTENT,
   createInitialState,
+  setPaused,
   stepState,
   type GameState,
   type MovementInput,
@@ -475,6 +476,52 @@ describe("active game state", () => {
     expect(state.cutRevision).toBe(cutRevisionSnapshot);
     expect(state.elapsedSeconds).toBe(elapsedSnapshot);
     expect(state.player.vx).toBe(MAX_MOVE_SPEED);
+  });
+
+  it("pauses and resumes active simulation without advancing cuts or elapsed time", () => {
+    const state = createInitialState(454);
+    const target = isolateTarget(state, "grass");
+
+    setPaused(state, true);
+
+    expect(state.mode).toBe("paused");
+    for (let frame = 0; frame < 60; frame += 1) {
+      stepState(state, idleInput, FIXED_TIME_STEP_SECONDS);
+    }
+
+    expect(state.elapsedSeconds).toBe(0);
+    expect(target.status).toBe("standing");
+    expect(target.accumulatedWork).toBe(0);
+    expect(state.inventory.grass).toBe(0);
+
+    setPaused(state, false);
+    cutCurrentTarget(state, target);
+
+    expect(state.mode).toBe("active");
+    expect(target.status).toBe("cut");
+    expect(state.inventory.grass).toBe(1);
+    expect(state.elapsedSeconds).toBeGreaterThan(0);
+  });
+
+  it("clears movement, contact, and too-tough feedback when pausing", () => {
+    const state = createInitialState(455);
+    const target = isolateTarget(state, "matureTree");
+    placeTargetAtPositiveXContact(state, target);
+
+    for (let frame = 0; frame < 300 && state.tooToughNotice === null; frame += 1) {
+      stepState(state, positiveXInput, FIXED_TIME_STEP_SECONDS);
+    }
+
+    expect(state.tooToughNotice?.targetId).toBe(target.id);
+    expect(state.bladeContactTargetIds).toEqual([target.id]);
+
+    setPaused(state, true);
+
+    expect(state.mode).toBe("paused");
+    expect(state.player.vx).toBe(0);
+    expect(state.player.vz).toBe(0);
+    expect(state.bladeContactTargetIds).toEqual([]);
+    expect(state.tooToughNotice).toBeNull();
   });
 
   it("records XP-derived level boundaries when a cut crosses a threshold", () => {

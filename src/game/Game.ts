@@ -7,6 +7,7 @@ import {
   FIXED_TIME_STEP_SECONDS,
   MAX_FRAME_DELTA_SECONDS,
   createInitialState,
+  setPaused,
   stepState,
   type GameState,
   type MovementInput,
@@ -47,6 +48,12 @@ interface ResultsElements {
   nextButton: HTMLButtonElement;
 }
 
+interface PauseElements {
+  overlay: HTMLDivElement;
+  resumeButton: HTMLButtonElement;
+  restartButton: HTMLButtonElement;
+}
+
 export class Game {
   private readonly canvas: HTMLCanvasElement;
   private readonly renderer: THREE.WebGLRenderer;
@@ -54,6 +61,7 @@ export class Game {
   private readonly state: GameState;
   private readonly hud: HudElements;
   private readonly results: ResultsElements;
+  private readonly pause: PauseElements;
   private readonly collectionMotes: CollectionMotes;
   private readonly targetProgress: TargetProgressOverlay;
   private readonly input: MovementInput = {
@@ -75,6 +83,7 @@ export class Game {
     this.state = createInitialState(seed);
     this.hud = getHudElements();
     this.results = createResultsElements(requireAppRoot(canvas));
+    this.pause = createPauseElements(requireAppRoot(canvas));
     this.meadow = createScene(this.state.seed);
     this.collectionMotes = createCollectionMotes(
       requireAppRoot(canvas),
@@ -122,6 +131,8 @@ export class Game {
     document.addEventListener("fullscreenchange", this.resize);
     this.results.restartButton.addEventListener("click", this.restartContract);
     this.results.nextButton.addEventListener("click", this.nextContract);
+    this.pause.resumeButton.addEventListener("click", this.resumeContract);
+    this.pause.restartButton.addEventListener("click", this.restartContract);
 
     this.resize();
     this.render();
@@ -144,7 +155,10 @@ export class Game {
     document.removeEventListener("fullscreenchange", this.resize);
     this.results.restartButton.removeEventListener("click", this.restartContract);
     this.results.nextButton.removeEventListener("click", this.nextContract);
+    this.pause.resumeButton.removeEventListener("click", this.resumeContract);
+    this.pause.restartButton.removeEventListener("click", this.restartContract);
     this.results.overlay.remove();
+    this.pause.overlay.remove();
     delete window.completeContractForDebug;
     this.collectionMotes.dispose();
     this.targetProgress.dispose();
@@ -238,7 +252,12 @@ export class Game {
     this.hud.root.style.setProperty("--rpm-progress", `${Math.round(rpmProgress * 100)}%`);
     this.hud.xpFill.style.width = `${xpProgress * 100}%`;
     this.updateHudFeedback();
+    this.updatePause();
     this.updateResults();
+  }
+
+  private updatePause(): void {
+    this.pause.overlay.hidden = this.state.mode !== "paused";
   }
 
   private updateResults(): void {
@@ -328,7 +347,11 @@ export class Game {
       return;
     }
 
-    if (this.state.mode === "complete" && event.code === "KeyR" && !event.repeat) {
+    if (
+      (this.state.mode === "paused" || this.state.mode === "complete") &&
+      event.code === "KeyR" &&
+      !event.repeat
+    ) {
       event.preventDefault();
       this.restartContract();
       return;
@@ -343,6 +366,12 @@ export class Game {
     if (event.code === "Escape" && document.fullscreenElement !== null && !event.repeat) {
       event.preventDefault();
       void document.exitFullscreen();
+      return;
+    }
+
+    if (event.code === "Escape" && this.state.mode !== "complete" && !event.repeat) {
+      event.preventDefault();
+      this.togglePause();
     }
   };
 
@@ -353,26 +382,36 @@ export class Game {
   };
 
   private setMovementKey(code: string, pressed: boolean): boolean {
+    let handled = true;
     switch (code) {
       case "KeyA":
       case "ArrowLeft":
-        this.input.left = pressed;
-        return true;
+        if (this.state.mode === "active") {
+          this.input.left = pressed;
+        }
+        break;
       case "KeyD":
       case "ArrowRight":
-        this.input.right = pressed;
-        return true;
+        if (this.state.mode === "active") {
+          this.input.right = pressed;
+        }
+        break;
       case "KeyW":
       case "ArrowUp":
-        this.input.forward = pressed;
-        return true;
+        if (this.state.mode === "active") {
+          this.input.forward = pressed;
+        }
+        break;
       case "KeyS":
       case "ArrowDown":
-        this.input.backward = pressed;
-        return true;
+        if (this.state.mode === "active") {
+          this.input.backward = pressed;
+        }
+        break;
       default:
-        return false;
+        handled = false;
     }
+    return handled;
   }
 
   private readonly resetInput = (): void => {
@@ -401,6 +440,27 @@ export class Game {
     const nextSeed = (this.state.seed + 0x9e3779b9) >>> 0;
     window.location.assign(`?seed=${nextSeed}`);
   };
+
+  private readonly resumeContract = (): void => {
+    if (this.state.mode !== "paused") {
+      return;
+    }
+
+    setPaused(this.state, false);
+    this.resetInput();
+    this.render();
+    this.canvas.focus({ preventScroll: true });
+  };
+
+  private togglePause(): void {
+    if (this.state.mode === "complete") {
+      return;
+    }
+
+    setPaused(this.state, this.state.mode === "active");
+    this.resetInput();
+    this.render();
+  }
 
   private readonly completeContractForDebug = (): void => {
     if (this.state.mode === "complete") {
@@ -501,8 +561,12 @@ export class Game {
       },
       controls: {
         movement: "WASD or arrow keys",
-        fullscreen: "F toggles; Escape exits fullscreen",
-        restart: this.state.mode === "complete" ? "R restarts the current seed" : null,
+        fullscreen: "F toggles; Escape exits fullscreen before pausing",
+        pause: this.state.mode === "complete" ? null : "Escape toggles pause",
+        restart:
+          this.state.mode === "paused" || this.state.mode === "complete"
+            ? "R restarts the current seed"
+            : null,
         nextContract: this.state.mode === "complete" ? "N opens the next deterministic seed" : null,
       },
       inventory: this.state.inventory,
@@ -610,6 +674,44 @@ function createResultsElements(root: HTMLElement): ResultsElements {
     restartButton,
     nextButton,
   };
+}
+
+function createPauseElements(root: HTMLElement): PauseElements {
+  const overlay = document.createElement("div");
+  const card = document.createElement("section");
+  const eyebrow = document.createElement("p");
+  const title = document.createElement("h2");
+  const summary = document.createElement("p");
+  const actions = document.createElement("div");
+  const resumeButton = document.createElement("button");
+  const restartButton = document.createElement("button");
+
+  overlay.className = "pause-overlay";
+  overlay.hidden = true;
+  overlay.setAttribute("role", "status");
+  overlay.setAttribute("aria-live", "polite");
+  overlay.setAttribute("aria-atomic", "true");
+  card.className = "pause-card";
+  card.setAttribute("aria-label", "Paused contract");
+  eyebrow.className = "pause-card__eyebrow";
+  eyebrow.textContent = "Contract paused";
+  title.textContent = "Take a breather";
+  summary.className = "pause-card__summary";
+  summary.textContent = "Resume cutting when ready, or restart this seeded meadow.";
+  actions.className = "pause-card__actions";
+  resumeButton.type = "button";
+  resumeButton.className = "pause-card__button pause-card__button--primary";
+  resumeButton.textContent = "Resume";
+  restartButton.type = "button";
+  restartButton.className = "pause-card__button";
+  restartButton.textContent = "Restart";
+
+  actions.append(resumeButton, restartButton);
+  card.append(eyebrow, title, summary, actions);
+  overlay.append(card);
+  root.append(overlay);
+
+  return { overlay, resumeButton, restartButton };
 }
 
 function requireElement(id: string): HTMLElement {

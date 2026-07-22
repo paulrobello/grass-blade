@@ -104,8 +104,10 @@ export interface ContractResult {
   completionRevision: number;
 }
 
+export type GameMode = "active" | "paused" | "complete";
+
 export interface GameState {
-  mode: "active" | "complete";
+  mode: GameMode;
   seed: number;
   elapsedSeconds: number;
   player: PlayerState;
@@ -186,7 +188,7 @@ export function stepState(state: GameState, input: MovementInput, deltaSeconds: 
   }
 
   const delta = Math.min(deltaSeconds, MAX_FRAME_DELTA_SECONDS);
-  if (state.mode === "complete") {
+  if (state.mode !== "active") {
     return state;
   }
   state.elapsedSeconds += delta;
@@ -222,6 +224,24 @@ export function stepState(state: GameState, input: MovementInput, deltaSeconds: 
   const intendedZ = state.player.z;
   stepCutting(state, startX, startZ, intendedX, intendedZ, delta);
   resolveSolidMovement(state, startX, startZ, intendedX, intendedZ);
+
+  return state;
+}
+
+export function setPaused(state: GameState, paused: boolean): GameState {
+  if (state.mode === "complete") {
+    return state;
+  }
+
+  if (paused) {
+    state.mode = "paused";
+    state.player.vx = 0;
+    state.player.vz = 0;
+    state.bladeContactTargetIds.length = 0;
+    state.tooToughNotice = null;
+  } else {
+    state.mode = "active";
+  }
 
   return state;
 }
