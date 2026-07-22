@@ -49,7 +49,7 @@ export interface ObjectivesState {
 }
 
 export interface ContractDefinition {
-  id: "meadow-delivery" | "flower-sweep";
+  id: "meadow-delivery" | "flower-sweep" | "woodland-cleanup";
   title: string;
   summary: string;
   objectives: {
@@ -80,6 +80,12 @@ export const CONTRACT_DEFINITIONS = [
     title: "Flower Sweep",
     summary: "Harvest every flower drift while keeping lighter Fiber and Wood quotas.",
     objectives: { grass: 34, flowers: 16, fiber: 4, wood: 4 },
+  },
+  {
+    id: "woodland-cleanup",
+    title: "Woodland Cleanup",
+    summary: "Focus on weeds and saplings for a heavier Fiber and Wood delivery.",
+    objectives: { grass: 30, flowers: 6, fiber: 8, wood: 8 },
   },
 ] as const satisfies readonly ContractDefinition[];
 

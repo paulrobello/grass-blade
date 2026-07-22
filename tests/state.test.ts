@@ -8,6 +8,7 @@ import {
 } from "../src/game/createScene";
 import { resolveQualitySettings } from "../src/game/quality";
 import {
+  CONTRACT_DEFINITIONS,
   FIXED_TIME_STEP_SECONDS,
   MAX_MOVE_SPEED,
   MEADOW_SEED,
@@ -30,7 +31,7 @@ import {
   DENSE_WEED_COUNT,
   DENSE_WEED_VISUAL_COUNT,
   DENSE_WEED_VISUALS_PER_TARGET,
-  FLOWER_CLUSTER_COUNT,
+  FLOWER_TARGET_COUNT,
   FLOWER_VISUAL_COUNT,
   GRASS_BLADES_PER_VISUAL,
   GRASS_FIELD_SIZE,
@@ -149,7 +150,7 @@ describe("active game state", () => {
     expect(first.bladeContactTargetIds).toEqual([]);
     expect(first.targets).toHaveLength(
       GRASS_LOGICAL_COLUMNS * GRASS_LOGICAL_COLUMNS +
-        FLOWER_CLUSTER_COUNT +
+        FLOWER_TARGET_COUNT +
         DENSE_WEED_COUNT +
         SHRUB_COUNT +
         SAPLING_COUNT +
@@ -157,7 +158,7 @@ describe("active game state", () => {
         ROCK_COUNT,
     );
     const grassEnd = GRASS_LOGICAL_COLUMNS * GRASS_LOGICAL_COLUMNS;
-    const flowersEnd = grassEnd + FLOWER_CLUSTER_COUNT;
+    const flowersEnd = grassEnd + FLOWER_TARGET_COUNT;
     const denseWeedsEnd = flowersEnd + DENSE_WEED_COUNT;
     const shrubsEnd = denseWeedsEnd + SHRUB_COUNT;
     const saplingsEnd = shrubsEnd + SAPLING_COUNT;
@@ -290,6 +291,46 @@ describe("active game state", () => {
     });
   });
 
+  it("creates and completes the authored Woodland Cleanup contract", () => {
+    const state = createInitialState(12345, "woodland-cleanup");
+
+    expect(state.contract).toEqual({
+      id: "woodland-cleanup",
+      title: "Woodland Cleanup",
+      summary: "Focus on weeds and saplings for a heavier Fiber and Wood delivery.",
+    });
+    expect(state.objectives.grass.target).toBe(30);
+    expect(state.objectives.flowers.target).toBe(6);
+    expect(state.objectives.fiber.target).toBe(8);
+    expect(state.objectives.wood.target).toBe(8);
+
+    completeContractThroughQuotaCuts(state);
+
+    expect(state.mode).toBe("complete");
+    expect(state.inventory).toEqual({ grass: 30, flowers: 6, fiber: 8, wood: 8 });
+    expect(state.result).toMatchObject({
+      cutTargets: 48,
+      highestLevel: 5,
+      finalInventory: { grass: 30, flowers: 6, fiber: 8, wood: 8 },
+      completionRevision: 48,
+    });
+  });
+
+  it("keeps every authored contract completable across ten authored seeds", () => {
+    for (const seed of COMPLETION_VALIDATION_SEEDS) {
+      for (const contract of CONTRACT_DEFINITIONS) {
+        const state = createInitialState(seed, contract.id);
+
+        completeContractThroughQuotaCuts(state);
+
+        expect(state.mode).toBe("complete");
+        expect(state.objectives.status).toBe("complete");
+        expect(state.inventory).toEqual(contract.objectives);
+        expect(state.result?.finalInventory).toEqual(contract.objectives);
+      }
+    }
+  });
+
   it("builds deterministic logical targets and visual mappings", () => {
     const first = createMeadowLayout(12345);
     const interleaved = createMeadowLayout(98765);
@@ -298,7 +339,7 @@ describe("active game state", () => {
     expect(replay).toEqual(first);
     expect(first.grassCells).toHaveLength(GRASS_LOGICAL_COLUMNS * GRASS_LOGICAL_COLUMNS);
     expect(first.grassVisuals).toHaveLength(GRASS_VISUAL_COLUMNS * GRASS_VISUAL_COLUMNS);
-    expect(first.flowerTargets).toHaveLength(FLOWER_CLUSTER_COUNT);
+    expect(first.flowerTargets).toHaveLength(FLOWER_TARGET_COUNT);
     expect(first.flowerVisuals).toHaveLength(FLOWER_VISUAL_COUNT);
     expect(first.denseWeedTargets).toHaveLength(DENSE_WEED_COUNT);
     expect(first.denseWeedVisuals).toHaveLength(DENSE_WEED_VISUAL_COUNT);
@@ -342,9 +383,10 @@ describe("active game state", () => {
     for (const visual of first.flowerVisuals) {
       flowerVisualCounts[visual.targetIndex] = (flowerVisualCounts[visual.targetIndex] ?? 0) + 1;
     }
-    expect(
-      flowerVisualCounts.every((count) => count === FLOWER_VISUAL_COUNT / FLOWER_CLUSTER_COUNT),
-    ).toBe(true);
+    expect(flowerVisualCounts.every((count) => count >= 6 && count <= 7)).toBe(true);
+    expect(first.flowerTargets.filter((target) => target.id.startsWith("flower-0-"))).toHaveLength(
+      8,
+    );
 
     const denseWeedVisualCounts = Array<number>(first.denseWeedTargets.length).fill(0);
     for (const visual of first.denseWeedVisuals) {
@@ -953,7 +995,7 @@ describe("active game state", () => {
     expect(state.cutRevision).toBe(1);
   });
 
-  it("cuts a flower cluster as one authoritative target", () => {
+  it("cuts one flower pocket without awarding the whole visual drift", () => {
     const state = createInitialState(202);
     const target = isolateTarget(state, "flower");
 

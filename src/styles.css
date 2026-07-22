@@ -1435,9 +1435,7 @@ body {
   }
 
   .intro-card__controls {
-    padding: 0.38rem 0.45rem;
-    font-size: 0.72rem;
-    line-height: 1.16;
+    display: none;
   }
 
   .intro-card__contracts {

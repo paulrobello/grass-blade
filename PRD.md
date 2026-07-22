@@ -2,7 +2,7 @@
 
 Status: Active product source of truth
 Owner: Paul Robello
-Last updated: 2026-07-20
+Last updated: 2026-07-22
 
 ## Product summary
 
@@ -31,6 +31,7 @@ The six gameplay screenshots supplied on 2026-07-20 are the current composition 
 - Use a bright, saturated but coherent palette. Distinct crop or resistance zones may shift green, yellow, orange, purple, or cool-white accents, but terrain, vegetation and targets must remain visually related rather than looking like unrelated asset packs.
 - Flowers, crops and produce appear in dense authored clusters embedded in the grass. Their silhouettes and resource type must remain distinguishable above the canopy.
 - A completed cut leaves a persistent, wide and sharply readable trail for the rest of the contract. Revealed ground includes low stubble, clippings or chopped marks so a cleared route does not look like an empty untextured plane.
+- Arenas must not all be simple square lawns. Some contracts should use authored path and corridor shapes, branching clearings, islands of dense growth, or obstacle-defined routes that lead in multiple directions.
 - Larger plants must visibly resist the cutter through sustained contact, RPM load and target response. When blade level or rendered cutter size is insufficient for comfortable progress, the game communicates that clearly without creating an invisible invulnerable tier.
 - Keep the primary HUD compact at the top edges: a glossy blue meter/timer treatment with cream panels, warm gold trim and high-contrast white text. Timer presentation is elapsed time only and never a default countdown failure condition.
 - Automatic level and tool upgrades should produce a visible cutter-power payoff. A contract may complete by satisfying its resource quotas or an authored clear-every-patch objective; both use deterministic authoritative state and a calm completion result.
@@ -76,6 +77,8 @@ The game must be fully playable with a keyboard. The browser page must not scrol
 7. Show a calm results card with elapsed time, targets cut, highest level, and Restart/Next Contract actions. Next Contract advances to the next authored contract template and the next deterministic seed.
 
 Blade level, XP, cut targets, and collected resources reset at the start of each contract. Persistent currency, meta-upgrades, and account progression are not part of the MVP.
+
+Some later contracts may add an explicit time constraint, but time pressure is contract-authored and must be visible before Start. The default Meadow Delivery contract remains no-fail-clock; its timer is elapsed-time scoring only.
 
 ## RPM, torque, and cutting model
 
@@ -147,9 +150,20 @@ Authored contracts are selected by deterministic contract ID and seed. The defau
 - Collect 16 Flowers.
 - Collect 4 Fiber.
 - Collect 4 Wood.
-- Requires every authored flower target while keeping Fiber and Wood lighter than Meadow Delivery.
+- Requires longer passes through flower drifts while keeping Fiber and Wood lighter than Meadow Delivery.
+
+### Woodland Cleanup
+
+- Contract ID: `woodland-cleanup`
+- Collect 30 Grass.
+- Collect 6 Flowers.
+- Collect 8 Fiber.
+- Collect 8 Wood.
+- Emphasizes weeds and saplings with heavier Fiber and Wood quotas while keeping the soft-target requirements shorter than Meadow Delivery.
 
 Later contracts may choose two to four resource quotas from authored templates, but must remain deterministic for a given contract ID and seed. Over-collection is allowed and still grants XP. Contract completion occurs in the same simulation tick that the final quota is awarded.
+
+Flower drifts are visual patches made from multiple smaller authoritative flower targets. Cutting one edge pocket must not collect or visually topple the whole patch; fully clearing a patch requires sweeping through all of its flower sub-targets.
 
 ## Collection and feedback
 
@@ -164,6 +178,7 @@ Later contracts may choose two to four resource quotas from authored templates, 
 ## World and target lifecycle
 
 - The first arena is a bounded authored meadow approximately 48 by 48 world units, populated deterministically from a seed.
+- Additional arenas must introduce authored silhouettes rather than only resizing the same square: branching paths, bends, clearings, dense islands, and obstacle corridors should change the route through the meadow while preserving readable boundaries.
 - Soft boundaries should read as hedges, rocks, or a path edge rather than invisible walls.
 - Logical target state is authoritative on the CPU:
 
@@ -363,6 +378,7 @@ If Grass Blade copies or substantially derives upstream code, add a third-party 
 | Grass cut mask   | CPU grid projected into per-chunk GPU texture                                        | Validate texel density so edges look organic without large texture updates    |
 | Camera           | Fixed orthographic isometric follow camera                                           | Validate pitch and zoom on laptop and ultrawide displays                      |
 | Contract length  | Meadow Delivery targets a 6-10 minute first run                                      | Tune only after measuring novice completion and stall moments                 |
+| Timed contracts  | Allowed only as explicit authored contracts, not the default mode                    | Define fail/result semantics before shipping the first timed contract         |
 | Audio            | RPM pitch and material contact are important feedback                                | Select generation/licensing pipeline and reduced-sensory defaults later       |
 | Art scope        | One meadow with six target types                                                     | Decide whether shrubs/saplings use authored models or procedural primitives   |
 | Mobile           | Explicitly deferred                                                                  | Reassess after desktop performance and input contracts are stable             |
@@ -458,6 +474,8 @@ Exit criteria:
 Candidate work:
 
 - Additional authored contracts and meadow variants.
+- Non-square arena variants with branching paths and direction changes.
+- Optional timed contracts with visible pre-start limits and deterministic timeout semantics.
 - New organic target families and biome-specific resources.
 - Balance/quality presets informed by telemetry-free local playtest captures.
 - Touch controls and mobile optimization only after desktop contracts remain intact.

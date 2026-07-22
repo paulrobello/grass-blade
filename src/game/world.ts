@@ -2,6 +2,7 @@ const TAU = Math.PI * 2;
 const GRASS_COLOR_COUNT = 4;
 const FLOWER_COLOR_COUNT = 5;
 const FLOWER_CLUSTER_COLUMNS = 4;
+const FLOWER_TARGETS_PER_CLUSTER = 8;
 const DENSE_WEED_COLOR_COUNT = 3;
 const SHRUB_COLOR_COUNT = 3;
 const SAPLING_COLOR_COUNT = 3;
@@ -11,6 +12,7 @@ export const GRASS_LOGICAL_COLUMNS = 26;
 export const GRASS_FIELD_SIZE = 41;
 export const GRASS_BLADES_PER_VISUAL = 14;
 export const FLOWER_CLUSTER_COUNT = 16;
+export const FLOWER_TARGET_COUNT = FLOWER_CLUSTER_COUNT * FLOWER_TARGETS_PER_CLUSTER;
 export const FLOWER_VISUAL_COUNT = 880;
 export const DENSE_WEED_COUNT = 12;
 export const DENSE_WEED_VISUALS_PER_TARGET = 9;
@@ -313,24 +315,35 @@ function createFlowerTargets(random: () => number): TargetSeed[] {
   const clusterCellSize = usableFieldSize / FLOWER_CLUSTER_COLUMNS;
   const halfUsableField = usableFieldSize / 2;
   const jitter = clusterCellSize * 0.24;
+  const clusterRadius = 2.55;
   const targets: TargetSeed[] = [];
 
-  for (let index = 0; index < FLOWER_CLUSTER_COUNT; index += 1) {
-    const column = index % FLOWER_CLUSTER_COLUMNS;
-    const row = Math.floor(index / FLOWER_CLUSTER_COLUMNS);
-    targets.push({
-      id: `flower-${index}`,
-      kind: "flower",
-      x: -halfUsableField + (column + 0.5) * clusterCellSize + randomRange(random, -jitter, jitter),
-      z: -halfUsableField + (row + 0.5) * clusterCellSize + randomRange(random, -jitter, jitter),
-      radius: 2.55 + random() * 0.28,
-      solidRadius: 0,
-      recommendedLevel: 1,
-      requiredWork: 4,
-      resistance: 0.08,
-      yield: 1,
-      xp: 3,
-    });
+  for (let clusterIndex = 0; clusterIndex < FLOWER_CLUSTER_COUNT; clusterIndex += 1) {
+    const column = clusterIndex % FLOWER_CLUSTER_COLUMNS;
+    const row = Math.floor(clusterIndex / FLOWER_CLUSTER_COLUMNS);
+    const centerX =
+      -halfUsableField + (column + 0.5) * clusterCellSize + randomRange(random, -jitter, jitter);
+    const centerZ =
+      -halfUsableField + (row + 0.5) * clusterCellSize + randomRange(random, -jitter, jitter);
+
+    for (let subIndex = 0; subIndex < FLOWER_TARGETS_PER_CLUSTER; subIndex += 1) {
+      const angle = (subIndex / FLOWER_TARGETS_PER_CLUSTER) * TAU + randomRange(random, -0.3, 0.3);
+      const distance =
+        subIndex === 0 ? random() * 0.25 : Math.sqrt(random()) * clusterRadius * 0.84;
+      targets.push({
+        id: `flower-${clusterIndex}-${subIndex}`,
+        kind: "flower",
+        x: centerX + Math.cos(angle) * distance,
+        z: centerZ + Math.sin(angle) * distance,
+        radius: 1.25 + random() * 0.16,
+        solidRadius: 0,
+        recommendedLevel: 1,
+        requiredWork: 4,
+        resistance: 0.08,
+        yield: 1,
+        xp: 3,
+      });
+    }
   }
 
   return targets;

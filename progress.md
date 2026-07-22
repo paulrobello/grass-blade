@@ -3,7 +3,7 @@ Original prompt: "i want create a threejs based game where you are a spinning bl
 # Grass Blade Progress
 
 Last updated: 2026-07-22
-Active milestone: Phase 5 — expansion after first-playable evidence, with GitHub Pages HTTPS provisioning still pending externally
+Active milestone: Phase 5 — expansion after first-playable evidence, with the custom-domain site served over valid HTTPS through Cloudflare and native GitHub Pages HTTPS enforcement still optional/pending
 
 ## Completed foundation intent
 
@@ -267,10 +267,21 @@ Active milestone: Phase 5 — expansion after first-playable evidence, with GitH
 - A focused 430 by 860 Playwright route verified both result labels, completed both authored contracts through `window.completeContractForDebug()`, and wrote `output/playwright/next-contract-label/meadow-results.png`, `flower-results.png`, and `summary.json` without browser errors.
 - The required web-game Playwright client ran against `?seed=12345&debug=1&contract=flower-sweep` after the result-label build and wrote `output/playwright/next-contract-label-client-smoke/shot-0.png` plus `state-0.json`; the state reports active Flower Sweep gameplay, `visibleBladeCount: 2`, Grass collection, and `canvasAspectMismatchRatio: 1`.
 - `make checkall` passes formatting verification, ESLint, strict TypeScript, 108 deterministic Vitest tests across eight files, and the Vite production build after the HTTPS/result-label slice.
+- Added the third authored Phase 5 contract, `woodland-cleanup`, with quotas `30 Grass / 6 Flowers / 8 Fiber / 8 Wood`, Start-screen selection, URL selection, and deterministic results-cycle navigation after Flower Sweep.
+- Split each visual flower drift into eight smaller authoritative flower pockets, increasing flower cut targets from 16 to 128 while keeping the same 880 decorative blossoms. A blade pass through one edge pocket now awards one Flower and starts only that pocket's falling flower visuals instead of collecting or toppling the full drift.
+- Updated `PRD.md` to lock the next arena direction: future contracts should not all be square lawns; authored arena silhouettes should include branching paths, bends, clearings, dense islands, and obstacle corridors. It also records optional timed contracts as explicit authored variants with visible pre-start limits and defined timeout semantics before shipping.
+- `bun test tests/state.test.ts` passes after the Woodland Cleanup and flower-pocket slice. New coverage verifies Woodland Cleanup metadata/completion, all authored contracts remain completable across ten authored seeds, 128 flower targets are created, and each flower pocket owns only six to seven visual blossoms.
+- `bun test tests/playableRootSize.test.ts` passes after adding Woodland Cleanup to the contract cycle. URL regression coverage now verifies Meadow Delivery -> Flower Sweep -> Woodland Cleanup -> Meadow Delivery while preserving unrelated query parameters.
+- A focused 430 by 860 Playwright route verified the three-contract chooser, Woodland Cleanup selection, Woodland Cleanup quotas, and one-pocket flower cutting through `window.cutTargetForDebug("flower")`; the state reported one Flower awarded and seven falling flower instances, with no browser errors. The inspected artifacts are `output/playwright/woodland-flower-pocket/chooser-three-contracts.png`, `woodland-selected.png`, and `single-flower-pocket-cut.png`.
+- A focused 215 by 430 high-contrast Playwright route verified the three-contract chooser still fits the 200%-equivalent phone viewport after compacting the ultra-small intro helper copy. The inspected artifact is `output/playwright/woodland-chooser-zoom/intro-215x430.png`; metrics report three visible contract buttons, card bottom `382.734375`, Start button bottom `369.546875`, and no browser errors.
+- The required web-game Playwright client ran against `?seed=12345&debug=1&contract=woodland-cleanup` after the Woodland Cleanup/flower-pocket build and wrote `output/playwright/woodland-client-smoke/shot-0.png` plus state without browser error artifacts. The inspected state reports active Woodland Cleanup gameplay, objective targets `30/6/8/8`, 845 total targets, 880 flower instances, valid flower-density thresholds, Grass collection, and `canvasAspectMismatchRatio: 1`.
+- `make checkall` passes formatting verification, ESLint, strict TypeScript, 110 deterministic Vitest tests across eight files, and the Vite production build after the Woodland Cleanup/flower-pocket/ultra-small chooser slice.
 
 ## Remaining TODOs
 
 - [ ] Optionally retry GitHub Pages native HTTPS enforcement later; the site is already valid over HTTPS through Cloudflare proxying, but GitHub Pages still rejects native enforcement with `The certificate does not exist yet`.
+- [ ] Implement non-square/path-based arena variants instead of only square meadow layout variants.
+- [ ] Define timed-contract timeout and result semantics before shipping a timed level.
 
 ## Handoff rules
 
