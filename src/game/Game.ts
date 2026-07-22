@@ -1,5 +1,6 @@
 import * as THREE from "three";
 
+import { GameAudio, resolveAudioSettings, type AudioDiagnostics } from "./audio";
 import { createCollectionMotes, type CollectionMotes } from "./collectionMotes";
 import { createScene, type MeadowScene } from "./createScene";
 import {
@@ -57,6 +58,17 @@ interface HudElements {
   levelToastNumber: HTMLElement;
 }
 
+interface AudioElements {
+  root: HTMLElement;
+  toggle: HTMLButtonElement;
+  master: HTMLInputElement;
+  music: HTMLInputElement;
+  effects: HTMLInputElement;
+  masterValue: HTMLElement;
+  musicValue: HTMLElement;
+  effectsValue: HTMLElement;
+}
+
 interface ResultsElements {
   overlay: HTMLDivElement;
   elapsed: HTMLElement;
@@ -89,12 +101,14 @@ export class Game {
   private readonly meadow: MeadowScene;
   private readonly state: GameState;
   private readonly hud: HudElements;
+  private readonly audioControls: AudioElements;
   private readonly intro: IntroElements;
   private readonly results: ResultsElements;
   private readonly pause: PauseElements;
   private readonly accessibilityStatus: HTMLElement;
   private readonly collectionMotes: CollectionMotes;
   private readonly targetProgress: TargetProgressOverlay;
+  private readonly audio: GameAudio;
   private readonly frameDiagnostics: FrameDiagnosticsTracker = createFrameDiagnosticsTracker();
   private readonly quality: QualitySettings;
   private readonly accessibilitySettings: AccessibilitySettings;
@@ -116,7 +130,9 @@ export class Game {
   private accumulatorSeconds = 0;
   private lastFrameTimeMs: number | null = null;
   private processedHudCutEvents = 0;
+  private processedAudioCutEvents = 0;
   private lastAnnouncedMode: GameState["mode"] = "active";
+  private lastAudioMode: GameState["mode"] = "active";
   private lastAnnouncedLevel = 1;
   private lastAccessibilityAnnouncement = "";
   private readonly announcedObjectiveCompletions: Record<ObjectiveResource, boolean> = {
@@ -143,6 +159,8 @@ export class Game {
     this.appRoot.dataset.contrast = this.accessibilitySettings.highContrast ? "high" : "standard";
     this.appRoot.dataset.contrastSource = this.accessibilitySettings.contrastSource;
     this.hud = getHudElements();
+    this.audio = new GameAudio(resolveAudioSettings(searchParams));
+    this.audioControls = createAudioElements(this.appRoot);
     this.accessibilityStatus = requireElement("accessibility-status");
     this.intro = createIntroElements(this.appRoot);
     this.results = createResultsElements(this.appRoot);
@@ -208,6 +226,10 @@ export class Game {
     this.intro.startButton.addEventListener("click", this.beginContract);
     this.pause.resumeButton.addEventListener("click", this.resumeContract);
     this.pause.restartButton.addEventListener("click", this.restartContract);
+    this.audioControls.toggle.addEventListener("click", this.toggleMuted);
+    this.audioControls.master.addEventListener("input", this.onMasterVolumeInput);
+    this.audioControls.music.addEventListener("input", this.onMusicVolumeInput);
+    this.audioControls.effects.addEventListener("input", this.onEffectsVolumeInput);
 
     this.resize();
     this.render();
@@ -241,12 +263,18 @@ export class Game {
     this.intro.startButton.removeEventListener("click", this.beginContract);
     this.pause.resumeButton.removeEventListener("click", this.resumeContract);
     this.pause.restartButton.removeEventListener("click", this.restartContract);
+    this.audioControls.toggle.removeEventListener("click", this.toggleMuted);
+    this.audioControls.master.removeEventListener("input", this.onMasterVolumeInput);
+    this.audioControls.music.removeEventListener("input", this.onMusicVolumeInput);
+    this.audioControls.effects.removeEventListener("input", this.onEffectsVolumeInput);
+    this.audioControls.root.remove();
     this.intro.overlay.remove();
     this.results.overlay.remove();
     this.pause.overlay.remove();
     delete window.completeContractForDebug;
     delete window.cutTargetForDebug;
     this.collectionMotes.dispose();
+    this.audio.dispose();
     this.targetProgress.dispose();
     this.meadow.dispose();
     this.renderer.dispose();
@@ -311,6 +339,7 @@ export class Game {
       this.simulationTimeSeconds += FIXED_TIME_STEP_SECONDS;
       this.meadow.sync(this.state, this.simulationTimeSeconds);
       this.collectionMotes.enqueue(this.state.cutEvents, this.simulationTimeSeconds);
+      this.updateAudioFeedback();
       this.accumulatorSeconds -= FIXED_TIME_STEP_SECONDS;
     }
   }
@@ -330,6 +359,7 @@ export class Game {
 
   private render(): void {
     this.updateHud();
+    this.syncAudio();
     this.meadow.sync(this.state, this.simulationTimeSeconds);
     this.renderer.render(this.meadow.scene, this.meadow.camera);
     this.targetProgress.sync(
@@ -370,6 +400,15 @@ export class Game {
     this.updatePause();
     this.updateResults();
     this.updateAccessibilityAnnouncements();
+    this.updateAudioControls();
+  }
+
+  private syncAudio(): void {
+    this.audio.sync({
+      mode: this.contractStarted ? this.state.mode : "ready",
+      player: this.state.player,
+      contactCount: this.state.bladeContactTargetIds.length,
+    });
   }
 
   private updateIntro(): void {
@@ -446,6 +485,41 @@ export class Game {
     }
   }
 
+  private updateAudioFeedback(): void {
+    while (this.processedAudioCutEvents < this.state.cutEvents.length) {
+      const event = this.state.cutEvents[this.processedAudioCutEvents];
+      this.processedAudioCutEvents += 1;
+      if (event === undefined) {
+        continue;
+      }
+
+      this.audio.playCut(event);
+      if (event.levelAfter > event.levelBefore) {
+        this.audio.playLevelUp(event.levelAfter);
+      }
+    }
+
+    if (this.state.mode !== this.lastAudioMode) {
+      this.lastAudioMode = this.state.mode;
+      if (this.state.mode === "complete") {
+        this.audio.playComplete();
+      }
+    }
+  }
+
+  private updateAudioControls(): void {
+    const diagnostics = this.audio.diagnostics;
+    this.audioControls.toggle.setAttribute("aria-pressed", String(!diagnostics.muted));
+    this.audioControls.toggle.textContent = diagnostics.muted ? "Sound off" : "Sound on";
+    this.audioControls.root.dataset.muted = String(diagnostics.muted);
+    syncRangeInput(this.audioControls.master, diagnostics.masterVolume);
+    syncRangeInput(this.audioControls.music, diagnostics.musicVolume);
+    syncRangeInput(this.audioControls.effects, diagnostics.effectsVolume);
+    setText(this.audioControls.masterValue, formatPercent(diagnostics.masterVolume));
+    setText(this.audioControls.musicValue, formatPercent(diagnostics.musicVolume));
+    setText(this.audioControls.effectsValue, formatPercent(diagnostics.effectsVolume));
+  }
+
   private updateAccessibilityAnnouncements(): void {
     const { objectives, player, result } = this.state;
     const announcements: string[] = [];
@@ -501,6 +575,12 @@ export class Game {
   };
 
   private readonly onKeyDown = (event: KeyboardEvent): void => {
+    if (event.code === "KeyM" && !event.repeat) {
+      event.preventDefault();
+      this.toggleMuted();
+      return;
+    }
+
     if (!this.contractStarted) {
       return;
     }
@@ -688,9 +768,34 @@ export class Game {
     this.lastAccessibilityAnnouncement =
       "Contract started. Drag to move, or use W A S D and arrow keys.";
     setText(this.accessibilityStatus, this.lastAccessibilityAnnouncement);
+    void this.audio.resume();
     this.resetInput();
     this.render();
     this.canvas.focus({ preventScroll: true });
+  };
+
+  private readonly toggleMuted = (): void => {
+    const muted = !this.audio.diagnostics.muted;
+    this.audio.setMuted(muted);
+    if (!muted) {
+      void this.audio.resume();
+    }
+    this.updateAudioControls();
+  };
+
+  private readonly onMasterVolumeInput = (): void => {
+    this.audio.setVolume("masterVolume", volumeFromInput(this.audioControls.master));
+    this.updateAudioControls();
+  };
+
+  private readonly onMusicVolumeInput = (): void => {
+    this.audio.setVolume("musicVolume", volumeFromInput(this.audioControls.music));
+    this.updateAudioControls();
+  };
+
+  private readonly onEffectsVolumeInput = (): void => {
+    this.audio.setVolume("effectsVolume", volumeFromInput(this.audioControls.effects));
+    this.updateAudioControls();
   };
 
   private togglePause(): void {
@@ -820,6 +925,7 @@ export class Game {
         highContrast: this.accessibilitySettings.highContrast,
         contrastSource: this.accessibilitySettings.contrastSource,
       },
+      audio: this.audio.diagnostics satisfies AudioDiagnostics,
       meadow: this.meadow.density,
       presentation: {
         ...this.meadow.presentation,
@@ -1070,6 +1176,65 @@ function getHudElements(): HudElements {
   };
 }
 
+function createAudioElements(root: HTMLElement): AudioElements {
+  const controls = document.createElement("details");
+  const summary = document.createElement("summary");
+  const panel = document.createElement("div");
+  const toggle = document.createElement("button");
+  const master = createVolumeInput("audio-master-volume");
+  const music = createVolumeInput("audio-music-volume");
+  const effects = createVolumeInput("audio-effects-volume");
+  const masterValue = document.createElement("span");
+  const musicValue = document.createElement("span");
+  const effectsValue = document.createElement("span");
+
+  controls.className = "audio-controls";
+  controls.setAttribute("aria-label", "Sound controls");
+  summary.className = "audio-controls__summary";
+  summary.textContent = "Sound";
+  panel.className = "audio-controls__panel";
+  toggle.id = "audio-toggle";
+  toggle.type = "button";
+  toggle.className = "audio-controls__toggle";
+  toggle.textContent = "Sound on";
+  toggle.setAttribute("aria-pressed", "true");
+  panel.append(
+    toggle,
+    createVolumeLabel("Master", master, masterValue),
+    createVolumeLabel("Music", music, musicValue),
+    createVolumeLabel("Effects", effects, effectsValue),
+  );
+  controls.append(summary, panel);
+  root.append(controls);
+
+  return { root: controls, toggle, master, music, effects, masterValue, musicValue, effectsValue };
+}
+
+function createVolumeInput(id: string): HTMLInputElement {
+  const input = document.createElement("input");
+  input.id = id;
+  input.type = "range";
+  input.min = "0";
+  input.max = "100";
+  input.step = "1";
+  return input;
+}
+
+function createVolumeLabel(
+  text: string,
+  input: HTMLInputElement,
+  value: HTMLElement,
+): HTMLLabelElement {
+  const label = document.createElement("label");
+  const title = document.createElement("span");
+  title.textContent = text;
+  value.className = "audio-controls__value";
+  label.className = "audio-controls__slider";
+  label.htmlFor = input.id;
+  label.append(title, input, value);
+  return label;
+}
+
 function createIntroElements(root: HTMLElement): IntroElements {
   const overlay = document.createElement("div");
   const card = document.createElement("section");
@@ -1214,6 +1379,26 @@ function setText(element: HTMLElement, value: string): void {
   if (element.textContent !== value) {
     element.textContent = value;
   }
+}
+
+function syncRangeInput(input: HTMLInputElement, volume: number): void {
+  const value = String(Math.round(volume * 100));
+  if (input.value !== value) {
+    input.value = value;
+  }
+}
+
+function volumeFromInput(input: HTMLInputElement): number {
+  const parsed = Number(input.value);
+  if (!Number.isFinite(parsed)) {
+    return 0;
+  }
+
+  return Math.min(1, Math.max(0, parsed / 100));
+}
+
+function formatPercent(value: number): string {
+  return `${Math.round(Math.min(1, Math.max(0, value)) * 100)}%`;
 }
 
 function restartCssAnimation(element: HTMLElement, className: string): void {

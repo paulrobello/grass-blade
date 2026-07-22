@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
 
+import {
+  clampVolume,
+  deriveRpmFrequencyHz,
+  resolveAudioSettings,
+  resolveVolume,
+} from "../src/game/audio";
 import { derivePlayableRootSize, resolveAccessibilitySettings } from "../src/game/Game";
 
 describe("playable root sizing", () => {
@@ -137,5 +143,34 @@ describe("accessibility settings", () => {
       highContrast: true,
       contrastSource: "prefers-contrast",
     });
+  });
+});
+
+describe("audio settings", () => {
+  it("clamps and parses volume values from query parameters", () => {
+    expect(resolveVolume("80", 0.5)).toBe(0.8);
+    expect(resolveVolume("0.25", 0.5)).toBe(0.25);
+    expect(resolveVolume("not-a-number", 0.5)).toBe(0.5);
+    expect(clampVolume(2)).toBe(1);
+    expect(clampVolume(-1)).toBe(0);
+  });
+
+  it("resolves independent audio channels and mute state", () => {
+    const settings = resolveAudioSettings(
+      new URLSearchParams("muted=1&masterVolume=60&musicVolume=35&effectsVolume=90"),
+    );
+
+    expect(settings).toEqual({
+      muted: true,
+      masterVolume: 0.6,
+      musicVolume: 0.35,
+      effectsVolume: 0.9,
+    });
+  });
+
+  it("derives an RPM hum pitch that rises with blade speed and clamps overspeed", () => {
+    expect(deriveRpmFrequencyHz(0, 720)).toBe(82);
+    expect(deriveRpmFrequencyHz(360, 720)).toBeGreaterThan(deriveRpmFrequencyHz(180, 720));
+    expect(deriveRpmFrequencyHz(2000, 720)).toBe(273);
   });
 });

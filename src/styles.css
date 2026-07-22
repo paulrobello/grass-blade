@@ -858,6 +858,83 @@ body {
   color: #bdf779;
 }
 
+.audio-controls {
+  position: absolute;
+  right: max(0.75rem, env(safe-area-inset-right));
+  bottom: max(0.75rem, env(safe-area-inset-bottom));
+  z-index: 4;
+  width: min(13.5rem, calc(100vw - 1.5rem));
+  color: white;
+  font-size: 0.72rem;
+  font-weight: 850;
+  user-select: none;
+}
+
+.audio-controls__summary {
+  display: block;
+  width: max-content;
+  margin-left: auto;
+  padding: 0.48rem 0.72rem;
+  border: 0.08rem solid rgb(255 255 255 / 50%);
+  border-radius: 999px;
+  background: rgb(22 47 39 / 68%);
+  box-shadow: 0 0.2rem 0.6rem rgb(20 57 35 / 18%);
+  cursor: pointer;
+  list-style: none;
+  text-shadow: 0 0.08rem 0.18rem rgb(0 0 0 / 28%);
+}
+
+.audio-controls__summary::-webkit-details-marker {
+  display: none;
+}
+
+.audio-controls[open] .audio-controls__summary {
+  border-radius: 0.85rem 0.85rem 0 0;
+  background: rgb(18 38 55 / 84%);
+}
+
+.audio-controls__panel {
+  display: grid;
+  gap: 0.48rem;
+  padding: 0.62rem;
+  border: 0.08rem solid rgb(255 255 255 / 52%);
+  border-radius: 0.85rem 0 0.85rem 0.85rem;
+  background: rgb(18 38 55 / 86%);
+  box-shadow: 0 0.35rem 1rem rgb(9 32 24 / 28%);
+}
+
+.audio-controls__toggle {
+  padding: 0.42rem 0.58rem;
+  border: 0.09rem solid #dfff70;
+  border-radius: 999px;
+  background: #26347d;
+  color: white;
+  font: inherit;
+  cursor: pointer;
+}
+
+.audio-controls[data-muted="true"] .audio-controls__toggle {
+  border-color: #ffd7d0;
+  background: #8e2727;
+}
+
+.audio-controls__slider {
+  display: grid;
+  grid-template-columns: 3.8rem 1fr 2.4rem;
+  align-items: center;
+  gap: 0.42rem;
+}
+
+.audio-controls__slider input {
+  width: 100%;
+  min-width: 0;
+  accent-color: #dfff70;
+}
+
+.audio-controls__value {
+  text-align: right;
+}
+
 #app[data-contrast="high"] {
   --hud-indigo: #1020f0;
   --hud-indigo-deep: #050515;
@@ -1043,6 +1120,28 @@ body {
   color: #d9ff00;
 }
 
+#app[data-contrast="high"] .audio-controls__summary,
+#app[data-contrast="high"] .audio-controls__panel,
+#app[data-contrast="high"] .audio-controls__toggle {
+  border-color: white;
+  background: #050515;
+  color: white;
+  box-shadow: 0 0 0 0.1rem #050515;
+  text-shadow: none;
+}
+
+#app[data-contrast="high"] .audio-controls__toggle {
+  border-color: #ffd400;
+}
+
+#app[data-contrast="high"] .audio-controls[data-muted="true"] .audio-controls__toggle {
+  background: #c00000;
+}
+
+#app[data-contrast="high"] .audio-controls__slider input {
+  accent-color: #d9ff00;
+}
+
 @media (forced-colors: active) {
   #app[data-contrast="high"] .time-dial,
   #app[data-contrast="high"] .objective-tray,
@@ -1053,7 +1152,10 @@ body {
   #app[data-contrast="high"] .intro-card__button,
   #app[data-contrast="high"] .results-card__button,
   #app[data-contrast="high"] .pause-card__button,
-  #app[data-contrast="high"] .controls-hint {
+  #app[data-contrast="high"] .controls-hint,
+  #app[data-contrast="high"] .audio-controls__summary,
+  #app[data-contrast="high"] .audio-controls__panel,
+  #app[data-contrast="high"] .audio-controls__toggle {
     border-color: CanvasText;
     background: Canvas;
     color: CanvasText;
@@ -1183,6 +1285,21 @@ body {
     bottom: max(0.65rem, env(safe-area-inset-bottom));
     padding: 0.42rem 0.62rem;
     font-size: 0.58rem;
+  }
+
+  .audio-controls {
+    right: max(0.55rem, env(safe-area-inset-right));
+    bottom: max(3.35rem, calc(env(safe-area-inset-bottom) + 3rem));
+    width: min(12rem, calc(100vw - 1.1rem));
+    font-size: 0.64rem;
+  }
+
+  .audio-controls__summary {
+    padding: 0.38rem 0.58rem;
+  }
+
+  .audio-controls__slider {
+    grid-template-columns: 3.35rem 1fr 2.15rem;
   }
 
   .level-toast {
