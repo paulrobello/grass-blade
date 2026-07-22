@@ -118,6 +118,7 @@ describe("active game state", () => {
   it("creates the same active contract state every time", () => {
     const first = createInitialState();
     const second = createInitialState();
+    const layout = createMeadowLayout(MEADOW_SEED);
 
     expect(first).toEqual(second);
     expect(first.mode).toBe("active");
@@ -151,7 +152,7 @@ describe("active game state", () => {
     expect(first.cutRevision).toBe(0);
     expect(first.bladeContactTargetIds).toEqual([]);
     expect(first.targets).toHaveLength(
-      GRASS_LOGICAL_COLUMNS * GRASS_LOGICAL_COLUMNS +
+      layout.grassCells.length +
         FLOWER_TARGET_COUNT +
         DENSE_WEED_COUNT +
         SHRUB_COUNT +
@@ -159,7 +160,7 @@ describe("active game state", () => {
         MATURE_TREE_COUNT +
         ROCK_COUNT,
     );
-    const grassEnd = GRASS_LOGICAL_COLUMNS * GRASS_LOGICAL_COLUMNS;
+    const grassEnd = layout.grassCells.length;
     const flowersEnd = grassEnd + FLOWER_TARGET_COUNT;
     const denseWeedsEnd = flowersEnd + DENSE_WEED_COUNT;
     const shrubsEnd = denseWeedsEnd + SHRUB_COUNT;
@@ -390,7 +391,8 @@ describe("active game state", () => {
     const replay = createMeadowLayout(12345);
 
     expect(replay).toEqual(first);
-    expect(first.grassCells).toHaveLength(GRASS_LOGICAL_COLUMNS * GRASS_LOGICAL_COLUMNS);
+    expect(first.grassCells.length).toBeGreaterThan(450);
+    expect(first.grassCells.length).toBeLessThan(GRASS_LOGICAL_COLUMNS * GRASS_LOGICAL_COLUMNS);
     expect(first.grassVisuals).toHaveLength(GRASS_VISUAL_COLUMNS * GRASS_VISUAL_COLUMNS);
     expect(first.flowerTargets).toHaveLength(FLOWER_TARGET_COUNT);
     expect(first.flowerVisuals).toHaveLength(FLOWER_VISUAL_COUNT);
@@ -404,7 +406,9 @@ describe("active game state", () => {
     expect(first.rockTargets).toHaveLength(ROCK_COUNT);
     expect(first.rockVisuals).toHaveLength(ROCK_COUNT);
     expect(first.arenaId).toBe("meadow-delivery");
-    expect(first.arenaShape).toBe("full-meadow");
+    expect(first.arenaShape).toBe("starter-meadow-paths");
+    expect(first.grassCells.length).toBeGreaterThan(450);
+    expect(first.grassCells.length).toBeLessThan(GRASS_LOGICAL_COLUMNS * GRASS_LOGICAL_COLUMNS);
     expect(first.denseWeedTargets.map((target) => target.id)).toEqual(
       interleaved.denseWeedTargets.map((target) => target.id),
     );
@@ -432,7 +436,15 @@ describe("active game state", () => {
     for (const visual of first.grassVisuals) {
       grassVisualCounts[visual.cellIndex] = (grassVisualCounts[visual.cellIndex] ?? 0) + 1;
     }
-    expect(grassVisualCounts.every((count) => count === 16)).toBe(true);
+    for (const visual of first.grassVisuals) {
+      if (visual.height > 0 || visual.scaleX > 0) {
+        expect(visual.cellIndex).not.toBe(-1);
+      } else {
+        expect(visual.height).toBe(0);
+        expect(visual.scaleX).toBe(0);
+      }
+    }
+    expect(grassVisualCounts.every((count) => count > 0 && count <= 16)).toBe(true);
 
     const flowerVisualCounts = Array<number>(first.flowerTargets.length).fill(0);
     for (const visual of first.flowerVisuals) {
@@ -509,36 +521,54 @@ describe("active game state", () => {
     const meadow = createMeadowLayout(12345, "meadow-delivery");
     const flowerSweep = createMeadowLayout(12345, "flower-sweep");
     const woodland = createMeadowLayout(12345, "woodland-cleanup");
+    const timed = createMeadowLayout(12345, "timed-harvest");
     const unknown = createMeadowLayout(12345, "unknown-contract");
 
-    expect(unknown.arenaShape).toBe("full-meadow");
+    expect(meadow.arenaShape).toBe("starter-meadow-paths");
+    expect(unknown.arenaShape).toBe("starter-meadow-paths");
     expect(flowerSweep.arenaShape).toBe("branching-flower-corridors");
     expect(woodland.arenaShape).toBe("woodland-clearings");
+    expect(timed.arenaShape).toBe("timed-loop");
     expect(flowerSweep.flowerTargets).toHaveLength(FLOWER_TARGET_COUNT);
     expect(woodland.flowerTargets).toHaveLength(FLOWER_TARGET_COUNT);
+    expect(timed.flowerTargets).toHaveLength(FLOWER_TARGET_COUNT);
     expect(flowerSweep.grassVisuals).toHaveLength(GRASS_VISUAL_COLUMNS * GRASS_VISUAL_COLUMNS);
     expect(woodland.grassVisuals).toHaveLength(GRASS_VISUAL_COLUMNS * GRASS_VISUAL_COLUMNS);
+    expect(timed.grassVisuals).toHaveLength(GRASS_VISUAL_COLUMNS * GRASS_VISUAL_COLUMNS);
     expect(flowerSweep.grassCells.length).toBeGreaterThan(120);
     expect(woodland.grassCells.length).toBeGreaterThan(160);
+    expect(timed.grassCells.length).toBeGreaterThan(120);
     expect(flowerSweep.grassCells.length).toBeLessThan(meadow.grassCells.length * 0.72);
     expect(woodland.grassCells.length).toBeLessThan(meadow.grassCells.length * 0.78);
+    expect(timed.grassCells.length).toBeLessThan(meadow.grassCells.length * 0.5);
+    expect(countVisibleGrassVisuals(meadow)).toBeLessThan(
+      GRASS_VISUAL_COLUMNS * GRASS_VISUAL_COLUMNS,
+    );
     expect(countVisibleGrassVisuals(flowerSweep)).toBeLessThan(
       GRASS_VISUAL_COLUMNS * GRASS_VISUAL_COLUMNS * 0.72,
     );
     expect(countVisibleGrassVisuals(woodland)).toBeLessThan(
       GRASS_VISUAL_COLUMNS * GRASS_VISUAL_COLUMNS * 0.78,
     );
+    expect(countVisibleGrassVisuals(timed)).toBeLessThan(
+      GRASS_VISUAL_COLUMNS * GRASS_VISUAL_COLUMNS * 0.5,
+    );
 
     const flowerState = createInitialState(12345, "flower-sweep");
     const woodlandState = createInitialState(12345, "woodland-cleanup");
+    const timedState = createInitialState(12345, "timed-harvest");
     expect(flowerState.targets.filter((target) => target.kind === "grass")).toHaveLength(
       flowerSweep.grassCells.length,
     );
     expect(woodlandState.targets.filter((target) => target.kind === "grass")).toHaveLength(
       woodland.grassCells.length,
     );
+    expect(timedState.targets.filter((target) => target.kind === "grass")).toHaveLength(
+      timed.grassCells.length,
+    );
     expect(flowerSweep.grassCells.length).toBeGreaterThan(flowerState.objectives.grass.target);
     expect(woodland.grassCells.length).toBeGreaterThan(woodlandState.objectives.grass.target);
+    expect(timed.grassCells.length).toBeGreaterThan(timedState.objectives.grass.target);
   });
 
   it("provides at least 150 percent of each required contract resource", () => {
@@ -562,13 +592,16 @@ describe("active game state", () => {
       const report = createMeadowDensityReport(layout);
       const lowQualityReport = createMeadowDensityReport(layout, 8);
 
-      expect(report.eligibleTerrainArea).toBe(GRASS_FIELD_SIZE * GRASS_FIELD_SIZE);
-      expect(report.visibleGrassVisuals).toBe(GRASS_VISUAL_COLUMNS * GRASS_VISUAL_COLUMNS);
+      const visualCellArea = (GRASS_FIELD_SIZE / GRASS_VISUAL_COLUMNS) ** 2;
+
+      expect(report.eligibleTerrainArea).toBeLessThan(GRASS_FIELD_SIZE * GRASS_FIELD_SIZE);
+      expect(report.eligibleTerrainArea).toBeGreaterThan(GRASS_FIELD_SIZE * GRASS_FIELD_SIZE * 0.7);
+      expect(report.visibleGrassVisuals).toBeLessThan(GRASS_VISUAL_COLUMNS * GRASS_VISUAL_COLUMNS);
+      expect(report.visibleGrassVisuals).toBeGreaterThan(7600);
       expect(report.grassBladesPerVisual).toBe(GRASS_BLADES_PER_VISUAL);
       expect(report.grassCoverageFraction).toBe(1);
       expect(report.decorativeGrassBladesPerWorldUnitSquared).toBeCloseTo(
-        (GRASS_VISUAL_COLUMNS * GRASS_VISUAL_COLUMNS * GRASS_BLADES_PER_VISUAL) /
-          (GRASS_FIELD_SIZE * GRASS_FIELD_SIZE),
+        GRASS_BLADES_PER_VISUAL / visualCellArea,
       );
       expect(report.flowerDriftCoverageFraction).toBeGreaterThanOrEqual(0.2);
       expect(report.flowerDriftCoverageFraction).toBeLessThanOrEqual(0.3);
@@ -581,11 +614,9 @@ describe("active game state", () => {
       expect(report.meetsFlowerBlossomDensity).toBe(true);
 
       expect(lowQualityReport.grassBladesPerVisual).toBe(8);
-      expect(lowQualityReport.visibleGrassVisuals).toBe(
-        GRASS_VISUAL_COLUMNS * GRASS_VISUAL_COLUMNS,
-      );
+      expect(lowQualityReport.visibleGrassVisuals).toBe(report.visibleGrassVisuals);
       expect(lowQualityReport.decorativeGrassBladesPerWorldUnitSquared).toBeCloseTo(
-        (GRASS_VISUAL_COLUMNS * GRASS_VISUAL_COLUMNS * 8) / (GRASS_FIELD_SIZE * GRASS_FIELD_SIZE),
+        8 / visualCellArea,
       );
       expect(lowQualityReport.meetsDefaultGrassDensity).toBe(false);
       expect(lowQualityReport.meetsLowGrassDensity).toBe(true);

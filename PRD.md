@@ -31,7 +31,7 @@ The six gameplay screenshots supplied on 2026-07-20 are the current composition 
 - Use a bright, saturated but coherent palette. Distinct crop or resistance zones may shift green, yellow, orange, purple, or cool-white accents, but terrain, vegetation and targets must remain visually related rather than looking like unrelated asset packs.
 - Flowers, crops and produce appear in dense authored clusters embedded in the grass. Their silhouettes and resource type must remain distinguishable above the canopy.
 - A completed cut leaves a persistent, wide and sharply readable trail for the rest of the contract. Revealed ground includes low stubble, clippings or chopped marks so a cleared route does not look like an empty untextured plane.
-- Arenas must not all be simple square lawns. Some contracts should use authored path and corridor shapes, branching clearings, islands of dense growth, or obstacle-defined routes that lead in multiple directions.
+- Arenas must avoid simple square lawns. Active contracts use authored path and corridor shapes, branching clearings, loops, islands of dense growth, or obstacle-defined routes that lead in multiple directions.
 - Larger plants must visibly resist the cutter through sustained contact, RPM load and target response. When blade level or rendered cutter size is insufficient for comfortable progress, the game communicates that clearly without creating an invisible invulnerable tier.
 - Keep the primary HUD compact at the top edges: a glossy blue meter/timer treatment with cream panels, warm gold trim and high-contrast white text. Timer presentation is elapsed time only and never a default countdown failure condition.
 - Automatic level and tool upgrades should produce a visible cutter-power payoff. A contract may complete by satisfying its resource quotas or an authored clear-every-patch objective; both use deterministic authoritative state and a calm completion result.
@@ -189,7 +189,7 @@ Flower drifts are visual patches made from multiple smaller authoritative flower
 ## World and target lifecycle
 
 - The first arena is a bounded authored meadow approximately 48 by 48 world units, populated deterministically from a seed.
-- Additional arenas must introduce authored silhouettes rather than only resizing the same square: branching paths, bends, clearings, dense islands, and obstacle corridors should change the route through the meadow while preserving readable boundaries.
+- Additional arenas must introduce authored silhouettes rather than resizing a square: branching paths, bends, clearings, dense islands, loops, and obstacle corridors should change the route through the meadow while preserving readable boundaries.
 - Soft boundaries should read as hedges, rocks, or a path edge rather than invisible walls.
 - Logical target state is authoritative on the CPU:
 
