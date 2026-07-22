@@ -12,6 +12,8 @@ Phase 3 renderer hardening is implemented and verified: measurable density diagn
 
 Phase 4 presentation/accessibility work has started. A code-native onboarding card now appears first with a focused `Start Cutting` button; movement, pause, fullscreen, and simulation time stay inactive until that explicit Start action is activated. After Start, focus moves to the canvas and the normal keyboard/touch contract flow resumes. Pause and results overlays move focus to their primary visible action, and Space is suppressed as a browser-scroll key while the canvas owns input. High-contrast HUD and dialog styling is available through `?contrast=high` and also activates from `forced-colors: active` or `prefers-contrast: more`. Reduced-motion mode is honored from `prefers-reduced-motion` and can be forced with `?motion=reduced` or disabled for testing with `?motion=standard`. Procedural WebAudio feedback starts only after the Start gesture and includes a blade RPM hum, resource-matched cut sounds, level-up stingers, completion audio, a mute shortcut, and independent Master/Music/Effects controls. `make accessibility-check` runs the current Phase 4 browser accessibility verifier for focus/no-scroll, reduced-motion, and 200%-equivalent grayscale readability. `make playthrough-check-headed` runs a visible-browser contract pass covering movement, fullscreen exit-before-pause behavior, pause/resume focus, durable-target reward feedback, and completion.
 
+Phase 5 expansion has its first authored contract variant. The default `meadow-delivery` contract remains the balanced `50/10/6/6` quota set. Add `?contract=flower-sweep` to play Flower Sweep, which requires all sixteen flower targets with lighter Grass, Fiber, and Wood quotas (`34/16/4/4`). Unknown contract IDs safely fall back to Meadow Delivery.
+
 ## Play online
 
 The public GitHub Pages deployment is configured to publish the production Vite build from `main`:
@@ -91,6 +93,7 @@ Grass Blade starts with a keyboard-focusable `Start Cutting` button before gamep
 The browser-facing automation contract lets the game be observed and driven without synthetic mouse gestures:
 
 - `?seed=<uint32>` selects a deterministic world seed.
+- `?contract=meadow-delivery` or `?contract=flower-sweep` selects the authored contract template; unknown IDs fall back to `meadow-delivery`.
 - `window.__grassBladeReady` becomes `true` when the scene is controllable.
 - `window.render_game_to_text()` returns a concise JSON snapshot of visible game state.
 - `window.advanceTime(milliseconds)` switches automation to manual time, advances exact 60 Hz ticks, and renders.

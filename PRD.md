@@ -128,7 +128,7 @@ Rocks, fences, structures, water, and terrain are non-cuttable obstacles in the 
 
 ## Contracts and quotas
 
-The first playable contract is fixed so onboarding and automated checks have one stable target:
+Authored contracts are selected by deterministic contract ID and seed. The default remains stable so onboarding and automated checks have one known target.
 
 ### Meadow Delivery
 
@@ -139,6 +139,15 @@ The first playable contract is fixed so onboarding and automated checks have one
 - Default mode has no failure timer. Elapsed time is a result metric only.
 - The seeded world must contain at least 150% of each required resource yield, with required low-tier resources reachable from the start.
 - Wood can be completed from saplings; a mature tree is an optional high-resistance shortcut/reward.
+
+### Flower Sweep
+
+- Contract ID: `flower-sweep`
+- Collect 34 Grass.
+- Collect 16 Flowers.
+- Collect 4 Fiber.
+- Collect 4 Wood.
+- Requires every authored flower target while keeping Fiber and Wood lighter than Meadow Delivery.
 
 Later contracts may choose two to four resource quotas from authored templates, but must remain deterministic for a given contract ID and seed. Over-collection is allowed and still grants XP. Contract completion occurs in the same simulation tick that the final quota is awarded.
 

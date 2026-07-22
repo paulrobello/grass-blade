@@ -3,7 +3,7 @@ Original prompt: "i want create a threejs based game where you are a spinning bl
 # Grass Blade Progress
 
 Last updated: 2026-07-22
-Active milestone: Phase 4 — cozy presentation and accessibility, with GitHub Pages HTTPS provisioning still pending externally
+Active milestone: Phase 5 — expansion after first-playable evidence, with GitHub Pages HTTPS provisioning still pending externally
 
 ## Completed foundation intent
 
@@ -243,6 +243,10 @@ Active milestone: Phase 4 — cozy presentation and accessibility, with GitHub P
 - `make accessibility-check` passes after adding the verifier. It wrote `output/playwright/accessibility-check/summary.json`, confirmed keyboard focus ends on `#results-next` with Space scroll `(0, 0)`, confirmed reduced-motion diagnostics with 19 active fragments and two active collection motes, confirmed no 215 by 430 HUD overflow, and confirmed the grayscale completion card fits within `199 by 344` pixels. The inspected artifacts are `keyboard-paused.png`, `reduced-motion.png`, and `zoom-grayscale-complete.png` in `output/playwright/accessibility-check/`.
 - Added a reusable Phase 4 playthrough verifier: `make playthrough-check` runs `tools/check_playthrough.mjs` headlessly, and `make playthrough-check-headed` runs the same deterministic contract path in a visible browser with fullscreen coverage.
 - `make playthrough-check-headed` passes after adding the verifier. It writes headed evidence to `output/playwright/playthrough-check-headed/summary.json`, confirms Start focus, active movement and Grass collection, `F` fullscreen entry, Escape fullscreen exit before pause, pause focus on `#pause-resume`, resume to `#game-canvas`, sapling Wood reward with blade level 2, final completion with inventory `50/10/6/6`, focus on `#results-next`, and no browser errors. The inspected artifacts are `active-cutting.png` and `complete.png` in `output/playwright/playthrough-check-headed/`.
+- Added the first Phase 5 authored contract variant. `?contract=flower-sweep` selects Flower Sweep with quotas `34 Grass / 16 Flowers / 4 Fiber / 4 Wood`, while unknown contract IDs fall back to the default Meadow Delivery contract.
+- `bun test tests/state.test.ts` passes 57 focused state tests after the authored-contract slice. New coverage verifies the default Meadow Delivery contract metadata, unknown-contract fallback, Flower Sweep quotas, and deterministic Flower Sweep completion through normal quota cuts with final inventory `34/16/4/4`.
+- The required web-game Playwright client ran against `?seed=12345&debug=1&contract=flower-sweep` and wrote `output/playwright/flower-sweep-client-smoke/shot-0.png` plus state without browser error artifacts; the inspected desktop screenshot shows `FLOWER SWEEP` and quotas `4/34`, `0/16`, `0/4`, and `0/4`.
+- A focused 430 by 860 Flower Sweep browser route verified `render_game_to_text().contract`, HUD title `FLOWER SWEEP`, Flower Sweep quota targets, quota-driven `window.completeContractForDebug()`, final inventory `34/16/4/4`, results title `Flower Sweep`, objective completion, and no browser errors. The inspected artifact is `output/playwright/flower-sweep-contract/active.png`.
 
 ## Remaining TODOs
 
