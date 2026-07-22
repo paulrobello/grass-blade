@@ -282,11 +282,17 @@ Active milestone: Phase 5 — expansion after first-playable evidence, with the 
 - Focused browser captures at 430 by 860 verified `flower-sweep` as a branching dense-growth route and `woodland-cleanup` as connected clearings. The inspected artifacts are `output/playwright/arena-shape-variants/flower-sweep.png` and `woodland-cleanup.png`.
 - The required web-game Playwright client ran against `?seed=12345&debug=1&contract=woodland-cleanup` after the arena-shape build and wrote `output/playwright/arena-shape-client-smoke/shot-0.png` plus state without browser error artifacts. The inspected state reports active Woodland Cleanup gameplay, `arenaShape: "woodland-clearings"`, grass coverage `0.318`, `visibleGrassVisuals: 3227`, Grass collection, and `canvasAspectMismatchRatio: 1`.
 - `make checkall` passes formatting verification, ESLint, strict TypeScript, 111 deterministic Vitest tests across eight files, and the Vite production build after the authored arena-shape slice.
+- Added the fourth authored Phase 5 contract, `timed-harvest`, with a visible pre-start `60 sec` badge, lighter `22 Grass / 6 Flowers / 2 Fiber / 2 Wood` quotas, a loop-shaped arena route, and deterministic timeout semantics. The HUD switches from elapsed `TIME` to countdown `LEFT` during timed contracts.
+- Timed Harvest completes normally if every quota is packed before the 60-second limit. If the timer expires first, the state clamps elapsed time at `1:00`, records a `timed-out` result with partial inventory, suppresses the success audio stinger, announces `Time up`, and shows a `Time Up` result card with Restart and `Next: Meadow Delivery`.
+- Focused reducer tests verify Timed Harvest metadata, normal quota completion, timeout result shape, and the four-contract Next cycle. Focused browser captures at 430 by 860 verified the Timed Harvest chooser, countdown HUD, loop arena, and `Time Up` result card. The inspected artifacts are `output/playwright/timed-harvest-flow/timed-intro.png`, `timed-active-countdown.png`, and `timed-time-up.png`.
+- A focused 215 by 430 high-contrast Playwright route verified the four-contract chooser still fits the 200%-equivalent phone viewport after hiding only the nonessential summary copy at the ultra-small breakpoint. The inspected artifact is `output/playwright/timed-chooser-zoom/intro-215x430.png`; metrics report four visible contract buttons, card bottom `385.21875`, Start button bottom `372.03125`, and no browser errors.
+- The required web-game Playwright client ran against `?seed=12345&debug=1&contract=timed-harvest` after the timed-contract build and wrote `output/playwright/timed-harvest-client-smoke/shot-0.png` plus state without browser error artifacts. The inspected state reports active Timed Harvest gameplay, `arenaShape: "timed-loop"`, `time.limitSeconds: 60`, `time.remainingSeconds: 59.467`, Grass collection, and `canvasAspectMismatchRatio: 1`.
+- `make checkall` passes formatting verification, ESLint, strict TypeScript, 113 deterministic Vitest tests across eight files, and the Vite production build after the Timed Harvest contract slice.
 
 ## Remaining TODOs
 
 - [ ] Optionally retry GitHub Pages native HTTPS enforcement later; the site is already valid over HTTPS through Cloudflare proxying, but GitHub Pages still rejects native enforcement with `The certificate does not exist yet`.
-- [ ] Define timed-contract timeout and result semantics before shipping a timed level.
+- [ ] Tune Timed Harvest quota and time-limit balance with before/after playtest evidence.
 
 ## Handoff rules
 

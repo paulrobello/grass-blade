@@ -36,6 +36,8 @@ const OBJECTIVE_LABELS: Record<ObjectiveResource, string> = {
 };
 interface HudElements {
   root: HTMLElement;
+  timeDial: HTMLElement;
+  timeLabel: HTMLElement;
   contractTitle: HTMLElement;
   time: HTMLElement;
   level: HTMLElement;
@@ -70,6 +72,7 @@ interface AudioElements {
 
 interface ResultsElements {
   overlay: HTMLDivElement;
+  eyebrow: HTMLElement;
   title: HTMLElement;
   summary: HTMLElement;
   elapsed: HTMLElement;
@@ -410,8 +413,16 @@ export class Game {
         ? 1
         : clamp((xp - previousThreshold) / (nextThreshold - previousThreshold), 0, 1);
 
+    const timeLimit = this.state.contract.timeLimitSeconds;
+    const remainingSeconds =
+      timeLimit === null ? null : Math.max(0, timeLimit - this.state.elapsedSeconds);
+    this.hud.timeDial.setAttribute(
+      "aria-label",
+      remainingSeconds === null ? "Elapsed time" : "Time remaining",
+    );
+    setText(this.hud.timeLabel, remainingSeconds === null ? "TIME" : "LEFT");
     setText(this.hud.contractTitle, this.state.contract.title.toUpperCase());
-    setText(this.hud.time, formatElapsedTime(this.state.elapsedSeconds));
+    setText(this.hud.time, formatElapsedTime(remainingSeconds ?? this.state.elapsedSeconds));
     setText(this.hud.level, `LV ${player.level}`);
     setText(this.hud.rpm, `${Math.round(player.rpm)} RPM`);
     setText(this.hud.grass, String(objectives.grass.collected));
@@ -472,9 +483,22 @@ export class Game {
       return;
     }
 
+    const timedOut = result.status === "timed-out";
     this.results.overlay.hidden = false;
-    setText(this.results.title, this.state.contract.title);
-    setText(this.results.summary, this.state.contract.summary);
+    this.results.overlay.setAttribute(
+      "aria-label",
+      timedOut
+        ? `${this.state.contract.title} time-up results`
+        : `${this.state.contract.title} results`,
+    );
+    setText(this.results.eyebrow, timedOut ? "Time up" : "Contract complete");
+    setText(this.results.title, timedOut ? "Time Up" : this.state.contract.title);
+    setText(
+      this.results.summary,
+      timedOut
+        ? "The timer ended before every quota was packed. Restart this contract or try the next route."
+        : this.state.contract.summary,
+    );
     setText(this.results.elapsed, formatElapsedTime(result.completedAtSeconds));
     setText(this.results.cutTargets, String(result.cutTargets));
     setText(this.results.highestLevel, `LV ${result.highestLevel}`);
@@ -554,7 +578,7 @@ export class Game {
 
     if (this.state.mode !== this.lastAudioMode) {
       this.lastAudioMode = this.state.mode;
-      if (this.state.mode === "complete") {
+      if (this.state.mode === "complete" && this.state.result?.status === "complete") {
         this.audio.playComplete();
       }
     }
@@ -602,10 +626,17 @@ export class Game {
       } else if (this.state.mode === "active") {
         announcements.push("Contract resumed. Cutting is active.");
       } else if (this.state.mode === "complete" && result !== null) {
-        announcements.push(
-          `Contract complete in ${formatElapsedTime(result.completedAtSeconds)}. ` +
-            `${result.cutTargets} targets cut. Highest blade level ${result.highestLevel}.`,
-        );
+        if (result.status === "timed-out") {
+          announcements.push(
+            `Time up at ${formatElapsedTime(result.completedAtSeconds)}. ` +
+              `${result.cutTargets} targets cut. Highest blade level ${result.highestLevel}.`,
+          );
+        } else {
+          announcements.push(
+            `Contract complete in ${formatElapsedTime(result.completedAtSeconds)}. ` +
+              `${result.cutTargets} targets cut. Highest blade level ${result.highestLevel}.`,
+          );
+        }
       }
     }
 
@@ -1014,6 +1045,13 @@ export class Game {
         focusedElementId: activeHtmlElement?.id || null,
       },
       elapsedSeconds: round(this.state.elapsedSeconds),
+      time: {
+        limitSeconds: this.state.contract.timeLimitSeconds,
+        remainingSeconds:
+          this.state.contract.timeLimitSeconds === null
+            ? null
+            : round(Math.max(0, this.state.contract.timeLimitSeconds - this.state.elapsedSeconds)),
+      },
       result: this.state.result,
       accessibility: {
         liveRegionText: this.lastAccessibilityAnnouncement,
@@ -1260,6 +1298,8 @@ function deriveAspectRatio(width: number, height: number): number {
 function getHudElements(): HudElements {
   return {
     root: requireElement("game-hud"),
+    timeDial: requireElement("hud-time-dial"),
+    timeLabel: requireElement("hud-time-label"),
     contractTitle: requireElement("hud-contract-title"),
     time: requireElement("hud-time"),
     level: requireElement("hud-level"),
@@ -1383,6 +1423,7 @@ function createIntroElements(
     const name = document.createElement("span");
     const contractSummary = document.createElement("span");
     const quotas = document.createElement("span");
+    const timeLimit = document.createElement("span");
 
     button.id = `contract-choice-${contract.id}`;
     button.type = "button";
@@ -1397,7 +1438,13 @@ function createIntroElements(
     quotas.textContent =
       `${contract.objectives.grass} Grass · ${contract.objectives.flowers} Flowers · ` +
       `${contract.objectives.fiber} Fiber · ${contract.objectives.wood} Wood`;
-    button.append(name, contractSummary, quotas);
+    if (contract.timeLimitSeconds !== undefined) {
+      timeLimit.className = "intro-card__contract-time";
+      timeLimit.textContent = `${contract.timeLimitSeconds} sec`;
+      button.append(name, contractSummary, quotas, timeLimit);
+    } else {
+      button.append(name, contractSummary, quotas);
+    }
     contractList.append(button);
     contractButtons.push(button);
   }
@@ -1467,6 +1514,7 @@ function createResultsElements(root: HTMLElement): ResultsElements {
 
   return {
     overlay,
+    eyebrow,
     title,
     summary,
     elapsed,

@@ -137,11 +137,13 @@ describe("contract navigation URLs", () => {
   it("cycles through authored contracts for the results next action", () => {
     expect(nextAuthoredContractId("meadow-delivery")).toBe("flower-sweep");
     expect(nextAuthoredContractId("flower-sweep")).toBe("woodland-cleanup");
-    expect(nextAuthoredContractId("woodland-cleanup")).toBe("meadow-delivery");
+    expect(nextAuthoredContractId("woodland-cleanup")).toBe("timed-harvest");
+    expect(nextAuthoredContractId("timed-harvest")).toBe("meadow-delivery");
     expect(nextAuthoredContractId("unknown-contract")).toBe("meadow-delivery");
     expect(nextAuthoredContractTitle("meadow-delivery")).toBe("Flower Sweep");
     expect(nextAuthoredContractTitle("flower-sweep")).toBe("Woodland Cleanup");
-    expect(nextAuthoredContractTitle("woodland-cleanup")).toBe("Meadow Delivery");
+    expect(nextAuthoredContractTitle("woodland-cleanup")).toBe("Timed Harvest");
+    expect(nextAuthoredContractTitle("timed-harvest")).toBe("Meadow Delivery");
     expect(nextAuthoredContractTitle("unknown-contract")).toBe("Meadow Delivery");
   });
 
@@ -166,7 +168,14 @@ describe("contract navigation URLs", () => {
         nextAuthoredContractId("woodland-cleanup"),
         "?seed=1013916587&debug=1&contract=woodland-cleanup",
       ),
-    ).toBe("?seed=3668364708&debug=1");
+    ).toBe("?seed=3668364708&debug=1&contract=timed-harvest");
+    expect(
+      contractNavigationSearch(
+        2027808453,
+        nextAuthoredContractId("timed-harvest"),
+        "?seed=3668364708&debug=1&contract=timed-harvest",
+      ),
+    ).toBe("?seed=2027808453&debug=1");
   });
 });
 

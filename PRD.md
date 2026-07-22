@@ -78,7 +78,7 @@ The game must be fully playable with a keyboard. The browser page must not scrol
 
 Blade level, XP, cut targets, and collected resources reset at the start of each contract. Persistent currency, meta-upgrades, and account progression are not part of the MVP.
 
-Some later contracts may add an explicit time constraint, but time pressure is contract-authored and must be visible before Start. The default Meadow Delivery contract remains no-fail-clock; its timer is elapsed-time scoring only.
+Some contracts may add an explicit time constraint, but time pressure is contract-authored and must be visible before Start. The default Meadow Delivery contract remains no-fail-clock; its timer is elapsed-time scoring only.
 
 ## RPM, torque, and cutting model
 
@@ -160,6 +160,17 @@ Authored contracts are selected by deterministic contract ID and seed. The defau
 - Collect 8 Fiber.
 - Collect 8 Wood.
 - Emphasizes weeds and saplings with heavier Fiber and Wood quotas while keeping the soft-target requirements shorter than Meadow Delivery.
+
+### Timed Harvest
+
+- Contract ID: `timed-harvest`
+- Time limit: 60 seconds.
+- Collect 22 Grass.
+- Collect 6 Flowers.
+- Collect 2 Fiber.
+- Collect 2 Wood.
+- Uses a loop-shaped route challenge with lighter quotas and a countdown HUD.
+- If the timer reaches zero before every quota is complete, the contract ends with a `timed-out` result. The result card shows `Time Up`, final partial inventory, targets cut, highest level, Restart, and Next Contract.
 
 Later contracts may choose two to four resource quotas from authored templates, but must remain deterministic for a given contract ID and seed. Over-collection is allowed and still grants XP. Contract completion occurs in the same simulation tick that the final quota is awarded.
 
@@ -378,7 +389,7 @@ If Grass Blade copies or substantially derives upstream code, add a third-party 
 | Grass cut mask   | CPU grid projected into per-chunk GPU texture                                        | Validate texel density so edges look organic without large texture updates    |
 | Camera           | Fixed orthographic isometric follow camera                                           | Validate pitch and zoom on laptop and ultrawide displays                      |
 | Contract length  | Meadow Delivery targets a 6-10 minute first run                                      | Tune only after measuring novice completion and stall moments                 |
-| Timed contracts  | Allowed only as explicit authored contracts, not the default mode                    | Define fail/result semantics before shipping the first timed contract         |
+| Timed contracts  | Allowed only as explicit authored contracts, not the default mode                    | Tune time limits and quotas only with before/after playtest evidence          |
 | Audio            | RPM pitch and material contact are important feedback                                | Select generation/licensing pipeline and reduced-sensory defaults later       |
 | Art scope        | One meadow with six target types                                                     | Decide whether shrubs/saplings use authored models or procedural primitives   |
 | Mobile           | Explicitly deferred                                                                  | Reassess after desktop performance and input contracts are stable             |
@@ -475,7 +486,7 @@ Candidate work:
 
 - Additional authored contracts and meadow variants.
 - Non-square arena variants with branching paths and direction changes.
-- Optional timed contracts with visible pre-start limits and deterministic timeout semantics.
+- Additional timed contracts with visible pre-start limits and deterministic timeout semantics.
 - New organic target families and biome-specific resources.
 - Balance/quality presets informed by telemetry-free local playtest captures.
 - Touch controls and mobile optimization only after desktop contracts remain intact.

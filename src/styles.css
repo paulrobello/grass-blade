@@ -775,6 +775,18 @@ body {
   line-height: 1.2;
 }
 
+.intro-card__contract-time {
+  align-self: start;
+  padding: 0.16rem 0.42rem;
+  border-radius: 999px;
+  background: #283277;
+  color: white;
+  font-size: 0.66rem;
+  font-weight: 950;
+  letter-spacing: 0.05em;
+  line-height: 1;
+}
+
 .results-card__stats {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -1434,6 +1446,10 @@ body {
     line-height: 1.22;
   }
 
+  .intro-card__summary {
+    display: none;
+  }
+
   .intro-card__controls {
     display: none;
   }
@@ -1468,6 +1484,11 @@ body {
   .intro-card__contract-quotas {
     font-size: 0.47rem;
     line-height: 1.08;
+  }
+
+  .intro-card__contract-time {
+    padding: 0.1rem 0.32rem;
+    font-size: 0.46rem;
   }
 
   .intro-card__button {

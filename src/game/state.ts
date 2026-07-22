@@ -49,9 +49,10 @@ export interface ObjectivesState {
 }
 
 export interface ContractDefinition {
-  id: "meadow-delivery" | "flower-sweep" | "woodland-cleanup";
+  id: "meadow-delivery" | "flower-sweep" | "woodland-cleanup" | "timed-harvest";
   title: string;
   summary: string;
+  timeLimitSeconds?: number;
   objectives: {
     grass: number;
     flowers: number;
@@ -64,6 +65,7 @@ export interface ContractState {
   id: ContractDefinition["id"];
   title: string;
   summary: string;
+  timeLimitSeconds: number | null;
 }
 
 export const DEFAULT_CONTRACT_ID: ContractDefinition["id"] = "meadow-delivery";
@@ -86,6 +88,13 @@ export const CONTRACT_DEFINITIONS = [
     title: "Woodland Cleanup",
     summary: "Focus on weeds and saplings for a heavier Fiber and Wood delivery.",
     objectives: { grass: 30, flowers: 6, fiber: 8, wood: 8 },
+  },
+  {
+    id: "timed-harvest",
+    title: "Timed Harvest",
+    summary: "A 60-second route challenge with lighter quotas and no room to wander.",
+    timeLimitSeconds: 60,
+    objectives: { grass: 22, flowers: 6, fiber: 2, wood: 2 },
   },
 ] as const satisfies readonly ContractDefinition[];
 
@@ -150,7 +159,9 @@ export interface PlayerState {
 }
 
 export interface ContractResult {
+  status: "complete" | "timed-out";
   completedAtSeconds: number;
+  timeLimitSeconds: number | null;
   cutTargets: number;
   highestLevel: number;
   finalInventory: InventoryState;
@@ -207,6 +218,7 @@ export function createInitialState(
       id: contract.id,
       title: contract.title,
       summary: contract.summary,
+      timeLimitSeconds: contract.timeLimitSeconds ?? null,
     },
     elapsedSeconds: 0,
     player: {
@@ -299,6 +311,7 @@ export function stepState(state: GameState, input: MovementInput, deltaSeconds: 
   const intendedZ = state.player.z;
   stepCutting(state, startX, startZ, intendedX, intendedZ, delta);
   resolveSolidMovement(state, startX, startZ, intendedX, intendedZ);
+  updateContractTimeout(state);
 
   return state;
 }
@@ -773,18 +786,37 @@ function updateContractCompletion(state: GameState): void {
     return;
   }
 
-  state.mode = "complete";
-  state.player.vx = 0;
-  state.player.vz = 0;
-  state.bladeContactTargetIds.length = 0;
-  state.tooToughNotice = null;
+  finalizeContractResult(state, "complete");
   state.objectives.status = "complete";
   state.objectives.grass.status = "complete";
   state.objectives.flowers.status = "complete";
   state.objectives.fiber.status = "complete";
   state.objectives.wood.status = "complete";
+}
+
+function updateContractTimeout(state: GameState): void {
+  if (state.mode === "complete" || state.contract.timeLimitSeconds === null) {
+    return;
+  }
+
+  if (state.elapsedSeconds < state.contract.timeLimitSeconds) {
+    return;
+  }
+
+  state.elapsedSeconds = state.contract.timeLimitSeconds;
+  finalizeContractResult(state, "timed-out");
+}
+
+function finalizeContractResult(state: GameState, status: ContractResult["status"]): void {
+  state.mode = "complete";
+  state.player.vx = 0;
+  state.player.vz = 0;
+  state.bladeContactTargetIds.length = 0;
+  state.tooToughNotice = null;
   state.result = {
+    status,
     completedAtSeconds: state.elapsedSeconds,
+    timeLimitSeconds: state.contract.timeLimitSeconds,
     cutTargets: state.targets.filter((target) => target.status === "cut").length,
     highestLevel: state.player.level,
     finalInventory: { ...state.inventory },

@@ -126,6 +126,7 @@ describe("active game state", () => {
       id: "meadow-delivery",
       title: "Meadow Delivery",
       summary: "Clear a balanced starter meadow contract.",
+      timeLimitSeconds: null,
     });
     expect(first.elapsedSeconds).toBe(0);
     expect(first.player).toMatchObject({
@@ -274,6 +275,7 @@ describe("active game state", () => {
       id: "flower-sweep",
       title: "Flower Sweep",
       summary: "Harvest every flower drift while keeping lighter Fiber and Wood quotas.",
+      timeLimitSeconds: null,
     });
     expect(state.objectives.grass.target).toBe(34);
     expect(state.objectives.flowers.target).toBe(16);
@@ -299,6 +301,7 @@ describe("active game state", () => {
       id: "woodland-cleanup",
       title: "Woodland Cleanup",
       summary: "Focus on weeds and saplings for a heavier Fiber and Wood delivery.",
+      timeLimitSeconds: null,
     });
     expect(state.objectives.grass.target).toBe(30);
     expect(state.objectives.flowers.target).toBe(6);
@@ -314,6 +317,55 @@ describe("active game state", () => {
       highestLevel: 5,
       finalInventory: { grass: 30, flowers: 6, fiber: 8, wood: 8 },
       completionRevision: 48,
+    });
+  });
+
+  it("creates and completes the authored Timed Harvest contract before the clock expires", () => {
+    const state = createInitialState(12345, "timed-harvest");
+
+    expect(state.contract).toEqual({
+      id: "timed-harvest",
+      title: "Timed Harvest",
+      summary: "A 60-second route challenge with lighter quotas and no room to wander.",
+      timeLimitSeconds: 60,
+    });
+    expect(state.objectives.grass.target).toBe(22);
+    expect(state.objectives.flowers.target).toBe(6);
+    expect(state.objectives.fiber.target).toBe(2);
+    expect(state.objectives.wood.target).toBe(2);
+
+    completeContractThroughQuotaCuts(state);
+
+    expect(state.mode).toBe("complete");
+    expect(state.elapsedSeconds).toBeLessThan(60);
+    expect(state.inventory).toEqual({ grass: 22, flowers: 6, fiber: 2, wood: 2 });
+    expect(state.result).toMatchObject({
+      status: "complete",
+      timeLimitSeconds: 60,
+      cutTargets: 31,
+      highestLevel: 3,
+      finalInventory: { grass: 22, flowers: 6, fiber: 2, wood: 2 },
+      completionRevision: 31,
+    });
+  });
+
+  it("ends a timed contract with a time-up result when quotas are incomplete", () => {
+    const state = createInitialState(12345, "timed-harvest");
+    state.targets = [];
+
+    advanceState(state, 60.5);
+
+    expect(state.mode).toBe("complete");
+    expect(state.elapsedSeconds).toBe(60);
+    expect(state.objectives.status).toBe("active");
+    expect(state.result).toEqual({
+      status: "timed-out",
+      completedAtSeconds: 60,
+      timeLimitSeconds: 60,
+      cutTargets: 0,
+      highestLevel: 1,
+      finalInventory: { grass: 0, flowers: 0, fiber: 0, wood: 0 },
+      completionRevision: 0,
     });
   });
 
@@ -884,7 +936,9 @@ describe("active game state", () => {
     expect(state.objectives.status).toBe("complete");
     expect(state.objectives.wood).toMatchObject({ status: "complete", collected: 6, target: 6 });
     expect(state.result).toEqual({
+      status: "complete",
       completedAtSeconds: FIXED_TIME_STEP_SECONDS,
+      timeLimitSeconds: null,
       cutTargets: 1,
       highestLevel: 4,
       finalInventory: { grass: 50, flowers: 10, fiber: 6, wood: 6 },
@@ -1706,6 +1760,13 @@ function totalAvailableResources(state: GameState): {
 
 function countVisibleGrassVisuals(layout: MeadowLayout): number {
   return layout.grassVisuals.filter((visual) => visual.height > 0 && visual.scaleX > 0).length;
+}
+
+function advanceState(state: GameState, seconds: number): void {
+  const frames = Math.ceil(seconds / FIXED_TIME_STEP_SECONDS);
+  for (let frame = 0; frame < frames; frame += 1) {
+    stepState(state, idleInput, FIXED_TIME_STEP_SECONDS);
+  }
 }
 
 function prepareOneCutFromCompletion(state: GameState): void {
