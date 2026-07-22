@@ -3,6 +3,8 @@ const GRASS_COLOR_COUNT = 4;
 const FLOWER_COLOR_COUNT = 5;
 const FLOWER_CLUSTER_COLUMNS = 4;
 const FLOWER_TARGETS_PER_CLUSTER = 20;
+const FLOWER_CONTACT_RADIUS = 0.24;
+const FLOWER_VISUAL_SPREAD_RADIUS = 0.58;
 const DENSE_WEED_COLOR_COUNT = 3;
 const SHRUB_COLOR_COUNT = 3;
 const SAPLING_COLOR_COUNT = 3;
@@ -382,7 +384,7 @@ function createGrassVisuals(
 
 function createFlowerTargets(random: () => number, arenaId: ArenaLayoutId): TargetSeed[] {
   const centers = createFlowerClusterCenters(random, arenaId);
-  const clusterRadius = 3.15;
+  const clusterRadius = 4.1;
   const targets: TargetSeed[] = [];
 
   for (let clusterIndex = 0; clusterIndex < FLOWER_CLUSTER_COUNT; clusterIndex += 1) {
@@ -400,7 +402,7 @@ function createFlowerTargets(random: () => number, arenaId: ArenaLayoutId): Targ
         kind: "flower",
         x: centerX + Math.cos(angle) * distance,
         z: centerZ + Math.sin(angle) * distance,
-        radius: 0.56 + random() * 0.08,
+        radius: FLOWER_CONTACT_RADIUS + random() * 0.03,
         solidRadius: 0,
         recommendedLevel: 1,
         requiredWork: 4,
@@ -665,7 +667,7 @@ function jitterAnchors(
   ]);
 }
 
-function isPointInArenaGrowth(arenaId: ArenaLayoutId, x: number, z: number): boolean {
+export function isPointInArenaGrowth(arenaId: ArenaLayoutId, x: number, z: number): boolean {
   switch (arenaId) {
     case "flower-sweep":
       return (
@@ -784,7 +786,7 @@ function createFlowerVisuals(targets: TargetSeed[], random: () => number): Flowe
     }
 
     const angle = random() * TAU;
-    const distance = Math.sqrt(random()) * target.radius * 0.92;
+    const distance = Math.sqrt(random()) * FLOWER_VISUAL_SPREAD_RADIUS;
     visuals.push({
       x: target.x + Math.cos(angle) * distance,
       z: target.z + Math.sin(angle) * distance,
@@ -982,7 +984,9 @@ function estimateFlowerDriftArea(targets: TargetSeed[]): number {
     for (let column = 0; column < sampleColumns; column += 1) {
       const x = -halfField + (column + 0.5) * cellSize;
       if (
-        targets.some((target) => distanceSquared(x, z, target.x, target.z) <= target.radius ** 2)
+        targets.some(
+          (target) => distanceSquared(x, z, target.x, target.z) <= FLOWER_VISUAL_SPREAD_RADIUS ** 2,
+        )
       ) {
         coveredSamples += 1;
       }

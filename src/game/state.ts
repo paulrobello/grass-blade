@@ -5,6 +5,7 @@ import {
   type GrassVisual,
   type MeadowLayout,
   type TargetSeed,
+  isPointInArenaGrowth,
 } from "./world";
 
 export const MEADOW_SEED = 0x6a09e667;
@@ -348,6 +349,7 @@ export function stepState(state: GameState, input: MovementInput, deltaSeconds: 
   state.player.x += state.player.vx * delta;
   state.player.z += state.player.vz * delta;
   clampPlayerToWorld(state.player);
+  resolveArenaMovement(state, startX, startZ, state.player.x, state.player.z);
   const intendedX = state.player.x;
   const intendedZ = state.player.z;
   stepCutting(state, startX, startZ, intendedX, intendedZ, delta);
@@ -940,6 +942,45 @@ function clampPlayerToWorld(player: PlayerState): void {
     player.z = limit;
     player.vz = Math.min(0, player.vz);
   }
+}
+
+function resolveArenaMovement(
+  state: GameState,
+  startX: number,
+  startZ: number,
+  intendedX: number,
+  intendedZ: number,
+): void {
+  const arenaId = state.contract.id;
+  if (isPointInArenaGrowth(arenaId, intendedX, intendedZ)) {
+    return;
+  }
+
+  if (!isPointInArenaGrowth(arenaId, startX, startZ)) {
+    state.player.x = startX;
+    state.player.z = startZ;
+    state.player.vx = 0;
+    state.player.vz = 0;
+    return;
+  }
+
+  let insideFraction = 0;
+  let outsideFraction = 1;
+  for (let iteration = 0; iteration < 10; iteration += 1) {
+    const candidateFraction = (insideFraction + outsideFraction) * 0.5;
+    const candidateX = startX + (intendedX - startX) * candidateFraction;
+    const candidateZ = startZ + (intendedZ - startZ) * candidateFraction;
+    if (isPointInArenaGrowth(arenaId, candidateX, candidateZ)) {
+      insideFraction = candidateFraction;
+    } else {
+      outsideFraction = candidateFraction;
+    }
+  }
+
+  state.player.x = startX + (intendedX - startX) * insideFraction;
+  state.player.z = startZ + (intendedZ - startZ) * insideFraction;
+  state.player.vx = 0;
+  state.player.vz = 0;
 }
 
 function resolveSolidMovement(

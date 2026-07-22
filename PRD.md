@@ -208,6 +208,7 @@ Flower drifts are visual patches made from twenty smaller authoritative flower t
 
 - The first arena is a bounded authored meadow approximately 48 by 48 world units, populated deterministically from a seed.
 - Additional arenas must introduce authored silhouettes rather than resizing a square: branching paths, bends, clearings, dense islands, loops, and obstacle corridors should change the route through the meadow while preserving readable boundaries.
+- The selected contract's authored arena silhouette is also the movement boundary for the blade center. The old square world clamp remains only a safety limit behind the organic mask; active play should stop at the authored path, loop, clearing, or corridor edge.
 - Soft boundaries should read as hedges, rocks, or a path edge rather than invisible walls. The current implementation places deterministic low rounded stones and mossy scallops along authored growth-mask edges so non-square routes remain readable without adding hard collision to soft vegetation boundaries.
 - Logical target state is authoritative on the CPU:
 

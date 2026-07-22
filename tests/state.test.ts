@@ -45,6 +45,7 @@ import {
   SHRUB_VISUAL_COUNT,
   createMeadowDensityReport,
   createMeadowLayout,
+  isPointInArenaGrowth,
   type MeadowLayout,
   type TargetKind,
 } from "../src/game/world";
@@ -731,6 +732,26 @@ describe("active game state", () => {
     expect(hasGrassCellNear(sprint, 15, 15)).toBe(false);
   });
 
+  it("uses the authored arena mask as the movement boundary", () => {
+    const state = createInitialState(12345, "timed-harvest");
+    state.player.x = 0;
+    state.player.z = -12;
+    state.player.vx = 0;
+    state.player.vz = MAX_MOVE_SPEED;
+
+    expect(isPointInArenaGrowth(state.contract.id, state.player.x, state.player.z)).toBe(true);
+    expect(isPointInArenaGrowth(state.contract.id, 0, -4)).toBe(false);
+
+    for (let frame = 0; frame < 60; frame += 1) {
+      stepState(state, idleInput, FIXED_TIME_STEP_SECONDS);
+      expect(isPointInArenaGrowth(state.contract.id, state.player.x, state.player.z)).toBe(true);
+    }
+
+    expect(Math.hypot(state.player.x, state.player.z + 4)).toBeGreaterThanOrEqual(2.34);
+    expect(state.player.vx).toBe(0);
+    expect(state.player.vz).toBe(0);
+  });
+
   it("provides at least 150 percent of each required contract resource", () => {
     const state = createInitialState(12345);
     const available = totalAvailableResources(state);
@@ -1315,12 +1336,14 @@ describe("active game state", () => {
     state.player.vx = 0;
     state.player.vz = 0;
 
-    cutCurrentTarget(state, edgeFlower);
+    for (let frame = 0; frame < 60; frame += 1) {
+      stepState(state, idleInput, FIXED_TIME_STEP_SECONDS);
+    }
 
     const cutFlowers = clusterFlowers.filter((target) => target.status === "cut");
     expect(cutFlowers.length).toBeGreaterThan(0);
     expect(cutFlowers.length).toBeLessThan(clusterFlowers.length);
-    expect(cutFlowers.length).toBeLessThanOrEqual(6);
+    expect(cutFlowers.length).toBeLessThanOrEqual(3);
     expect(state.inventory.flowers).toBe(cutFlowers.length);
   });
 
@@ -1952,13 +1975,13 @@ describe("active game state", () => {
     state.player.x = limit - 0.01;
     state.player.vx = MAX_MOVE_SPEED;
     stepState(state, { ...idleInput, right: true }, FIXED_TIME_STEP_SECONDS);
-    expect(state.player.x).toBe(limit);
+    expect(state.player.x).toBeLessThanOrEqual(limit);
     expect(state.player.vx).toBe(0);
 
     state.player.z = -limit + 0.01;
     state.player.vz = -MAX_MOVE_SPEED;
     stepState(state, { ...idleInput, forward: true }, FIXED_TIME_STEP_SECONDS);
-    expect(state.player.z).toBe(-limit);
+    expect(state.player.z).toBeGreaterThanOrEqual(-limit);
     expect(state.player.vz).toBe(0);
   });
 });
