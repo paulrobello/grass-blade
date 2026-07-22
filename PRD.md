@@ -176,8 +176,8 @@ Authored contracts are selected by deterministic contract ID and seed. The defau
 
 - Contract ID: `field-sprint`
 - Time limit: 45 seconds.
-- Collect 18 Grass.
-- Collect 10 Flowers.
+- Collect 120 Grass.
+- Collect 120 Flowers.
 - No Fiber or Wood quota; this is a soft-target speed contract.
 - Uses narrow connected lanes with flower-heavy pockets and a countdown HUD.
 - If the timer reaches zero before every quota is complete, the contract ends with the same `timed-out` result semantics as Timed Harvest.
@@ -208,8 +208,8 @@ Flower drifts are visual patches made from twenty smaller authoritative flower t
 
 - The first arena is a bounded authored meadow approximately 48 by 48 world units, populated deterministically from a seed.
 - Additional arenas must introduce authored silhouettes rather than resizing a square: branching paths, bends, clearings, dense islands, loops, and obstacle corridors should change the route through the meadow while preserving readable boundaries.
-- The selected contract's authored arena silhouette is also the movement boundary for the blade center. The old square world clamp remains only a safety limit behind the organic mask; active play should stop at the authored path, loop, clearing, or corridor edge.
-- Soft boundaries should read as hedges, rocks, or a path edge rather than invisible walls. The current implementation places deterministic low rounded stones and mossy scallops along authored growth-mask edges so non-square routes remain readable without adding hard collision to soft vegetation boundaries.
+- The selected contract's authored arena silhouette controls vegetation and target placement, not invisible collision. The blade center is constrained by the world bounds and by visible solid targets: rocks, shrubs, saplings, and mature trees while they remain uncut.
+- Soft arena edges should read as path edges and vegetation silhouettes, not invisible walls. Decorative low stones and mossy scallops may clarify authored growth-mask edges, but they must not block movement unless they correspond to an authoritative visible solid target.
 - Logical target state is authoritative on the CPU:
 
 ```text

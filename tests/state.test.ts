@@ -375,8 +375,8 @@ describe("active game state", () => {
       timeLimitSeconds: 45,
       completionMode: "quota",
     });
-    expect(state.objectives.grass.target).toBe(18);
-    expect(state.objectives.flowers.target).toBe(10);
+    expect(state.objectives.grass.target).toBe(120);
+    expect(state.objectives.flowers.target).toBe(120);
     expect(state.objectives.fiber.target).toBe(0);
     expect(state.objectives.wood.target).toBe(0);
 
@@ -384,14 +384,14 @@ describe("active game state", () => {
 
     expect(state.mode).toBe("complete");
     expect(state.elapsedSeconds).toBeLessThan(45);
-    expect(state.inventory).toEqual({ grass: 18, flowers: 10, fiber: 0, wood: 0 });
+    expect(state.inventory).toEqual({ grass: 120, flowers: 120, fiber: 0, wood: 0 });
     expect(state.result).toMatchObject({
       status: "complete",
       timeLimitSeconds: 45,
-      cutTargets: 28,
-      highestLevel: 2,
-      finalInventory: { grass: 18, flowers: 10, fiber: 0, wood: 0 },
-      completionRevision: 28,
+      cutTargets: 240,
+      highestLevel: 7,
+      finalInventory: { grass: 120, flowers: 120, fiber: 0, wood: 0 },
+      completionRevision: 240,
     });
   });
 
@@ -741,24 +741,20 @@ describe("active game state", () => {
     expect(hasGrassCellNear(sprint, 15, 15)).toBe(false);
   });
 
-  it("uses the authored arena mask as the movement boundary", () => {
+  it("does not use decorative no-growth arena gaps as invisible movement blockers", () => {
     const state = createInitialState(12345, "timed-harvest");
     state.player.x = 0;
-    state.player.z = -12;
+    state.player.z = -4;
     state.player.vx = 0;
     state.player.vz = MAX_MOVE_SPEED;
+    state.targets = [];
 
-    expect(isPointInArenaGrowth(state.contract.id, state.player.x, state.player.z)).toBe(true);
-    expect(isPointInArenaGrowth(state.contract.id, 0, -4)).toBe(false);
+    expect(isPointInArenaGrowth(state.contract.id, state.player.x, state.player.z)).toBe(false);
 
-    for (let frame = 0; frame < 60; frame += 1) {
-      stepState(state, idleInput, FIXED_TIME_STEP_SECONDS);
-      expect(isPointInArenaGrowth(state.contract.id, state.player.x, state.player.z)).toBe(true);
-    }
+    stepState(state, idleInput, FIXED_TIME_STEP_SECONDS);
 
-    expect(Math.hypot(state.player.x, state.player.z + 4)).toBeGreaterThanOrEqual(2.34);
-    expect(state.player.vx).toBe(0);
-    expect(state.player.vz).toBe(0);
+    expect(state.player.z).toBeGreaterThan(-4);
+    expect(state.player.vz).toBeGreaterThan(0);
   });
 
   it("provides at least 150 percent of each required contract resource", () => {

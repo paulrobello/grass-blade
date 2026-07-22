@@ -333,6 +333,8 @@ Active milestone: Phase 5 — expansion after first-playable evidence, with the 
 - Added active-contract pause-on-blur handling. Browser blur now releases keyboard/pointer movement, pauses only an active started contract, shows the normal pause card with Resume focused, and leaves ready/paused/complete flow semantics unchanged.
 - `make accessibility-check` passes after adding blur-pause coverage. The keyboard-focus scenario now holds ArrowUp, dispatches browser blur, verifies the pause card, verifies held input is cleared, advances manual time for one second, and confirms elapsed time remains frozen at the blur-pause value. The inspected artifact is `output/playwright/accessibility-check/keyboard-paused.png`.
 - The required web-game Playwright client ran a short post-change smoke against `?seed=12345&debug=1` and wrote `output/playwright/blur-pause-client-smoke-short/shot-0.png` plus `state-0.json` without browser error artifacts. The inspected screenshot shows active Meadow Delivery gameplay after Start with the two-arm cutter, lush grass/flowers, and normal HUD state; the state reports mode `active`, focus on `game-canvas`, `4/50` Grass, and `canvasAspectMismatchRatio: 1`.
+- Removed invisible arena-mask movement blockers. Authored non-square masks still shape grass, flowers, target placement, and decorative edge markers, but the blade center is now blocked only by visible solid targets and the outer world bounds. This fixes no-rock areas that looked open but stopped movement.
+- Raised Field Sprint from `18 Grass / 10 Flowers` to `120 Grass / 120 Flowers` so the 45-second sprint requires sustained route clearing instead of ending after a few early soft-target contacts.
 
 ## Remaining TODOs
 
