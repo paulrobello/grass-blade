@@ -49,7 +49,7 @@ export interface ObjectivesState {
 }
 
 export interface ContractDefinition {
-  id: "meadow-delivery" | "flower-sweep" | "woodland-cleanup" | "timed-harvest";
+  id: "meadow-delivery" | "flower-sweep" | "woodland-cleanup" | "timed-harvest" | "field-sprint";
   title: string;
   summary: string;
   timeLimitSeconds?: number;
@@ -95,6 +95,13 @@ export const CONTRACT_DEFINITIONS = [
     summary: "A 60-second grass, flower, and fiber route with no room to wander.",
     timeLimitSeconds: 60,
     objectives: { grass: 22, flowers: 6, fiber: 2, wood: 0 },
+  },
+  {
+    id: "field-sprint",
+    title: "Field Sprint",
+    summary: "A 45-second flower-lane sprint with only soft targets.",
+    timeLimitSeconds: 45,
+    objectives: { grass: 18, flowers: 10, fiber: 0, wood: 0 },
   },
 ] as const satisfies readonly ContractDefinition[];
 

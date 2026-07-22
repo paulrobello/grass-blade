@@ -172,6 +172,16 @@ Authored contracts are selected by deterministic contract ID and seed. The defau
 - Uses a loop-shaped route challenge with lighter grass, flower, and fiber quotas plus a countdown HUD.
 - If the timer reaches zero before every quota is complete, the contract ends with a `timed-out` result. The result card shows `Time Up`, final partial inventory, targets cut, highest level, Restart, and Next Contract.
 
+### Field Sprint
+
+- Contract ID: `field-sprint`
+- Time limit: 45 seconds.
+- Collect 18 Grass.
+- Collect 10 Flowers.
+- No Fiber or Wood quota; this is a soft-target speed contract.
+- Uses narrow connected lanes with flower-heavy pockets and a countdown HUD.
+- If the timer reaches zero before every quota is complete, the contract ends with the same `timed-out` result semantics as Timed Harvest.
+
 Later contracts may choose two to four resource quotas from authored templates, but must remain deterministic for a given contract ID and seed. Over-collection is allowed and still grants XP. Contract completion occurs in the same simulation tick that the final quota is awarded.
 
 Flower drifts are visual patches made from twenty smaller authoritative flower targets per drift. Cutting one edge pocket must not collect or visually topple the whole patch; fully clearing a patch requires sweeping through all of its flower sub-targets.
