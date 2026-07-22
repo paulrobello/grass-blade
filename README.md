@@ -10,7 +10,7 @@ Phase 0 is complete, and the first Phase 1 and Phase 2 contract systems are impl
 
 Phase 3 renderer hardening is implemented and verified: measurable density diagnostics, frame diagnostics, low-quality renderer-cost scaling, decorative-grass chunk culling, near/far grass distance LOD, phone viewport aspect correction, mobile browser-chrome aspect fallback, the world-aligned grass GPU cut-mask path, and the production blade GLB asset path are exposed through the debug snapshot. The grass GPU cut-mask now owns persistent completed-grass stubble state without terminal per-instance matrix rewrites after the fall lifecycle. The generated blade asset now uses a low-profile cyan orientation stripe instead of the earlier gold peg/protrusion while preserving readable rotation. Browser snapshots report WebGL adapter/vendor strings so performance evidence distinguishes hardware rendering from SwiftShader/software rendering, and the archived headed capture confirms Apple Metal hardware rendering for desktop and phone-sized scenarios. See [progress.md](progress.md) for the exact handoff state.
 
-Phase 4 presentation/accessibility work has started. A code-native onboarding card now appears first with a focused `Start Cutting` button; movement, pause, fullscreen, and simulation time stay inactive until that explicit Start action is activated. After Start, focus moves to the canvas and the normal keyboard/touch contract flow resumes. Pause and results overlays move focus to their primary visible action, and Space is suppressed as a browser-scroll key while the canvas owns input. High-contrast HUD and dialog styling is available through `?contrast=high` and also activates from `forced-colors: active` or `prefers-contrast: more`. Reduced-motion mode is honored from `prefers-reduced-motion` and can be forced with `?motion=reduced` or disabled for testing with `?motion=standard`. Procedural WebAudio feedback starts only after the Start gesture and includes a blade RPM hum, resource-matched cut sounds, level-up stingers, completion audio, a mute shortcut, and independent Master/Music/Effects controls. `make accessibility-check` runs the current Phase 4 browser accessibility verifier for focus/no-scroll, reduced-motion, and 200%-equivalent grayscale readability.
+Phase 4 presentation/accessibility work has started. A code-native onboarding card now appears first with a focused `Start Cutting` button; movement, pause, fullscreen, and simulation time stay inactive until that explicit Start action is activated. After Start, focus moves to the canvas and the normal keyboard/touch contract flow resumes. Pause and results overlays move focus to their primary visible action, and Space is suppressed as a browser-scroll key while the canvas owns input. High-contrast HUD and dialog styling is available through `?contrast=high` and also activates from `forced-colors: active` or `prefers-contrast: more`. Reduced-motion mode is honored from `prefers-reduced-motion` and can be forced with `?motion=reduced` or disabled for testing with `?motion=standard`. Procedural WebAudio feedback starts only after the Start gesture and includes a blade RPM hum, resource-matched cut sounds, level-up stingers, completion audio, a mute shortcut, and independent Master/Music/Effects controls. `make accessibility-check` runs the current Phase 4 browser accessibility verifier for focus/no-scroll, reduced-motion, and 200%-equivalent grayscale readability. `make playthrough-check-headed` runs a visible-browser contract pass covering movement, fullscreen exit-before-pause behavior, pause/resume focus, durable-target reward feedback, and completion.
 
 ## Play online
 
@@ -51,19 +51,21 @@ bun run typecheck
 
 ## Make targets
 
-| Target                     | Purpose                                                                       |
-| -------------------------- | ----------------------------------------------------------------------------- |
-| `make dev`                 | Start the Vite development server on `127.0.0.1:4209`                         |
-| `make build`               | Produce the production bundle                                                 |
-| `make test`                | Run deterministic unit tests                                                  |
-| `make lint`                | Run ESLint                                                                    |
-| `make fmt`                 | Format source and project files                                               |
-| `make typecheck`           | Run TypeScript without emitting files                                         |
-| `make accessibility-check` | Run the browser Phase 4 accessibility verifier; requires `make dev` first     |
-| `make perf-capture`        | Capture default headless performance screenshots and JSON summaries           |
-| `make perf-capture-headed` | Capture the same scenarios in a visible browser for hardware-adapter evidence |
-| `make checkall`            | Run formatting verification, lint, typecheck, tests, and build                |
-| `make pre-commit`          | Run all configured pre-commit hooks, including secret scans                   |
+| Target                          | Purpose                                                                       |
+| ------------------------------- | ----------------------------------------------------------------------------- |
+| `make dev`                      | Start the Vite development server on `127.0.0.1:4209`                         |
+| `make build`                    | Produce the production bundle                                                 |
+| `make test`                     | Run deterministic unit tests                                                  |
+| `make lint`                     | Run ESLint                                                                    |
+| `make fmt`                      | Format source and project files                                               |
+| `make typecheck`                | Run TypeScript without emitting files                                         |
+| `make accessibility-check`      | Run the browser Phase 4 accessibility verifier; requires `make dev` first     |
+| `make playthrough-check`        | Run deterministic browser playthrough smoke; requires `make dev` first        |
+| `make playthrough-check-headed` | Run the playthrough in a visible browser with fullscreen coverage             |
+| `make perf-capture`             | Capture default headless performance screenshots and JSON summaries           |
+| `make perf-capture-headed`      | Capture the same scenarios in a visible browser for hardware-adapter evidence |
+| `make checkall`                 | Run formatting verification, lint, typecheck, tests, and build                |
+| `make pre-commit`               | Run all configured pre-commit hooks, including secret scans                   |
 
 ## Controls
 
