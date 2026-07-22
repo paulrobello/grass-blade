@@ -7,6 +7,7 @@ import {
   resolveVolume,
 } from "../src/game/audio";
 import {
+  applyPlayableRootSize,
   contractNavigationSearch,
   derivePlayableRootSize,
   resolveAccessibilitySettings,
@@ -95,6 +96,20 @@ describe("playable root sizing", () => {
       constrained: false,
     });
   });
+
+  it("applies the visible viewport size to the playable root", () => {
+    const root = createStyleTarget();
+
+    applyPlayableRootSize(root, {
+      width: 592,
+      height: 981,
+      constrained: false,
+    });
+
+    expect(root.style.width).toBe("592px");
+    expect(root.style.height).toBe("981px");
+    expect(root.removedProperties).toEqual(["margin-left", "margin-right"]);
+  });
 });
 
 describe("contract navigation URLs", () => {
@@ -117,6 +132,30 @@ describe("contract navigation URLs", () => {
     );
   });
 });
+
+function createStyleTarget(): {
+  style: Pick<
+    CSSStyleDeclaration,
+    "height" | "marginLeft" | "marginRight" | "removeProperty" | "width"
+  >;
+  removedProperties: string[];
+} {
+  const removedProperties: string[] = [];
+
+  return {
+    removedProperties,
+    style: {
+      width: "",
+      height: "",
+      marginLeft: "",
+      marginRight: "",
+      removeProperty(property: string): string {
+        removedProperties.push(property);
+        return "";
+      },
+    },
+  };
+}
 
 describe("accessibility settings", () => {
   it("allows query-string high contrast to override standard media settings", () => {

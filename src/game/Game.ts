@@ -1088,6 +1088,13 @@ export interface PlayableRootSize {
   constrained: boolean;
 }
 
+interface PlayableRootStyleTarget {
+  style: Pick<
+    CSSStyleDeclaration,
+    "height" | "marginLeft" | "marginRight" | "removeProperty" | "width"
+  >;
+}
+
 export function derivePlayableRootSize(options: {
   viewportWidth: number;
   viewportHeight: number;
@@ -1121,18 +1128,23 @@ function syncPlayableRootSize(root: HTMLElement): void {
     allowConstrain: true,
   });
 
-  if (!rootSize.constrained) {
-    root.style.removeProperty("width");
-    root.style.removeProperty("height");
-    root.style.removeProperty("margin-left");
-    root.style.removeProperty("margin-right");
+  applyPlayableRootSize(root, rootSize);
+}
+
+export function applyPlayableRootSize(
+  root: PlayableRootStyleTarget,
+  rootSize: PlayableRootSize,
+): void {
+  root.style.width = `${rootSize.width}px`;
+  root.style.height = `${rootSize.height}px`;
+  if (rootSize.constrained) {
+    root.style.marginLeft = "auto";
+    root.style.marginRight = "auto";
     return;
   }
 
-  root.style.width = `${rootSize.width}px`;
-  root.style.height = `${rootSize.height}px`;
-  root.style.marginLeft = "auto";
-  root.style.marginRight = "auto";
+  root.style.removeProperty("margin-left");
+  root.style.removeProperty("margin-right");
 }
 
 export function resolveAccessibilitySettings(options: {
