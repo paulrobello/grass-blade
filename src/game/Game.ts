@@ -33,6 +33,7 @@ const OBJECTIVE_LABELS: Record<ObjectiveResource, string> = {
 };
 interface HudElements {
   root: HTMLElement;
+  contractTitle: HTMLElement;
   time: HTMLElement;
   level: HTMLElement;
   rpm: HTMLElement;
@@ -66,6 +67,8 @@ interface AudioElements {
 
 interface ResultsElements {
   overlay: HTMLDivElement;
+  title: HTMLElement;
+  summary: HTMLElement;
   elapsed: HTMLElement;
   cutTargets: HTMLElement;
   highestLevel: HTMLElement;
@@ -148,10 +151,10 @@ export class Game {
   private pauseFocusPlaced = false;
   private resultsFocusPlaced = false;
 
-  public constructor(canvas: HTMLCanvasElement, seed?: number) {
+  public constructor(canvas: HTMLCanvasElement, seed?: number, contractId: string | null = null) {
     this.canvas = canvas;
     this.appRoot = requireAppRoot(canvas);
-    this.state = createInitialState(seed);
+    this.state = createInitialState(seed, contractId);
     const searchParams = new URLSearchParams(window.location.search);
     this.quality = resolveQualitySettings(searchParams.get("quality"));
     this.accessibilitySettings = resolveAccessibilitySettings({
@@ -391,6 +394,7 @@ export class Game {
         ? 1
         : clamp((xp - previousThreshold) / (nextThreshold - previousThreshold), 0, 1);
 
+    setText(this.hud.contractTitle, this.state.contract.title.toUpperCase());
     setText(this.hud.time, formatElapsedTime(this.state.elapsedSeconds));
     setText(this.hud.level, `LV ${player.level}`);
     setText(this.hud.rpm, `${Math.round(player.rpm)} RPM`);
@@ -447,6 +451,8 @@ export class Game {
     }
 
     this.results.overlay.hidden = false;
+    setText(this.results.title, this.state.contract.title);
+    setText(this.results.summary, this.state.contract.summary);
     setText(this.results.elapsed, formatElapsedTime(result.completedAtSeconds));
     setText(this.results.cutTargets, String(result.cutTargets));
     setText(this.results.highestLevel, `LV ${result.highestLevel}`);
@@ -856,11 +862,17 @@ export class Game {
       return;
     }
 
-    this.state.inventory = { grass: 49, flowers: 10, fiber: 6, wood: 6 };
-    this.state.objectives.grass.collected = 49;
-    this.state.objectives.flowers.collected = 10;
-    this.state.objectives.fiber.collected = 6;
-    this.state.objectives.wood.collected = 6;
+    const grassBeforeFinalCut = Math.max(0, this.state.objectives.grass.target - 1);
+    this.state.inventory = {
+      grass: grassBeforeFinalCut,
+      flowers: this.state.objectives.flowers.target,
+      fiber: this.state.objectives.fiber.target,
+      wood: this.state.objectives.wood.target,
+    };
+    this.state.objectives.grass.collected = grassBeforeFinalCut;
+    this.state.objectives.flowers.collected = this.state.objectives.flowers.target;
+    this.state.objectives.fiber.collected = this.state.objectives.fiber.target;
+    this.state.objectives.wood.collected = this.state.objectives.wood.target;
     finalTarget.x = this.state.player.x;
     finalTarget.z = this.state.player.z;
     finalTarget.status = "cutting";
@@ -952,6 +964,7 @@ export class Game {
         "Ground plane is XZ with origin at meadow center and +Y up; movement is screen-relative under the fixed isometric camera.",
       mode: this.contractStarted ? this.state.mode : "ready",
       seed: this.state.seed,
+      contract: this.state.contract,
       flow: {
         contractStarted: this.contractStarted,
         focusedElementId: activeHtmlElement?.id || null,
@@ -1153,6 +1166,7 @@ function deriveAspectRatio(width: number, height: number): number {
 function getHudElements(): HudElements {
   return {
     root: requireElement("game-hud"),
+    contractTitle: requireElement("hud-contract-title"),
     time: requireElement("hud-time"),
     level: requireElement("hud-level"),
     rpm: requireElement("hud-rpm"),
@@ -1321,6 +1335,8 @@ function createResultsElements(root: HTMLElement): ResultsElements {
 
   return {
     overlay,
+    title,
+    summary,
     elapsed,
     cutTargets,
     highestLevel,

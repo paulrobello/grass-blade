@@ -48,6 +48,41 @@ export interface ObjectivesState {
   wood: ObjectiveCounter;
 }
 
+export interface ContractDefinition {
+  id: "meadow-delivery" | "flower-sweep";
+  title: string;
+  summary: string;
+  objectives: {
+    grass: number;
+    flowers: number;
+    fiber: number;
+    wood: number;
+  };
+}
+
+export interface ContractState {
+  id: ContractDefinition["id"];
+  title: string;
+  summary: string;
+}
+
+export const DEFAULT_CONTRACT_ID: ContractDefinition["id"] = "meadow-delivery";
+
+export const CONTRACT_DEFINITIONS = [
+  {
+    id: "meadow-delivery",
+    title: "Meadow Delivery",
+    summary: "Clear a balanced starter meadow contract.",
+    objectives: { grass: 50, flowers: 10, fiber: 6, wood: 6 },
+  },
+  {
+    id: "flower-sweep",
+    title: "Flower Sweep",
+    summary: "Harvest every flower drift while keeping lighter Fiber and Wood quotas.",
+    objectives: { grass: 34, flowers: 16, fiber: 4, wood: 4 },
+  },
+] as const satisfies readonly ContractDefinition[];
+
 export interface InventoryState {
   grass: number;
   flowers: number;
@@ -121,6 +156,7 @@ export type GameMode = "active" | "paused" | "complete";
 export interface GameState {
   mode: GameMode;
   seed: number;
+  contract: ContractState;
   elapsedSeconds: number;
   player: PlayerState;
   inventory: InventoryState;
@@ -140,7 +176,11 @@ export interface GameState {
   tooToughNoticeCooldowns: Record<string, number>;
 }
 
-export function createInitialState(seed = MEADOW_SEED): GameState {
+export function createInitialState(
+  seed = MEADOW_SEED,
+  contractId: string | null = DEFAULT_CONTRACT_ID,
+): GameState {
+  const contract = resolveContractDefinition(contractId);
   const layout = createMeadowLayout(seed);
   const targetSeeds = [
     ...layout.grassCells,
@@ -157,6 +197,11 @@ export function createInitialState(seed = MEADOW_SEED): GameState {
   return {
     mode: "active",
     seed,
+    contract: {
+      id: contract.id,
+      title: contract.title,
+      summary: contract.summary,
+    },
     elapsedSeconds: 0,
     player: {
       x: 0,
@@ -177,10 +222,10 @@ export function createInitialState(seed = MEADOW_SEED): GameState {
     },
     objectives: {
       status: "active",
-      grass: { status: "active", collected: 0, target: 50 },
-      flowers: { status: "active", collected: 0, target: 10 },
-      fiber: { status: "active", collected: 0, target: 6 },
-      wood: { status: "active", collected: 0, target: 6 },
+      grass: { status: "active", collected: 0, target: contract.objectives.grass },
+      flowers: { status: "active", collected: 0, target: contract.objectives.flowers },
+      fiber: { status: "active", collected: 0, target: contract.objectives.fiber },
+      wood: { status: "active", collected: 0, target: contract.objectives.wood },
     },
     result: null,
     xp: 0,
@@ -196,6 +241,14 @@ export function createInitialState(seed = MEADOW_SEED): GameState {
     tooToughRevision: 0,
     tooToughNoticeCooldowns: {},
   };
+}
+
+export function resolveContractDefinition(contractId: string | null): ContractDefinition {
+  const normalizedId = contractId ?? DEFAULT_CONTRACT_ID;
+  return (
+    CONTRACT_DEFINITIONS.find((definition) => definition.id === normalizedId) ??
+    CONTRACT_DEFINITIONS[0]
+  );
 }
 
 export function stepState(state: GameState, input: MovementInput, deltaSeconds: number): GameState {

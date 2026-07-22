@@ -10,13 +10,14 @@ if (!(canvas instanceof HTMLCanvasElement)) {
 }
 
 const seedParameter = new URLSearchParams(window.location.search).get("seed");
+const contractParameter = new URLSearchParams(window.location.search).get("contract");
 const parsedSeed = seedParameter === null ? Number.NaN : Number(seedParameter);
 const seed =
   Number.isInteger(parsedSeed) && parsedSeed >= 0 && parsedSeed <= 0xffffffff
     ? parsedSeed
     : undefined;
 
-const game = new Game(canvas, seed);
+const game = new Game(canvas, seed, contractParameter);
 game.start();
 
 window.addEventListener("pagehide", () => game.dispose(), { once: true });

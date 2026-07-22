@@ -120,6 +120,11 @@ describe("active game state", () => {
     expect(first).toEqual(second);
     expect(first.mode).toBe("active");
     expect(first.seed).toBe(MEADOW_SEED);
+    expect(first.contract).toEqual({
+      id: "meadow-delivery",
+      title: "Meadow Delivery",
+      summary: "Clear a balanced starter meadow contract.",
+    });
     expect(first.elapsedSeconds).toBe(0);
     expect(first.player).toMatchObject({
       x: 0,
@@ -248,6 +253,41 @@ describe("active game state", () => {
     expect(state.elapsedSeconds).toBe(0);
     expect(state.player.level).toBe(1);
     expect(state.targets.every((target) => target.status === "standing")).toBe(true);
+  });
+
+  it("falls back to the default contract for unknown contract ids", () => {
+    const state = createInitialState(12345, "unknown-contract");
+
+    expect(state.contract.id).toBe("meadow-delivery");
+    expect(state.objectives.grass.target).toBe(50);
+    expect(state.objectives.flowers.target).toBe(10);
+    expect(state.objectives.fiber.target).toBe(6);
+    expect(state.objectives.wood.target).toBe(6);
+  });
+
+  it("creates and completes the authored Flower Sweep contract", () => {
+    const state = createInitialState(12345, "flower-sweep");
+
+    expect(state.contract).toEqual({
+      id: "flower-sweep",
+      title: "Flower Sweep",
+      summary: "Harvest every flower drift while keeping lighter Fiber and Wood quotas.",
+    });
+    expect(state.objectives.grass.target).toBe(34);
+    expect(state.objectives.flowers.target).toBe(16);
+    expect(state.objectives.fiber.target).toBe(4);
+    expect(state.objectives.wood.target).toBe(4);
+
+    completeContractThroughQuotaCuts(state);
+
+    expect(state.mode).toBe("complete");
+    expect(state.inventory).toEqual({ grass: 34, flowers: 16, fiber: 4, wood: 4 });
+    expect(state.result).toMatchObject({
+      cutTargets: 56,
+      highestLevel: 4,
+      finalInventory: { grass: 34, flowers: 16, fiber: 4, wood: 4 },
+      completionRevision: 56,
+    });
   });
 
   it("builds deterministic logical targets and visual mappings", () => {
