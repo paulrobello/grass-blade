@@ -57,6 +57,15 @@ const negativeXInput: MovementInput = {
   backward: false,
 };
 
+interface ContractSnapshot {
+  mode: GameState["mode"];
+  inventory: GameState["inventory"];
+  objectives: GameState["objectives"];
+  result: GameState["result"];
+  cutRevision: number;
+  cutEvents: GameState["cutEvents"];
+}
+
 describe("active game state", () => {
   it("derives a slower visible blade angle to avoid high-rpm strobing", () => {
     const rawFrameAdvance = (720 / 60) * Math.PI * 2 * FIXED_TIME_STEP_SECONDS;
@@ -313,6 +322,21 @@ describe("active game state", () => {
     }
   });
 
+  it("provides at least 150 percent of each required contract resource", () => {
+    const state = createInitialState(12345);
+    const available = totalAvailableResources(state);
+
+    expect(available.grass).toBeGreaterThanOrEqual(state.objectives.grass.target * 1.5);
+    expect(available.flowers).toBeGreaterThanOrEqual(state.objectives.flowers.target * 1.5);
+    expect(available.fiber).toBeGreaterThanOrEqual(state.objectives.fiber.target * 1.5);
+    expect(available.wood).toBeGreaterThanOrEqual(state.objectives.wood.target * 1.5);
+
+    const saplingWood = state.targets
+      .filter((target) => target.kind === "sapling")
+      .reduce((sum, target) => sum + target.yield, 0);
+    expect(saplingWood).toBeGreaterThanOrEqual(state.objectives.wood.target);
+  });
+
   it("marks deterministic grass visuals individually inside the swept blade capsule", () => {
     const seed = 707;
     const first = createInitialState(seed);
@@ -476,6 +500,26 @@ describe("active game state", () => {
     expect(state.cutRevision).toBe(cutRevisionSnapshot);
     expect(state.elapsedSeconds).toBe(elapsedSnapshot);
     expect(state.player.vx).toBe(MAX_MOVE_SPEED);
+  });
+
+  it("replays repeated contract-completion snapshots deterministically", () => {
+    const first = createInitialState(96);
+    const replay = createInitialState(96);
+
+    prepareOneCutFromCompletion(first);
+    prepareOneCutFromCompletion(replay);
+
+    stepState(first, idleInput, FIXED_TIME_STEP_SECONDS);
+    stepState(replay, idleInput, FIXED_TIME_STEP_SECONDS);
+
+    expect(contractSnapshot(replay)).toEqual(contractSnapshot(first));
+
+    const stableSnapshot = contractSnapshot(first);
+    for (let frame = 0; frame < 90; frame += 1) {
+      stepState(first, positiveXInput, FIXED_TIME_STEP_SECONDS);
+    }
+
+    expect(contractSnapshot(first)).toEqual(stableSnapshot);
   });
 
   it("pauses and resumes active simulation without advancing cuts or elapsed time", () => {
@@ -906,6 +950,60 @@ describe("active game state", () => {
     expect(state.objectives.wood.collected).toBe(0);
   });
 
+  it("recovers RPM after the blade leaves a high-load target", () => {
+    const state = createInitialState(312);
+    const target = isolateTarget(state, "matureTree");
+    placeTargetAtPositiveXContact(state, target);
+
+    for (let frame = 0; frame < 240; frame += 1) {
+      stepState(state, positiveXInput, FIXED_TIME_STEP_SECONDS);
+    }
+    expect(state.player.rpm).toBeLessThan(180);
+
+    for (let frame = 0; frame < 120 && state.bladeContactTargetIds.length > 0; frame += 1) {
+      stepState(state, negativeXInput, FIXED_TIME_STEP_SECONDS);
+    }
+    expect(state.bladeContactTargetIds).toEqual([]);
+
+    const releasedRpm = state.player.rpm;
+    for (let frame = 0; frame < 120; frame += 1) {
+      stepState(state, idleInput, FIXED_TIME_STEP_SECONDS);
+    }
+
+    expect(state.player.rpm).toBeGreaterThan(releasedRpm);
+    expect(state.player.rpm).toBeLessThanOrEqual(state.player.targetRpm);
+    expect(target.status).toBe("cutting");
+    expect(state.inventory.wood).toBe(0);
+  });
+
+  it("applies aggregate RPM load for simultaneous blade contacts", () => {
+    const singleContact = createInitialState(317);
+    const singleWeed = isolateTarget(singleContact, "denseWeed");
+    prepareLevelTwoBlade(singleContact);
+
+    const doubleContact = createInitialState(317);
+    const firstWeed = isolateTarget(doubleContact, "denseWeed");
+    const secondWeed: TargetState = {
+      ...firstWeed,
+      id: "test-denseWeed-second",
+      accumulatedWork: 0,
+      status: "standing",
+    };
+    doubleContact.targets = [firstWeed, secondWeed];
+    prepareLevelTwoBlade(doubleContact);
+
+    for (let frame = 0; frame < 30; frame += 1) {
+      stepState(singleContact, idleInput, FIXED_TIME_STEP_SECONDS);
+      stepState(doubleContact, idleInput, FIXED_TIME_STEP_SECONDS);
+    }
+
+    expect(singleContact.bladeContactTargetIds).toEqual([singleWeed.id]);
+    expect(doubleContact.bladeContactTargetIds).toEqual([firstWeed.id, secondWeed.id]);
+    expect(doubleContact.player.rpm).toBeLessThan(singleContact.player.rpm);
+    expect(firstWeed.accumulatedWork).toBeLessThan(singleWeed.accumulatedWork);
+    expect(secondWeed.accumulatedWork).toBeCloseTo(firstWeed.accumulatedWork);
+  });
+
   it("emits a throttled too-tough notice when a higher-level target stalls the blade", () => {
     const state = createInitialState(314);
     const target = isolateTarget(state, "matureTree");
@@ -1120,6 +1218,58 @@ function requireTarget(state: GameState, kind: TargetKind): TargetState {
     throw new Error(`Missing ${kind} target`);
   }
   return target;
+}
+
+function totalAvailableResources(state: GameState): {
+  grass: number;
+  flowers: number;
+  fiber: number;
+  wood: number;
+} {
+  const totals = { grass: 0, flowers: 0, fiber: 0, wood: 0 };
+  for (const target of state.targets) {
+    switch (target.kind) {
+      case "grass":
+        totals.grass += target.yield;
+        break;
+      case "flower":
+        totals.flowers += target.yield;
+        break;
+      case "denseWeed":
+      case "shrub":
+        totals.fiber += target.yield;
+        break;
+      case "sapling":
+      case "matureTree":
+        totals.wood += target.yield;
+        break;
+    }
+  }
+  return totals;
+}
+
+function prepareOneCutFromCompletion(state: GameState): void {
+  const target = isolateTarget(state, "grass");
+  state.inventory = { grass: 49, flowers: 10, fiber: 6, wood: 6 };
+  state.objectives.grass.collected = 49;
+  state.objectives.flowers.collected = 10;
+  state.objectives.fiber.collected = 6;
+  state.objectives.wood.collected = 6;
+  target.status = "cutting";
+  target.accumulatedWork = target.requiredWork - 0.001;
+}
+
+function contractSnapshot(state: GameState): ContractSnapshot {
+  return JSON.parse(
+    JSON.stringify({
+      mode: state.mode,
+      inventory: state.inventory,
+      objectives: state.objectives,
+      result: state.result,
+      cutRevision: state.cutRevision,
+      cutEvents: state.cutEvents,
+    }),
+  ) as ContractSnapshot;
 }
 
 function placeTargetAtPositiveXContact(state: GameState, target: TargetState): void {

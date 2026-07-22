@@ -3,7 +3,7 @@ Original prompt: "i want create a threejs based game where you are a spinning bl
 # Grass Blade Progress
 
 Last updated: 2026-07-21
-Active milestone: Phase 2 — pause flow verified; rocks and seed-validation slices next
+Active milestone: Phase 2 — deterministic coverage hardened; rocks and seed-validation slices next
 
 ## Completed foundation intent
 
@@ -85,7 +85,7 @@ Active milestone: Phase 2 — pause flow verified; rocks and seed-validation sli
 - [x] Added a calm results card with elapsed time, targets cut, highest level, Restart, and Next Contract actions; `R` restarts the current seed and `N` opens the next deterministic seed from results.
 - [x] Added a query-gated `?debug=1` browser hook, `window.completeContractForDebug()`, that completes the final quota through the normal fixed-step award path for deterministic results-flow verification.
 - [x] Added pause mode and a pause card: Escape pauses an active contract unless fullscreen is being exited, simulation time and cutting freeze while paused, movement input is ignored, Resume returns to active play, and `R` restarts the current seed from pause.
-- [x] Added deterministic tests for layout mapping, fine grass masks, grass/flower/weed/tree cuts, Tier 2 timing, solid blocking and release, persistent work, exact-once rewards, level thresholds, replay, movement, and boundaries.
+- [x] Added deterministic tests for layout mapping, fine grass masks, available contract resources, repeated completion snapshots, grass/flower/weed/tree cuts, RPM recovery, aggregate RPM load, Tier 2 timing, solid blocking and release, persistent work, exact-once rewards, level thresholds, replay, movement, pause, and boundaries.
 
 ## Phase 1 verification evidence
 
@@ -129,10 +129,12 @@ Active milestone: Phase 2 — pause flow verified; rocks and seed-validation sli
 - `make checkall` passes formatting verification, ESLint, strict TypeScript, 66 deterministic Vitest tests across four files, and the Vite production build after the pause-flow slice.
 - The required web-game Playwright client ran against `?seed=12345` after the pause build and wrote `output/playwright/pause-smoke-client/shot-0.png` without browser error artifacts.
 - A focused Playwright pause route pressed Escape, inspected `output/playwright/pause-flow/paused.png`, and verified `mode: "paused"`, elapsed time frozen from `1.283` to `1.283` across 2 simulated seconds, inventory frozen at `12/0/0/0`, Resume returning to `active`, and `R` from pause reloading a fresh active run with lower elapsed time and reset inventory. The final summary is `output/playwright/pause-flow/result.json`, with `errors: []`.
+- `make checkall` passes formatting verification, ESLint, strict TypeScript, 70 deterministic Vitest tests across four files, and the Vite production build after the deterministic coverage slice.
+- New deterministic coverage verifies at least 150% available resources for all four Meadow Delivery quotas, sapling-only Wood availability, stable repeated contract-completion snapshots, RPM recovery after leaving a mature tree, and lower per-target work/RPM under simultaneous aggregate load.
+- The required web-game Playwright client ran against `?seed=12345` after the coverage slice and wrote `output/playwright/coverage-smoke/shot-0.png` plus `state-0.json` without browser error artifacts; the inspected screenshot shows the HUD, lush field, and opening cut patch still rendering normally.
 
 ## Remaining Phase 1 TODOs
 
-- [ ] Add deterministic coverage for RPM recovery, simultaneous aggregate load, final available quotas, and repeated contract snapshots.
 - [ ] Replace the linear target scan with the planned spatial query before discrete target counts grow beyond this bounded first slice.
 - [ ] In Phase 2, add final sapling art/material feedback, non-cuttable rocks, and ten-seed completion validation.
 
