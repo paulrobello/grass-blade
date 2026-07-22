@@ -98,6 +98,7 @@ Active milestone: Phase 3 — density, frame, and quality diagnostics before ren
 - [x] Added `public/CNAME` for the requested GitHub Pages custom domain `grass-blade.pardev.net`.
 - [x] Added mobile-friendly drag movement on the game canvas and compressed the phone objective HUD into four icon/count chips with the XP bar preserved.
 - [x] Split decorative grass into 64 deterministic render chunks, added conservative camera-footprint visibility culling, and exposed visible/culled chunk diagnostics through `render_game_to_text()`.
+- [x] Expanded `?quality=low` renderer-cost scaling to disable antialiasing and shadow rendering while reporting those active settings through frame diagnostics.
 
 ## Phase 1 verification evidence
 
@@ -173,10 +174,12 @@ Active milestone: Phase 3 — density, frame, and quality diagnostics before ren
 - The added scene regression constructs the Three.js scene without a WebGL renderer, syncs the deterministic camera, and verifies 64 total grass chunks, visible instance accounting, and real culling after moving the player to the meadow edge.
 - The required web-game Playwright client ran against `?seed=12345` after the chunk-culling build and wrote `output/playwright/grass-chunk-culling-smoke/shot-0.png` plus `state-0.json` without browser error artifacts. The inspected screenshot keeps the center-field grass canopy continuous; the state reports `grassTotalChunks: 64`, `grassVisibleChunks: 64`, `grassCulledChunks: 0`, and `grassVisibleInstances: 10816` near the meadow center.
 - A second browser route drove the player to the meadow edge and wrote `output/playwright/grass-chunk-culling-edge-smoke/shot-0.png` plus `state-0.json` without browser error artifacts. The inspected screenshot shows normal world-edge falloff with no visible gap around the blade; the state reports `grassTotalChunks: 64`, `grassVisibleChunks: 48`, `grassCulledChunks: 16`, and `grassVisibleInstances: 8112`.
+- `make checkall` passes formatting verification, ESLint, strict TypeScript, 80 deterministic Vitest tests across six files, and the Vite production build after the low-quality render-cost slice.
+- The required web-game Playwright client ran against `?seed=12345&quality=low` after the render-cost quality build and wrote `output/playwright/quality-render-cost-low-smoke/shot-0.png` plus `state-0.json` without browser error artifacts. The inspected screenshot remains readable with the lower-cost grass field, HUD, cut trail, progress bars, and too-tough notice. The state reports `qualityPreset: "low"`, `antialias: false`, `maxPixelRatio: 1`, `grassBladesPerVisual: 8`, `shadowsEnabled: false`, `shadowMapSize: 0`, and `grassBlades: 86528`.
 
 ## Remaining TODOs
 
-- [ ] Continue Phase 3 renderer hardening with broader quality scaling, the production blade GLB path, or the world-aligned GPU cut-mask path.
+- [ ] Continue Phase 3 renderer hardening with the production blade GLB path, the world-aligned GPU cut-mask path, or deeper distance LOD.
 
 ## Handoff rules
 

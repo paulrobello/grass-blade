@@ -285,15 +285,17 @@ export function createScene(seed: number, quality: QualitySettings): MeadowScene
 
   const sunlight = new THREE.DirectionalLight(0xfff4d0, 3.1);
   sunlight.position.set(14, 24, 10);
-  sunlight.castShadow = true;
-  sunlight.shadow.mapSize.set(1024, 1024);
-  sunlight.shadow.camera.left = -28;
-  sunlight.shadow.camera.right = 28;
-  sunlight.shadow.camera.top = 28;
-  sunlight.shadow.camera.bottom = -28;
-  sunlight.shadow.camera.near = 1;
-  sunlight.shadow.camera.far = 60;
-  sunlight.shadow.bias = -0.0004;
+  sunlight.castShadow = quality.shadowsEnabled;
+  if (quality.shadowsEnabled) {
+    sunlight.shadow.mapSize.set(quality.shadowMapSize, quality.shadowMapSize);
+    sunlight.shadow.camera.left = -28;
+    sunlight.shadow.camera.right = 28;
+    sunlight.shadow.camera.top = 28;
+    sunlight.shadow.camera.bottom = -28;
+    sunlight.shadow.camera.near = 1;
+    sunlight.shadow.camera.far = 60;
+    sunlight.shadow.bias = -0.0004;
+  }
   scene.add(sunlight);
 
   const fillLight = new THREE.DirectionalLight(0x9edbff, 0.8);

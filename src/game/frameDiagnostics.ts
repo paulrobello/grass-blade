@@ -11,8 +11,11 @@ export interface FrameDiagnosticsSnapshot {
   accumulatorMs: number;
   pixelRatio: number;
   qualityPreset: string;
+  antialias: boolean;
   maxPixelRatio: number;
   grassBladesPerVisual: number;
+  shadowsEnabled: boolean;
+  shadowMapSize: number;
   canvasWidth: number;
   canvasHeight: number;
 }
@@ -23,8 +26,11 @@ export interface FrameDiagnosticsTracker {
     accumulatorSeconds: number;
     pixelRatio: number;
     qualityPreset: string;
+    antialias: boolean;
     maxPixelRatio: number;
     grassBladesPerVisual: number;
+    shadowsEnabled: boolean;
+    shadowMapSize: number;
     canvasWidth: number;
     canvasHeight: number;
   }) => FrameDiagnosticsSnapshot;
@@ -69,8 +75,11 @@ export function createFrameDiagnosticsTracker(
     accumulatorSeconds: number;
     pixelRatio: number;
     qualityPreset: string;
+    antialias: boolean;
     maxPixelRatio: number;
     grassBladesPerVisual: number;
+    shadowsEnabled: boolean;
+    shadowMapSize: number;
     canvasWidth: number;
     canvasHeight: number;
   }): FrameDiagnosticsSnapshot {
@@ -85,8 +94,11 @@ export function createFrameDiagnosticsTracker(
       accumulatorMs: roundFrameMetric(options.accumulatorSeconds * 1000),
       pixelRatio: roundFrameMetric(options.pixelRatio),
       qualityPreset: options.qualityPreset,
+      antialias: options.antialias,
       maxPixelRatio: roundFrameMetric(options.maxPixelRatio),
       grassBladesPerVisual: options.grassBladesPerVisual,
+      shadowsEnabled: options.shadowsEnabled,
+      shadowMapSize: options.shadowMapSize,
       canvasWidth: options.canvasWidth,
       canvasHeight: options.canvasHeight,
     };

@@ -106,14 +106,14 @@ export class Game {
     this.targetProgress = createTargetProgressOverlay(requireAppRoot(canvas));
     this.renderer = new THREE.WebGLRenderer({
       canvas,
-      antialias: true,
+      antialias: this.quality.antialias,
       alpha: false,
       powerPreference: "high-performance",
     });
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.08;
-    this.renderer.shadowMap.enabled = true;
+    this.renderer.shadowMap.enabled = this.quality.shadowsEnabled;
     this.renderer.shadowMap.type = THREE.PCFShadowMap;
 
     window.render_game_to_text = this.renderGameToText;
@@ -658,8 +658,11 @@ export class Game {
         canvasWidth: this.canvas.width,
         canvasHeight: this.canvas.height,
         qualityPreset: this.quality.preset,
+        antialias: this.quality.antialias,
         maxPixelRatio: this.quality.maxPixelRatio,
         grassBladesPerVisual: this.quality.grassBladesPerVisual,
+        shadowsEnabled: this.quality.shadowsEnabled,
+        shadowMapSize: this.quality.shadowMapSize,
       }),
       player: {
         position: { x: round(player.x), z: round(player.z) },
