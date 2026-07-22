@@ -29,6 +29,7 @@ import {
   GRASS_LOGICAL_COLUMNS,
   GRASS_VISUAL_COLUMNS,
   MATURE_TREE_COUNT,
+  ROCK_COUNT,
   SAPLING_COUNT,
   SHRUB_COUNT,
   SHRUB_VISUAL_COUNT,
@@ -125,13 +126,15 @@ describe("active game state", () => {
         DENSE_WEED_COUNT +
         SHRUB_COUNT +
         SAPLING_COUNT +
-        MATURE_TREE_COUNT,
+        MATURE_TREE_COUNT +
+        ROCK_COUNT,
     );
     const grassEnd = GRASS_LOGICAL_COLUMNS * GRASS_LOGICAL_COLUMNS;
     const flowersEnd = grassEnd + FLOWER_CLUSTER_COUNT;
     const denseWeedsEnd = flowersEnd + DENSE_WEED_COUNT;
     const shrubsEnd = denseWeedsEnd + SHRUB_COUNT;
     const saplingsEnd = shrubsEnd + SAPLING_COUNT;
+    const matureTreesEnd = saplingsEnd + MATURE_TREE_COUNT;
     expect(first.targets.slice(0, grassEnd).every((target) => target.kind === "grass")).toBe(true);
     expect(
       first.targets.slice(grassEnd, flowersEnd).every((target) => target.kind === "flower"),
@@ -145,7 +148,12 @@ describe("active game state", () => {
     expect(
       first.targets.slice(shrubsEnd, saplingsEnd).every((target) => target.kind === "sapling"),
     ).toBe(true);
-    expect(first.targets.slice(saplingsEnd).every((target) => target.kind === "matureTree")).toBe(
+    expect(
+      first.targets
+        .slice(saplingsEnd, matureTreesEnd)
+        .every((target) => target.kind === "matureTree"),
+    ).toBe(true);
+    expect(first.targets.slice(matureTreesEnd).every((target) => target.kind === "rock")).toBe(
       true,
     );
     expect(first.grassVisualPositions).toBeInstanceOf(Float32Array);
@@ -165,6 +173,7 @@ describe("active game state", () => {
     const shrub = requireTarget(state, "shrub");
     const sapling = requireTarget(state, "sapling");
     const matureTree = requireTarget(state, "matureTree");
+    const rock = requireTarget(state, "rock");
 
     expect(shouldShowTargetProgress(grass)).toBe(false);
     expect(shouldShowTargetProgress(flower)).toBe(false);
@@ -172,6 +181,7 @@ describe("active game state", () => {
     expect(shouldShowTargetProgress(shrub)).toBe(false);
     expect(shouldShowTargetProgress(sapling)).toBe(false);
     expect(shouldShowTargetProgress(matureTree)).toBe(false);
+    expect(shouldShowTargetProgress(rock)).toBe(false);
 
     grass.status = "cutting";
     grass.accumulatedWork = 0.75;
@@ -235,6 +245,8 @@ describe("active game state", () => {
     expect(first.saplingTargets).toHaveLength(SAPLING_COUNT);
     expect(first.saplingVisuals).toHaveLength(SAPLING_COUNT);
     expect(first.matureTreeTargets).toHaveLength(MATURE_TREE_COUNT);
+    expect(first.rockTargets).toHaveLength(ROCK_COUNT);
+    expect(first.rockVisuals).toHaveLength(ROCK_COUNT);
     expect(first.denseWeedTargets.map((target) => target.id)).toEqual(
       interleaved.denseWeedTargets.map((target) => target.id),
     );
@@ -318,6 +330,16 @@ describe("active game state", () => {
         z: visual.z,
         radius: visual.size * 0.5,
         solidRadius: visual.size * 0.5,
+      });
+    }
+    expect(first.rockTargets.every(hasRockObstacleValues)).toBe(true);
+    for (const visual of first.rockVisuals) {
+      const target = first.rockTargets[visual.targetIndex];
+      expect(target).toMatchObject({
+        x: visual.x,
+        z: visual.z,
+        radius: visual.size * 0.62,
+        solidRadius: visual.size * 0.62,
       });
     }
   });
@@ -1073,6 +1095,40 @@ describe("active game state", () => {
     expect(state.player.z).toBeCloseTo(0, 8);
   });
 
+  it("blocks on a non-cuttable rock without awarding resources or cut progress", () => {
+    const state = createInitialState(343);
+    const target = isolateTarget(state, "rock");
+    placeTargetAtPositiveXContact(state, target);
+
+    for (let frame = 0; frame < 180; frame += 1) {
+      stepState(state, positiveXInput, FIXED_TIME_STEP_SECONDS);
+    }
+
+    expect(state.player.x).toBeCloseTo(0, 8);
+    expect(state.player.z).toBeCloseTo(0, 8);
+    expect(target.status).toBe("standing");
+    expect(target.accumulatedWork).toBe(0);
+    expect(state.bladeContactTargetIds).toEqual([target.id]);
+    expect(state.tooToughNotice).toBeNull();
+    expect(shouldShowTargetProgress(target)).toBe(false);
+    expect(state.inventory).toEqual({ grass: 0, flowers: 0, fiber: 0, wood: 0 });
+    expect(state.xp).toBe(0);
+    expect(state.cutEvents).toEqual([]);
+    expect(state.cutRevision).toBe(0);
+  });
+
+  it("allows the blade hub to back away from a non-cuttable rock", () => {
+    const state = createInitialState(344);
+    const target = isolateTarget(state, "rock");
+    placeTargetAtPositiveXContact(state, target);
+
+    stepState(state, negativeXInput, FIXED_TIME_STEP_SECONDS);
+
+    expect(state.player.x).toBeLessThan(0);
+    expect(state.player.z).toBeCloseTo(0, 8);
+    expect(target.status).toBe("standing");
+  });
+
   it("releases movement and awards a mature tree exactly once on the cut tick", () => {
     const state = createInitialState(333);
     const target = isolateTarget(state, "matureTree");
@@ -1242,6 +1298,8 @@ function totalAvailableResources(state: GameState): {
       case "sapling":
       case "matureTree":
         totals.wood += target.yield;
+        break;
+      case "rock":
         break;
     }
   }
@@ -1435,5 +1493,25 @@ function hasMatureTreeTierValues(target: {
     target.resistance === 1.6 &&
     target.yield === 6 &&
     target.xp === 75
+  );
+}
+
+function hasRockObstacleValues(target: {
+  kind: TargetKind;
+  solidRadius: number;
+  recommendedLevel: number;
+  requiredWork: number;
+  resistance: number;
+  yield: number;
+  xp: number;
+}): boolean {
+  return (
+    target.kind === "rock" &&
+    target.solidRadius > 0 &&
+    target.recommendedLevel === Number.POSITIVE_INFINITY &&
+    target.requiredWork === 0 &&
+    target.resistance === 1.2 &&
+    target.yield === 0 &&
+    target.xp === 0
   );
 }

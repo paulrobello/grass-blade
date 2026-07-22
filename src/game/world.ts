@@ -18,6 +18,7 @@ export const SHRUB_COUNT = 8;
 export const SHRUB_VISUAL_COUNT = SHRUB_COUNT;
 export const SAPLING_COUNT = 5;
 export const MATURE_TREE_COUNT = 8;
+export const ROCK_COUNT = 8;
 
 const DENSE_WEED_CLUSTER_CENTERS = [
   [-4.8, -3.5],
@@ -54,6 +55,17 @@ const MATURE_TREE_PLACEMENTS = [
   [7, 18, 0.9],
   [-10, 17, 1.18],
   [-18, 8, 0.92],
+] as const;
+
+const ROCK_PLACEMENTS = [
+  [-14.5, -2.5, 0.86],
+  [13.7, 3.4, 0.74],
+  [-14.2, 12.8, 0.92],
+  [14.5, -13.3, 0.82],
+  [0.4, 17.1, 0.72],
+  [18.1, 0.3, 0.78],
+  [-18.2, -6.4, 0.7],
+  [4.1, -12.7, 0.76],
 ] as const;
 
 export interface GrassVisual {
@@ -110,7 +122,16 @@ export interface MatureTreeVisual {
   targetIndex: number;
 }
 
-export type TargetKind = "grass" | "flower" | "denseWeed" | "shrub" | "sapling" | "matureTree";
+export interface RockVisual {
+  x: number;
+  z: number;
+  size: number;
+  rotation: number;
+  targetIndex: number;
+}
+
+export type TargetKind =
+  "grass" | "flower" | "denseWeed" | "shrub" | "sapling" | "matureTree" | "rock";
 
 export interface TargetSeed {
   id: string;
@@ -139,6 +160,8 @@ export interface MeadowLayout {
   saplingVisuals: SaplingVisual[];
   matureTreeTargets: TargetSeed[];
   matureTreeVisuals: MatureTreeVisual[];
+  rockTargets: TargetSeed[];
+  rockVisuals: RockVisual[];
 }
 
 export function createMeadowLayout(seed: number): MeadowLayout {
@@ -160,6 +183,8 @@ export function createMeadowLayout(seed: number): MeadowLayout {
   );
   const matureTreeTargets = createMatureTreeTargets();
   const matureTreeVisuals = createMatureTreeVisuals();
+  const rockTargets = createRockTargets();
+  const rockVisuals = createRockVisuals(createSeededRandom(seed ^ 0x082efa98));
 
   return {
     grassCells,
@@ -174,6 +199,8 @@ export function createMeadowLayout(seed: number): MeadowLayout {
     saplingVisuals,
     matureTreeTargets,
     matureTreeVisuals,
+    rockTargets,
+    rockVisuals,
   };
 }
 
@@ -427,6 +454,32 @@ function createMatureTreeVisuals(): MatureTreeVisual[] {
     x,
     z,
     size,
+    targetIndex,
+  }));
+}
+
+function createRockTargets(): TargetSeed[] {
+  return ROCK_PLACEMENTS.map(([x, z, size], index) => ({
+    id: `rock-${index}`,
+    kind: "rock",
+    x,
+    z,
+    radius: size * 0.62,
+    solidRadius: size * 0.62,
+    recommendedLevel: Number.POSITIVE_INFINITY,
+    requiredWork: 0,
+    resistance: 1.2,
+    yield: 0,
+    xp: 0,
+  }));
+}
+
+function createRockVisuals(random: () => number): RockVisual[] {
+  return ROCK_PLACEMENTS.map(([x, z, size], targetIndex) => ({
+    x,
+    z,
+    size,
+    rotation: random() * TAU,
     targetIndex,
   }));
 }

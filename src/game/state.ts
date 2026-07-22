@@ -61,10 +61,12 @@ export interface TargetState extends TargetSeed {
   accumulatedWork: number;
 }
 
+export type CuttableTargetKind = Exclude<TargetSeed["kind"], "rock">;
+
 export interface CutCompletionEvent {
   revision: number;
   targetId: string;
-  kind: TargetSeed["kind"];
+  kind: CuttableTargetKind;
   x: number;
   z: number;
   yield: number;
@@ -136,6 +138,7 @@ export function createInitialState(seed = MEADOW_SEED): GameState {
     ...layout.shrubTargets,
     ...layout.saplingTargets,
     ...layout.matureTreeTargets,
+    ...layout.rockTargets,
   ];
   const grassVisualPositions = createGrassVisualPositions(layout.grassVisuals);
 
@@ -317,7 +320,7 @@ function stepCutting(
 
   for (const contact of contacts) {
     const target = contact.target;
-    if (target.status === "cut" || normalizedRpm <= 0) {
+    if (target.status === "cut" || target.requiredWork <= 0 || normalizedRpm <= 0) {
       continue;
     }
 
@@ -541,6 +544,8 @@ function awardTarget(state: GameState, target: TargetState): void {
       state.inventory.wood += target.yield;
       state.objectives.wood.collected += target.yield;
       break;
+    case "rock":
+      return;
     default:
       assertNever(target.kind);
   }

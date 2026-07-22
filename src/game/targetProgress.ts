@@ -60,6 +60,8 @@ export function targetProgressHeight(kind: TargetKind): number {
       return 3.85;
     case "matureTree":
       return 5.35;
+    case "rock":
+      return 1.35;
     case "grass":
     case "flower":
       return 1.8;

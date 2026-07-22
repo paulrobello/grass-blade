@@ -80,6 +80,7 @@ export interface MeadowScene {
     shrubInstances: number;
     saplingInstances: number;
     treeInstances: number;
+    rockInstances: number;
   };
   presentation: MeadowPresentationDiagnostics;
   resize: (aspect: number) => void;
@@ -199,6 +200,17 @@ export function createScene(seed: number): MeadowScene {
     scratchColor,
     reducedMotion,
   );
+  addRocks(
+    scene,
+    resources,
+    layout,
+    scratchMatrix,
+    scratchPosition,
+    scratchRotation,
+    scratchScale,
+    scratchColor,
+    yAxis,
+  );
   addBoundaryStones(
     scene,
     resources,
@@ -315,6 +327,7 @@ export function createScene(seed: number): MeadowScene {
       shrubInstances: layout.shrubVisuals.length,
       saplingInstances: layout.saplingVisuals.length,
       treeInstances: layout.matureTreeVisuals.length,
+      rockInstances: layout.rockVisuals.length,
     },
     presentation,
     resize,
@@ -1889,6 +1902,50 @@ function addTrees(
       }
     },
   };
+}
+
+function addRocks(
+  scene: THREE.Scene,
+  resources: Array<THREE.BufferGeometry | THREE.Material>,
+  layout: MeadowLayout,
+  matrix: THREE.Matrix4,
+  position: THREE.Vector3,
+  rotation: THREE.Quaternion,
+  scale: THREE.Vector3,
+  color: THREE.Color,
+  yAxis: THREE.Vector3,
+): void {
+  const count = layout.rockVisuals.length;
+  const geometry = track(resources, new THREE.DodecahedronGeometry(1, 0));
+  const material = track(
+    resources,
+    new THREE.MeshStandardMaterial({
+      color: 0xffffff,
+      roughness: 0.96,
+      metalness: 0,
+      flatShading: true,
+    }),
+  );
+  const rocks = new THREE.InstancedMesh(geometry, material, count);
+  const palette = [0x9fa8b2, 0x7f8790, 0xb8aa91] as const;
+
+  for (const visual of layout.rockVisuals) {
+    position.set(visual.x, 0.38 * visual.size, visual.z);
+    rotation.setFromAxisAngle(yAxis, visual.rotation);
+    scale.set(visual.size * 0.98, visual.size * 0.52, visual.size * 0.72);
+    matrix.compose(position, rotation, scale);
+    rocks.setMatrixAt(visual.targetIndex, matrix);
+    color.setHex(palette[visual.targetIndex % palette.length] ?? palette[0]);
+    rocks.setColorAt(visual.targetIndex, color);
+  }
+
+  rocks.castShadow = true;
+  rocks.receiveShadow = true;
+  rocks.instanceMatrix.needsUpdate = true;
+  if (rocks.instanceColor !== null) {
+    rocks.instanceColor.needsUpdate = true;
+  }
+  scene.add(rocks);
 }
 
 function addBoundaryStones(

@@ -3,7 +3,7 @@ Original prompt: "i want create a threejs based game where you are a spinning bl
 # Grass Blade Progress
 
 Last updated: 2026-07-21
-Active milestone: Phase 2 — deterministic coverage hardened; rocks and seed-validation slices next
+Active milestone: Phase 2 — deterministic coverage and non-cuttable rocks hardened; seed-validation slice next
 
 ## Completed foundation intent
 
@@ -86,6 +86,7 @@ Active milestone: Phase 2 — deterministic coverage hardened; rocks and seed-va
 - [x] Added a query-gated `?debug=1` browser hook, `window.completeContractForDebug()`, that completes the final quota through the normal fixed-step award path for deterministic results-flow verification.
 - [x] Added pause mode and a pause card: Escape pauses an active contract unless fullscreen is being exited, simulation time and cutting freeze while paused, movement input is ignored, Resume returns to active play, and `R` restarts the current seed from pause.
 - [x] Added deterministic tests for layout mapping, fine grass masks, available contract resources, repeated completion snapshots, grass/flower/weed/tree cuts, RPM recovery, aggregate RPM load, Tier 2 timing, solid blocking and release, persistent work, exact-once rewards, level thresholds, replay, movement, pause, and boundaries.
+- [x] Added eight deterministic non-cuttable rock obstacles with rendered boulder visuals; rocks are solid blockers, never accrue cut work, never show progress bars, never award resources or XP, and allow the blade hub to back away after contact.
 
 ## Phase 1 verification evidence
 
@@ -132,11 +133,14 @@ Active milestone: Phase 2 — deterministic coverage hardened; rocks and seed-va
 - `make checkall` passes formatting verification, ESLint, strict TypeScript, 70 deterministic Vitest tests across four files, and the Vite production build after the deterministic coverage slice.
 - New deterministic coverage verifies at least 150% available resources for all four Meadow Delivery quotas, sapling-only Wood availability, stable repeated contract-completion snapshots, RPM recovery after leaving a mature tree, and lower per-target work/RPM under simultaneous aggregate load.
 - The required web-game Playwright client ran against `?seed=12345` after the coverage slice and wrote `output/playwright/coverage-smoke/shot-0.png` plus `state-0.json` without browser error artifacts; the inspected screenshot shows the HUD, lush field, and opening cut patch still rendering normally.
+- `make checkall` passes formatting verification, ESLint, strict TypeScript, 72 deterministic Vitest tests across four files, and the Vite production build after the non-cuttable rocks slice.
+- The required web-game Playwright client ran against `?seed=12345` after the rocks slice and wrote `output/playwright/rocks-smoke-client/shot-0.png` plus `state-0.json` without browser error artifacts. The snapshot reports `rockInstances: 8`, eight `rock-*` solid entries with `requiredWork: 0`, and no rock progress bars.
+- Focused headed input routes against the same production preview confirmed solid-object blocking remains active in the runtime while route A, route B, and route C were intercepted by authored tree/shrub blockers before reaching a rock. Rock-specific browser contact is therefore covered by deterministic reducer tests in this slice, while visual/runtime smoke covers rendered rock population and browser health.
 
 ## Remaining Phase 1 TODOs
 
 - [ ] Replace the linear target scan with the planned spatial query before discrete target counts grow beyond this bounded first slice.
-- [ ] In Phase 2, add final sapling art/material feedback, non-cuttable rocks, and ten-seed completion validation.
+- [ ] In Phase 2, add final sapling art/material feedback and ten-seed completion validation.
 
 ## Handoff rules
 
