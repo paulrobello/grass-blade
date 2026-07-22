@@ -11,12 +11,14 @@ import {
 import { resolveQualitySettings, type QualitySettings } from "./quality";
 import {
   CUMULATIVE_XP_THRESHOLDS,
+  CONTRACT_DEFINITIONS,
   DEFAULT_CONTRACT_ID,
   FIXED_TIME_STEP_SECONDS,
   MAX_FRAME_DELTA_SECONDS,
   createInitialState,
   setPaused,
   stepState,
+  type ContractDefinition,
   type GameState,
   type MovementInput,
 } from "./state";
@@ -86,6 +88,7 @@ interface PauseElements {
 interface IntroElements {
   overlay: HTMLDivElement;
   startButton: HTMLButtonElement;
+  contractButtons: HTMLButtonElement[];
 }
 
 export interface AccessibilitySettings {
@@ -175,7 +178,7 @@ export class Game {
     this.audio = new GameAudio(resolveAudioSettings(searchParams));
     this.audioControls = createAudioElements(this.appRoot);
     this.accessibilityStatus = requireElement("accessibility-status");
-    this.intro = createIntroElements(this.appRoot);
+    this.intro = createIntroElements(this.appRoot, CONTRACT_DEFINITIONS);
     this.results = createResultsElements(this.appRoot);
     this.pause = createPauseElements(this.appRoot);
     this.meadow = createScene(this.state.seed, this.quality, this.motionSettings.reducedMotion);
@@ -237,6 +240,9 @@ export class Game {
     this.results.restartButton.addEventListener("click", this.restartContract);
     this.results.nextButton.addEventListener("click", this.nextContract);
     this.intro.startButton.addEventListener("click", this.beginContract);
+    for (const button of this.intro.contractButtons) {
+      button.addEventListener("click", this.onIntroContractChoiceClick);
+    }
     this.pause.resumeButton.addEventListener("click", this.resumeContract);
     this.pause.restartButton.addEventListener("click", this.restartContract);
     this.audioControls.toggle.addEventListener("click", this.toggleMuted);
@@ -274,6 +280,9 @@ export class Game {
     this.results.restartButton.removeEventListener("click", this.restartContract);
     this.results.nextButton.removeEventListener("click", this.nextContract);
     this.intro.startButton.removeEventListener("click", this.beginContract);
+    for (const button of this.intro.contractButtons) {
+      button.removeEventListener("click", this.onIntroContractChoiceClick);
+    }
     this.pause.resumeButton.removeEventListener("click", this.resumeContract);
     this.pause.restartButton.removeEventListener("click", this.restartContract);
     this.audioControls.toggle.removeEventListener("click", this.toggleMuted);
@@ -427,6 +436,11 @@ export class Game {
 
   private updateIntro(): void {
     this.intro.overlay.hidden = this.contractStarted;
+    for (const button of this.intro.contractButtons) {
+      const selected = button.dataset.contractId === this.state.contract.id;
+      button.classList.toggle("intro-card__contract--selected", selected);
+      button.setAttribute("aria-pressed", selected ? "true" : "false");
+    }
   }
 
   private updatePause(): void {
@@ -782,6 +796,22 @@ export class Game {
     const nextSeed = (this.state.seed + 0x9e3779b9) >>> 0;
     window.location.assign(
       contractNavigationSearch(nextSeed, this.state.contract.id, window.location.search),
+    );
+  };
+
+  private readonly onIntroContractChoiceClick = (event: Event): void => {
+    const target = event.currentTarget;
+    if (!(target instanceof HTMLButtonElement)) {
+      return;
+    }
+
+    const contractId = target.dataset.contractId;
+    if (contractId === undefined || contractId === this.state.contract.id) {
+      return;
+    }
+
+    window.location.assign(
+      contractNavigationSearch(this.state.seed, contractId, window.location.search),
     );
   };
 
@@ -1279,14 +1309,21 @@ function createVolumeLabel(
   return label;
 }
 
-function createIntroElements(root: HTMLElement): IntroElements {
+function createIntroElements(
+  root: HTMLElement,
+  contracts: readonly ContractDefinition[],
+): IntroElements {
   const overlay = document.createElement("div");
   const card = document.createElement("section");
   const eyebrow = document.createElement("p");
   const title = document.createElement("h2");
   const summary = document.createElement("p");
+  const contractPicker = document.createElement("div");
+  const contractPickerTitle = document.createElement("p");
+  const contractList = document.createElement("div");
   const controls = document.createElement("p");
   const startButton = document.createElement("button");
+  const contractButtons: HTMLButtonElement[] = [];
 
   overlay.className = "intro-overlay";
   overlay.setAttribute("role", "dialog");
@@ -1302,6 +1339,37 @@ function createIntroElements(root: HTMLElement): IntroElements {
   summary.className = "intro-card__summary";
   summary.textContent =
     "Clear grass, flowers, fiber, and wood quotas with a spinning blade that levels up as you cut.";
+  contractPicker.className = "intro-card__contracts";
+  contractPicker.setAttribute("role", "group");
+  contractPicker.setAttribute("aria-labelledby", "intro-contract-picker-title");
+  contractPickerTitle.id = "intro-contract-picker-title";
+  contractPickerTitle.className = "intro-card__contract-title";
+  contractPickerTitle.textContent = "Choose Contract";
+  contractList.className = "intro-card__contract-list";
+  for (const contract of contracts) {
+    const button = document.createElement("button");
+    const name = document.createElement("span");
+    const contractSummary = document.createElement("span");
+    const quotas = document.createElement("span");
+
+    button.id = `contract-choice-${contract.id}`;
+    button.type = "button";
+    button.className = "intro-card__contract";
+    button.dataset.contractId = contract.id;
+    button.setAttribute("aria-pressed", "false");
+    name.className = "intro-card__contract-name";
+    name.textContent = contract.title;
+    contractSummary.className = "intro-card__contract-summary";
+    contractSummary.textContent = contract.summary;
+    quotas.className = "intro-card__contract-quotas";
+    quotas.textContent =
+      `${contract.objectives.grass} Grass · ${contract.objectives.flowers} Flowers · ` +
+      `${contract.objectives.fiber} Fiber · ${contract.objectives.wood} Wood`;
+    button.append(name, contractSummary, quotas);
+    contractList.append(button);
+    contractButtons.push(button);
+  }
+  contractPicker.append(contractPickerTitle, contractList);
   controls.className = "intro-card__controls";
   controls.textContent = "Drag to move after starting. Keyboard: WASD or arrows. Escape pauses.";
   startButton.id = "start-contract";
@@ -1309,11 +1377,11 @@ function createIntroElements(root: HTMLElement): IntroElements {
   startButton.className = "intro-card__button intro-card__button--primary";
   startButton.textContent = "Start Cutting";
 
-  card.append(eyebrow, title, summary, controls, startButton);
+  card.append(eyebrow, title, summary, contractPicker, controls, startButton);
   overlay.append(card);
   root.append(overlay);
 
-  return { overlay, startButton };
+  return { overlay, startButton, contractButtons };
 }
 
 function createResultsElements(root: HTMLElement): ResultsElements {
