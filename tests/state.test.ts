@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { accumulateReadableBladeAngle, deriveReadableBladeAngle } from "../src/game/createScene";
+import {
+  accumulateReadableBladeAngle,
+  createScene,
+  deriveReadableBladeAngle,
+} from "../src/game/createScene";
+import { resolveQualitySettings } from "../src/game/quality";
 import {
   FIXED_TIME_STEP_SECONDS,
   MAX_MOVE_SPEED,
@@ -406,6 +411,49 @@ describe("active game state", () => {
       );
       expect(lowQualityReport.meetsDefaultGrassDensity).toBe(false);
       expect(lowQualityReport.meetsLowGrassDensity).toBe(true);
+    }
+  });
+
+  it("reports grass render chunk visibility diagnostics from the camera footprint", () => {
+    const originalWindow = globalThis.window;
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      value: {
+        matchMedia: () => ({ matches: false }),
+      },
+    });
+    const scene = createScene(12345, resolveQualitySettings(null));
+    try {
+      const state = createInitialState(12345);
+      scene.resize(16 / 9);
+      scene.sync(state, 0);
+
+      const visibleAtCenter = scene.presentation.grassVisibleChunks;
+      expect(scene.presentation.grassTotalChunks).toBe(64);
+      expect(visibleAtCenter).toBeGreaterThan(0);
+      expect(visibleAtCenter).toBeLessThanOrEqual(scene.presentation.grassTotalChunks);
+      expect(scene.presentation.grassCulledChunks).toBe(
+        scene.presentation.grassTotalChunks - visibleAtCenter,
+      );
+      expect(scene.presentation.grassVisibleInstances).toBe(visibleAtCenter * 169);
+
+      state.player.x = WORLD_HALF_EXTENT;
+      state.player.z = WORLD_HALF_EXTENT;
+      scene.sync(state, 1);
+      expect(scene.presentation.grassVisibleChunks).toBeGreaterThan(0);
+      expect(scene.presentation.grassVisibleChunks).toBeLessThanOrEqual(visibleAtCenter);
+      expect(scene.presentation.grassVisibleChunks).toBeLessThan(
+        scene.presentation.grassTotalChunks,
+      );
+      expect(scene.presentation.grassCulledChunks).toBe(
+        scene.presentation.grassTotalChunks - scene.presentation.grassVisibleChunks,
+      );
+    } finally {
+      scene.dispose();
+      Object.defineProperty(globalThis, "window", {
+        configurable: true,
+        value: originalWindow,
+      });
     }
   });
 

@@ -97,6 +97,7 @@ Active milestone: Phase 3 — density, frame, and quality diagnostics before ren
 - [x] Expanded `?quality=low` to reduce rendered grass geometry from fourteen to eight blades per visual tuft while keeping the same authored coverage, gameplay targets, and low-quality density threshold diagnostics.
 - [x] Added `public/CNAME` for the requested GitHub Pages custom domain `grass-blade.pardev.net`.
 - [x] Added mobile-friendly drag movement on the game canvas and compressed the phone objective HUD into four icon/count chips with the XP bar preserved.
+- [x] Split decorative grass into 64 deterministic render chunks, added conservative camera-footprint visibility culling, and exposed visible/culled chunk diagnostics through `render_game_to_text()`.
 
 ## Phase 1 verification evidence
 
@@ -168,10 +169,14 @@ Active milestone: Phase 3 — density, frame, and quality diagnostics before ren
 - `make checkall` passes formatting verification, ESLint, strict TypeScript, 79 deterministic Vitest tests across six files, and the Vite production build after the mobile controls/HUD slice.
 - The required web-game Playwright client ran against `?seed=12345` after the mobile controls build and wrote `output/playwright/mobile-controls-client-smoke/shot-0.png` plus `state-0.json` without browser error artifacts. The inspected screenshot confirms the default desktop HUD remains the full labeled objective tray.
 - A focused 430 by 860 Playwright route verified canvas drag movement, pointer input clearing on release, and a compact mobile HUD. Its state reports the drag moved the player from `(0, 0)` to `(-4.264, -4.264)`, activated forward pointer input during drag, cleared all pointer/active inputs after release, and found an objective tray height of `67.96875` pixels with four `44` pixel chips. The inspected local artifact is `output/playwright/mobile-controls-focused-smoke/mobile-hud-drag.png`; `errors` is empty.
+- `make checkall` passes formatting verification, ESLint, strict TypeScript, 80 deterministic Vitest tests across six files, and the Vite production build after the grass chunk-culling slice.
+- The added scene regression constructs the Three.js scene without a WebGL renderer, syncs the deterministic camera, and verifies 64 total grass chunks, visible instance accounting, and real culling after moving the player to the meadow edge.
+- The required web-game Playwright client ran against `?seed=12345` after the chunk-culling build and wrote `output/playwright/grass-chunk-culling-smoke/shot-0.png` plus `state-0.json` without browser error artifacts. The inspected screenshot keeps the center-field grass canopy continuous; the state reports `grassTotalChunks: 64`, `grassVisibleChunks: 64`, `grassCulledChunks: 0`, and `grassVisibleInstances: 10816` near the meadow center.
+- A second browser route drove the player to the meadow edge and wrote `output/playwright/grass-chunk-culling-edge-smoke/shot-0.png` plus `state-0.json` without browser error artifacts. The inspected screenshot shows normal world-edge falloff with no visible gap around the blade; the state reports `grassTotalChunks: 64`, `grassVisibleChunks: 48`, `grassCulledChunks: 16`, and `grassVisibleInstances: 8112`.
 
 ## Remaining TODOs
 
-- [ ] Continue Phase 3 renderer hardening with chunk culling, broader quality scaling, or the production blade GLB path.
+- [ ] Continue Phase 3 renderer hardening with broader quality scaling, the production blade GLB path, or the world-aligned GPU cut-mask path.
 
 ## Handoff rules
 
