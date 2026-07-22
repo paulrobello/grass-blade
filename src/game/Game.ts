@@ -30,6 +30,7 @@ const OBJECTIVE_LABELS: Record<ObjectiveResource, string> = {
   fiber: "Fiber",
   wood: "Wood",
 };
+const MOBILE_CHROME_ASPECT_WIDE_RATIO = 1.08;
 
 interface HudElements {
   root: HTMLElement;
@@ -70,6 +71,7 @@ interface PauseElements {
 
 export class Game {
   private readonly canvas: HTMLCanvasElement;
+  private readonly appRoot: HTMLElement;
   private readonly renderer: THREE.WebGLRenderer;
   private readonly meadow: MeadowScene;
   private readonly state: GameState;
@@ -113,17 +115,18 @@ export class Game {
 
   public constructor(canvas: HTMLCanvasElement, seed?: number) {
     this.canvas = canvas;
+    this.appRoot = requireAppRoot(canvas);
     this.state = createInitialState(seed);
     this.quality = resolveQualitySettings(
       new URLSearchParams(window.location.search).get("quality"),
     );
     this.hud = getHudElements();
     this.accessibilityStatus = requireElement("accessibility-status");
-    this.results = createResultsElements(requireAppRoot(canvas));
-    this.pause = createPauseElements(requireAppRoot(canvas));
+    this.results = createResultsElements(this.appRoot);
+    this.pause = createPauseElements(this.appRoot);
     this.meadow = createScene(this.state.seed, this.quality);
     this.collectionMotes = createCollectionMotes(
-      requireAppRoot(canvas),
+      this.appRoot,
       {
         grass: this.hud.grass,
         flowers: this.hud.flowers,
@@ -133,7 +136,7 @@ export class Game {
       this.state.seed,
       window.matchMedia("(prefers-reduced-motion: reduce)").matches,
     );
-    this.targetProgress = createTargetProgressOverlay(requireAppRoot(canvas));
+    this.targetProgress = createTargetProgressOverlay(this.appRoot);
     this.renderer = new THREE.WebGLRenderer({
       canvas,
       antialias: this.quality.antialias,
@@ -171,7 +174,7 @@ export class Game {
     window.visualViewport?.addEventListener("scroll", this.resize);
     document.addEventListener("fullscreenchange", this.resize);
     this.layoutResizeObserver?.observe(this.canvas);
-    this.layoutResizeObserver?.observe(requireAppRoot(this.canvas));
+    this.layoutResizeObserver?.observe(this.appRoot);
     this.canvas.addEventListener("pointerdown", this.onPointerDown);
     this.canvas.addEventListener("pointermove", this.onPointerMove);
     this.canvas.addEventListener("pointerup", this.onPointerEnd);
@@ -436,6 +439,7 @@ export class Game {
   }
 
   private readonly resize = (): void => {
+    syncPlayableRootSize(this.appRoot);
     const { width, height } = measureCanvasDisplaySize(this.canvas);
     this.canvasCssWidth = width;
     this.canvasCssHeight = height;
@@ -802,6 +806,82 @@ function requireAppRoot(canvas: HTMLCanvasElement): HTMLElement {
     throw new Error("Grass Blade requires an #app HTMLElement around the game canvas.");
   }
   return root;
+}
+
+export interface PlayableRootSize {
+  width: number;
+  height: number;
+  constrained: boolean;
+}
+
+export function derivePlayableRootSize(options: {
+  viewportWidth: number;
+  viewportHeight: number;
+  screenWidth: number;
+  screenHeight: number;
+  allowConstrain: boolean;
+}): PlayableRootSize {
+  const viewportWidth = Math.max(1, options.viewportWidth);
+  const viewportHeight = Math.max(1, options.viewportHeight);
+  const viewportAspectRatio = viewportWidth / viewportHeight;
+  const screenAspectRatio = derivePortraitAspectRatio(options.screenWidth, options.screenHeight);
+  const shouldConstrain =
+    options.allowConstrain &&
+    viewportAspectRatio < 1 &&
+    screenAspectRatio < 0.75 &&
+    viewportAspectRatio > screenAspectRatio * MOBILE_CHROME_ASPECT_WIDE_RATIO;
+
+  if (!shouldConstrain) {
+    return {
+      width: viewportWidth,
+      height: viewportHeight,
+      constrained: false,
+    };
+  }
+
+  return {
+    width: Math.max(1, Math.min(viewportWidth, Math.round(viewportHeight * screenAspectRatio))),
+    height: viewportHeight,
+    constrained: true,
+  };
+}
+
+function syncPlayableRootSize(root: HTMLElement): void {
+  const viewport = window.visualViewport;
+  const viewportWidth = viewport?.width ?? window.innerWidth;
+  const viewportHeight = viewport?.height ?? window.innerHeight;
+  const rootSize = derivePlayableRootSize({
+    viewportWidth,
+    viewportHeight,
+    screenWidth: window.screen.width,
+    screenHeight: window.screen.height,
+    allowConstrain: isTouchLikeViewport(),
+  });
+
+  if (!rootSize.constrained) {
+    root.style.removeProperty("width");
+    root.style.removeProperty("height");
+    root.style.removeProperty("margin-left");
+    root.style.removeProperty("margin-right");
+    return;
+  }
+
+  root.style.width = `${rootSize.width}px`;
+  root.style.height = `${rootSize.height}px`;
+  root.style.marginLeft = "auto";
+  root.style.marginRight = "auto";
+}
+
+function derivePortraitAspectRatio(width: number, height: number): number {
+  if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
+    return 1;
+  }
+
+  return Math.min(width, height) / Math.max(width, height);
+}
+
+function isTouchLikeViewport(): boolean {
+  return window.matchMedia("(pointer: coarse)").matches || navigator.maxTouchPoints > 0;
 }
 
 function getHudElements(): HudElements {
