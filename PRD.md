@@ -64,7 +64,7 @@ The six gameplay screenshots supplied on 2026-07-20 are the current composition 
 | `Escape`   | Leave fullscreen natively; pause once the contract flow ships        |
 | `R`        | Restart the current seeded contract from the pause or results screen |
 
-The game must be fully playable with a keyboard. The browser page must not scroll from arrows or Space while game input is focused.
+The game must be fully playable with a keyboard. Touch and pen users drag on the canvas to move; an on-screen stick appears during an active touch drag so direction and magnitude are visible without adding a permanent HUD control. The browser page must not scroll from arrows or Space while game input is focused.
 
 ### Run loop
 

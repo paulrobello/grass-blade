@@ -130,10 +130,15 @@ export class Game {
   private readonly input: MovementInput = createMovementInput();
   private readonly keyboardInput: MovementInput = createMovementInput();
   private readonly pointerInput: MovementInput = createMovementInput();
+  private readonly touchStick: HTMLElement;
   private activePointerId: number | null = null;
+  private activePointerType = "";
   private pointerAnchorX = 0;
   private pointerAnchorY = 0;
+  private pointerDeltaX = 0;
+  private pointerDeltaY = 0;
   private readonly pointerDeadZonePixels = 14;
+  private readonly touchStickMaxPixels = 48;
   private canvasCssWidth = 1;
   private canvasCssHeight = 1;
   private displayAspectRatio = 1;
@@ -179,6 +184,7 @@ export class Game {
     this.appRoot.dataset.motion = this.motionSettings.reducedMotion ? "reduced" : "standard";
     this.appRoot.dataset.motionSource = this.motionSettings.motionSource;
     this.hud = getHudElements();
+    this.touchStick = requireElement("touch-stick");
     this.audio = new GameAudio(resolveAudioSettings(searchParams));
     this.audioControls = createAudioElements(this.appRoot);
     this.accessibilityStatus = requireElement("accessibility-status");
@@ -732,9 +738,13 @@ export class Game {
     }
 
     this.activePointerId = event.pointerId;
+    this.activePointerType = event.pointerType;
     this.pointerAnchorX = event.clientX;
     this.pointerAnchorY = event.clientY;
+    this.pointerDeltaX = 0;
+    this.pointerDeltaY = 0;
     clearMovementInput(this.pointerInput);
+    this.updateTouchStick();
     this.canvas.setPointerCapture(event.pointerId);
     this.canvas.focus({ preventScroll: true });
     event.preventDefault();
@@ -755,16 +765,23 @@ export class Game {
     }
 
     this.activePointerId = null;
+    this.activePointerType = "";
+    this.pointerDeltaX = 0;
+    this.pointerDeltaY = 0;
     clearMovementInput(this.pointerInput);
+    this.updateTouchStick();
     event.preventDefault();
   };
 
   private updatePointerInput(clientX: number, clientY: number): void {
     const deltaX = clientX - this.pointerAnchorX;
     const deltaY = clientY - this.pointerAnchorY;
+    this.pointerDeltaX = deltaX;
+    this.pointerDeltaY = deltaY;
     const distance = Math.hypot(deltaX, deltaY);
     if (distance < this.pointerDeadZonePixels) {
       clearMovementInput(this.pointerInput);
+      this.updateTouchStick();
       return;
     }
 
@@ -772,6 +789,31 @@ export class Game {
     this.pointerInput.right = deltaX > this.pointerDeadZonePixels;
     this.pointerInput.forward = deltaY < -this.pointerDeadZonePixels;
     this.pointerInput.backward = deltaY > this.pointerDeadZonePixels;
+    this.updateTouchStick();
+  }
+
+  private updateTouchStick(): void {
+    const visible =
+      this.activePointerId !== null &&
+      this.activePointerType !== "mouse" &&
+      this.contractStarted &&
+      this.state.mode === "active";
+
+    this.touchStick.hidden = !visible;
+    if (!visible) {
+      this.touchStick.style.removeProperty("left");
+      this.touchStick.style.removeProperty("top");
+      this.touchStick.style.removeProperty("--touch-stick-x");
+      this.touchStick.style.removeProperty("--touch-stick-y");
+      return;
+    }
+
+    const distance = Math.hypot(this.pointerDeltaX, this.pointerDeltaY);
+    const scale = distance > this.touchStickMaxPixels ? this.touchStickMaxPixels / distance : 1;
+    this.touchStick.style.left = `${this.pointerAnchorX}px`;
+    this.touchStick.style.top = `${this.pointerAnchorY}px`;
+    this.touchStick.style.setProperty("--touch-stick-x", `${this.pointerDeltaX * scale}px`);
+    this.touchStick.style.setProperty("--touch-stick-y", `${this.pointerDeltaY * scale}px`);
   }
 
   private setMovementKey(code: string, pressed: boolean): boolean {
@@ -809,9 +851,13 @@ export class Game {
 
   private readonly resetInput = (): void => {
     this.activePointerId = null;
+    this.activePointerType = "";
+    this.pointerDeltaX = 0;
+    this.pointerDeltaY = 0;
     clearMovementInput(this.input);
     clearMovementInput(this.keyboardInput);
     clearMovementInput(this.pointerInput);
+    this.updateTouchStick();
   };
 
   private async toggleFullscreen(): Promise<void> {
@@ -1119,6 +1165,12 @@ export class Game {
           keyboard: { ...this.keyboardInput },
           pointer: { ...this.pointerInput },
           active: { ...this.currentMovementInput() },
+          pointerDrag: {
+            active: this.activePointerId !== null,
+            type: this.activePointerType || null,
+            delta: { x: round(this.pointerDeltaX), y: round(this.pointerDeltaY) },
+            stickVisible: !this.touchStick.hidden,
+          },
         },
       },
       inventory: this.state.inventory,

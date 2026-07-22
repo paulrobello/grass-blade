@@ -10,7 +10,7 @@ Phase 0 is complete, and the first Phase 1 and Phase 2 contract systems are impl
 
 Phase 3 renderer hardening is implemented and verified: measurable density diagnostics, frame diagnostics, low-quality renderer-cost scaling, decorative-grass chunk culling, near/far grass distance LOD, phone viewport aspect correction, mobile browser-chrome aspect fallback, the world-aligned grass GPU cut-mask path, and the production blade GLB asset path are exposed through the debug snapshot. The grass GPU cut-mask now owns persistent completed-grass stubble state without terminal per-instance matrix rewrites after the fall lifecycle. The generated blade asset now uses a low-profile cyan orientation stripe instead of the earlier gold peg/protrusion while preserving readable rotation. Browser snapshots report WebGL adapter/vendor strings so performance evidence distinguishes hardware rendering from SwiftShader/software rendering, and the archived headed capture confirms Apple Metal hardware rendering for desktop and phone-sized scenarios. See [progress.md](progress.md) for the exact handoff state.
 
-Phase 4 presentation/accessibility work has started. A code-native onboarding card now appears first with a focused `Start Cutting` button; movement, pause, fullscreen, and simulation time stay inactive until that explicit Start action is activated. After Start, focus moves to the canvas and the normal keyboard/touch contract flow resumes. Pause and results overlays move focus to their primary visible action, and Space is suppressed as a browser-scroll key while the canvas owns input. High-contrast HUD and dialog styling is available through `?contrast=high` and also activates from `forced-colors: active` or `prefers-contrast: more`. Reduced-motion mode is honored from `prefers-reduced-motion` and can be forced with `?motion=reduced` or disabled for testing with `?motion=standard`. Procedural WebAudio feedback starts only after the Start gesture and includes a blade RPM hum, resource-matched cut sounds, level-up stingers, completion audio, a mute shortcut, and independent Master/Music/Effects controls. `make accessibility-check` runs the current Phase 4 browser accessibility verifier for focus/no-scroll, reduced-motion, and 200%-equivalent grayscale readability. `make playthrough-check-headed` runs a visible-browser contract pass covering movement, fullscreen exit-before-pause behavior, pause/resume focus, durable-target reward feedback, and completion.
+Phase 4 presentation/accessibility work has started. A code-native onboarding card now appears first with a focused `Start Cutting` button; movement, pause, fullscreen, and simulation time stay inactive until that explicit Start action is activated. After Start, focus moves to the canvas and the normal keyboard/touch contract flow resumes. Touch and pen drags now show a temporary cyan stick at the drag origin so mobile movement direction is visible without adding a permanent control pad. Pause and results overlays move focus to their primary visible action, and Space is suppressed as a browser-scroll key while the canvas owns input. High-contrast HUD and dialog styling is available through `?contrast=high` and also activates from `forced-colors: active` or `prefers-contrast: more`. Reduced-motion mode is honored from `prefers-reduced-motion` and can be forced with `?motion=reduced` or disabled for testing with `?motion=standard`. Procedural WebAudio feedback starts only after the Start gesture and includes a blade RPM hum, resource-matched cut sounds, level-up stingers, completion audio, a mute shortcut, and independent Master/Music/Effects controls. `make accessibility-check` runs the current Phase 4 browser accessibility verifier for focus/no-scroll, reduced-motion, and 200%-equivalent grayscale readability. `make playthrough-check-headed` runs a visible-browser contract pass covering movement, fullscreen exit-before-pause behavior, pause/resume focus, durable-target reward feedback, and completion.
 
 Phase 5 expansion has authored contract variants and a Start-screen contract chooser. The default `meadow-delivery` contract remains the balanced `50/10/6/6` quota set, but now uses a broad non-square starter meadow with a main route, side routes, and rounded clearings instead of a full square lawn. Choose Flower Sweep on the Start screen, or add `?contract=flower-sweep`, to play a flower-drift contract with lighter Grass, Fiber, and Wood quotas (`34/16/4/4`) in a branching corridor-shaped growth arena. Choose Woodland Cleanup, or add `?contract=woodland-cleanup`, to emphasize weeds and saplings with heavier Fiber and Wood quotas (`30/6/8/8`) in connected woodland clearings. Choose Timed Harvest, or add `?contract=timed-harvest`, to play a 60-second loop-route challenge with lighter `22/6/2/2` quotas, a visible pre-start time badge, a countdown HUD, and a `Time Up` result if the timer expires before every quota is complete. Flower drifts are now split into multiple smaller authoritative flower pockets with tighter cut radii, so touching the edge of a patch no longer cuts or topples the entire patch. Unknown contract IDs safely fall back to Meadow Delivery.
 
@@ -71,17 +71,18 @@ bun run typecheck
 
 ## Controls
 
-| Input         | Action                                                 |
-| ------------- | ------------------------------------------------------ |
-| Start button  | Begin the contract before movement keys are captured   |
-| Contract card | Choose an authored contract before starting            |
-| `W A S D`     | Move relative to the screen                            |
-| Arrow keys    | Equivalent movement controls                           |
-| `F`           | Toggle fullscreen                                      |
-| `M`           | Toggle mute                                            |
-| `Escape`      | Leave fullscreen if active; otherwise pause/resume     |
-| `R`           | Restart the current seed from pause or results         |
-| `N`           | Open the next authored contract and deterministic seed |
+| Input            | Action                                                 |
+| ---------------- | ------------------------------------------------------ |
+| Start button     | Begin the contract before movement keys are captured   |
+| Contract card    | Choose an authored contract before starting            |
+| Touch / pen drag | Move with a temporary on-screen stick affordance       |
+| `W A S D`        | Move relative to the screen                            |
+| Arrow keys       | Equivalent movement controls                           |
+| `F`              | Toggle fullscreen                                      |
+| `M`              | Toggle mute                                            |
+| `Escape`         | Leave fullscreen if active; otherwise pause/resume     |
+| `R`              | Restart the current seed from pause or results         |
+| `N`              | Open the next authored contract and deterministic seed |
 
 The blade spins automatically; there is no attack button.
 
@@ -105,7 +106,7 @@ The browser-facing automation contract lets the game be observed and driven with
 - `?debug=1` exposes `window.completeContractForDebug()` for deterministic browser verification of the results flow; the hook completes the final quota through the normal fixed-step award path.
 - `?debug=1` also exposes `window.cutTargetForDebug(kind)` for visual verification of a specific authored target kind through the same fixed-step cut and reward path. Non-cuttable targets such as rocks are ignored.
 
-These hooks include the current mode, start-flow state, pause/result state, accessibility live-region text, high-contrast state, reduced-motion state, audio diagnostics, inventory, objectives, XP, RPM, target counts, live blade-contact target IDs, too-tough notice diagnostics, partially cut target work, recent authoritative cut events, blade presentation tier, blade asset load state, orientation cue, pooled-fragment diagnostics, meadow density diagnostics, grass chunk/distance-LOD diagnostics, GPU cut-mask diagnostics including GPU-settled grass and completed-grass CPU matrix updates, playable-root layout diagnostics, canvas/backing aspect diagnostics, WebGL adapter diagnostics, and recent frame timing/pixel-ratio/quality diagnostics. See [progress.md](progress.md) for the recorded evidence.
+These hooks include the current mode, start-flow state, pause/result state, accessibility live-region text, high-contrast state, reduced-motion state, audio diagnostics, keyboard/pointer input, touch-stick visibility diagnostics, inventory, objectives, XP, RPM, target counts, live blade-contact target IDs, too-tough notice diagnostics, partially cut target work, recent authoritative cut events, blade presentation tier, blade asset load state, orientation cue, pooled-fragment diagnostics, meadow density diagnostics, grass chunk/distance-LOD diagnostics, GPU cut-mask diagnostics including GPU-settled grass and completed-grass CPU matrix updates, playable-root layout diagnostics, canvas/backing aspect diagnostics, WebGL adapter diagnostics, and recent frame timing/pixel-ratio/quality diagnostics. See [progress.md](progress.md) for the recorded evidence.
 
 Example URL:
 
