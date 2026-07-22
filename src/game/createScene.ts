@@ -68,6 +68,8 @@ interface GrassVegetationSync extends VegetationSync {
     cutMaskAppliedTexels: number;
     cutMaskCoverageRatio: number;
     cutMaskWorldSize: number;
+    cutMaskGpuSettledVisuals: number;
+    cpuCompletedGrassMatrixUpdates: number;
   };
   syncVisibility: (camera: THREE.OrthographicCamera, focusX: number, focusZ: number) => void;
 }
@@ -127,6 +129,8 @@ export interface MeadowPresentationDiagnostics {
   grassCutMaskAppliedTexels: number;
   grassCutMaskCoverageRatio: number;
   grassCutMaskWorldSize: number;
+  grassCutMaskGpuSettledVisuals: number;
+  grassCpuCompletedGrassMatrixUpdates: number;
   activeFragments: number;
   consumedCutRevision: number;
   consumedGrassVisualCuts: number;
@@ -345,6 +349,8 @@ export function createScene(seed: number, quality: QualitySettings): MeadowScene
     grassCutMaskAppliedTexels: grass.diagnostics.cutMaskAppliedTexels,
     grassCutMaskCoverageRatio: grass.diagnostics.cutMaskCoverageRatio,
     grassCutMaskWorldSize: grass.diagnostics.cutMaskWorldSize,
+    grassCutMaskGpuSettledVisuals: grass.diagnostics.cutMaskGpuSettledVisuals,
+    grassCpuCompletedGrassMatrixUpdates: grass.diagnostics.cpuCompletedGrassMatrixUpdates,
     activeFragments: 0,
     consumedCutRevision: 0,
     consumedGrassVisualCuts: 0,
@@ -419,6 +425,9 @@ export function createScene(seed: number, quality: QualitySettings): MeadowScene
     presentation.grassCutMaskAppliedTexels = grass.diagnostics.cutMaskAppliedTexels;
     presentation.grassCutMaskCoverageRatio = grass.diagnostics.cutMaskCoverageRatio;
     presentation.grassCutMaskWorldSize = grass.diagnostics.cutMaskWorldSize;
+    presentation.grassCutMaskGpuSettledVisuals = grass.diagnostics.cutMaskGpuSettledVisuals;
+    presentation.grassCpuCompletedGrassMatrixUpdates =
+      grass.diagnostics.cpuCompletedGrassMatrixUpdates;
     presentation.activeFragments = cutEffects.diagnostics.activeFragments;
     presentation.consumedCutRevision = cutEffects.diagnostics.consumedCutRevision;
     presentation.consumedGrassVisualCuts = cutEffects.diagnostics.consumedGrassVisualCuts;
@@ -530,7 +539,6 @@ function addGrass(
   const visualChunkIndices = new Uint8Array(count);
   const visualLocalIndices = new Uint16Array(count);
   const palette = [0x227a38, 0x2f9640, 0x43ad48, 0x62c94f] as const;
-  const cutMatrices = new Float32Array(count * 16);
   const fallStartTimes = new Float32Array(count);
   const fallDirections = new Float32Array(count);
   const dirtyChunkFlags = new Uint8Array(chunks.length);
@@ -560,6 +568,8 @@ function addGrass(
     cutMaskAppliedTexels: cutMask.diagnostics.appliedTexels,
     cutMaskCoverageRatio: cutMask.diagnostics.coverageRatio,
     cutMaskWorldSize: cutMask.diagnostics.worldSize,
+    cutMaskGpuSettledVisuals: cutMask.diagnostics.appliedTexels,
+    cpuCompletedGrassMatrixUpdates: 0,
   };
   const groundBounds = {
     minX: -Infinity,
@@ -600,12 +610,6 @@ function addGrass(
     matrix.compose(position, rotation, scale);
     chunk.nearMesh.setMatrixAt(localIndex, matrix);
     chunk.farMesh.setMatrixAt(localIndex, matrix);
-
-    position.y = 0.018;
-    rotation.setFromAxisAngle(yAxis, visual.rotation + 0.38);
-    scale.set(visual.scaleX * 0.78, 0.04, visual.scaleZ * 0.78);
-    matrix.compose(position, rotation, scale);
-    writeMatrix(cutMatrices, index, matrix);
 
     color.setHex(palette[visual.colorIndex] ?? palette[0]);
     chunk.nearMesh.setColorAt(localIndex, color);
@@ -712,10 +716,6 @@ function addGrass(
         }
         if (fallSample.stage === "complete") {
           cutMask.markCutVisual(visualIndex);
-          readMatrix(matrix, cutMatrices, visualIndex);
-          chunk.nearMesh.setMatrixAt(localIndex, matrix);
-          chunk.farMesh.setMatrixAt(localIndex, matrix);
-          markDirtyChunk(chunkIndex, dirtyChunkFlags, dirtyChunkIndices);
           continue;
         }
 
@@ -745,6 +745,7 @@ function addGrass(
       diagnostics.activeFalls = activeWriteIndex;
       diagnostics.cutMaskAppliedTexels = cutMask.diagnostics.appliedTexels;
       diagnostics.cutMaskCoverageRatio = cutMask.diagnostics.coverageRatio;
+      diagnostics.cutMaskGpuSettledVisuals = cutMask.diagnostics.appliedTexels;
 
       for (const chunkIndex of dirtyChunkIndices) {
         const chunk = chunks[chunkIndex];
@@ -844,8 +845,8 @@ function createGrassMaterial(cutMaskTexture: THREE.Texture): THREE.MeshStandardM
           "vec4 grassCutMaskOrigin = modelMatrix * instanceMatrix * vec4(0.0, 0.0, 0.0, 1.0);",
           "vec2 grassCutMaskUv = grassCutMaskOrigin.xz / uGrassCutMaskWorldSize + vec2(0.5);",
           "vGrassCutMaskValue = texture2D(uGrassCutMask, grassCutMaskUv).r;",
-          "transformed.xz *= mix(1.0, 0.82, vGrassCutMaskValue);",
-          "transformed.y *= mix(1.0, 0.55, vGrassCutMaskValue);",
+          "transformed.xz *= mix(1.0, 0.72, vGrassCutMaskValue);",
+          "transformed.y *= mix(1.0, 0.18, vGrassCutMaskValue);",
         ].join("\n"),
       );
     shader.fragmentShader = shader.fragmentShader

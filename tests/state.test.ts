@@ -495,9 +495,15 @@ describe("active game state", () => {
       expect(scene.presentation.grassCutMaskWorldSize).toBe(GRASS_FIELD_SIZE);
       expect(scene.presentation.grassCutMaskAppliedTexels).toBe(0);
       expect(scene.presentation.grassCutMaskCoverageRatio).toBe(0);
+      expect(scene.presentation.grassCutMaskGpuSettledVisuals).toBe(0);
+      expect(scene.presentation.grassCpuCompletedGrassMatrixUpdates).toBe(0);
 
       scene.sync(state, 5);
       expect(scene.presentation.grassCutMaskAppliedTexels).toBe(state.cutGrassVisualIndices.length);
+      expect(scene.presentation.grassCutMaskGpuSettledVisuals).toBe(
+        state.cutGrassVisualIndices.length,
+      );
+      expect(scene.presentation.grassCpuCompletedGrassMatrixUpdates).toBe(0);
       expect(scene.presentation.grassCutMaskCoverageRatio).toBeCloseTo(
         state.cutGrassVisualIndices.length / (GRASS_VISUAL_COLUMNS * GRASS_VISUAL_COLUMNS),
         6,
