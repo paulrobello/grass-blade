@@ -145,6 +145,8 @@ export class Game {
   private manualTime = false;
   private started = false;
   private contractStarted = false;
+  private pauseFocusPlaced = false;
+  private resultsFocusPlaced = false;
 
   public constructor(canvas: HTMLCanvasElement, seed?: number) {
     this.canvas = canvas;
@@ -423,13 +425,24 @@ export class Game {
   }
 
   private updatePause(): void {
-    this.pause.overlay.hidden = this.state.mode !== "paused";
+    const isPaused = this.state.mode === "paused";
+    this.pause.overlay.hidden = !isPaused;
+    if (!isPaused) {
+      this.pauseFocusPlaced = false;
+      return;
+    }
+
+    if (!this.pauseFocusPlaced) {
+      this.pauseFocusPlaced = true;
+      this.pause.resumeButton.focus({ preventScroll: true });
+    }
   }
 
   private updateResults(): void {
     const result = this.state.result;
     if (this.state.mode !== "complete" || result === null) {
       this.results.overlay.hidden = true;
+      this.resultsFocusPlaced = false;
       return;
     }
 
@@ -437,6 +450,10 @@ export class Game {
     setText(this.results.elapsed, formatElapsedTime(result.completedAtSeconds));
     setText(this.results.cutTargets, String(result.cutTargets));
     setText(this.results.highestLevel, `LV ${result.highestLevel}`);
+    if (!this.resultsFocusPlaced) {
+      this.resultsFocusPlaced = true;
+      this.results.nextButton.focus({ preventScroll: true });
+    }
   }
 
   private updateHudFeedback(): void {
@@ -589,6 +606,11 @@ export class Game {
     }
 
     if (!this.contractStarted) {
+      return;
+    }
+
+    if (event.code === "Space" && document.activeElement === this.canvas) {
+      event.preventDefault();
       return;
     }
 
@@ -769,6 +791,8 @@ export class Game {
     }
 
     this.contractStarted = true;
+    this.pauseFocusPlaced = false;
+    this.resultsFocusPlaced = false;
     this.manualTime = false;
     this.accumulatorSeconds = 0;
     this.lastFrameTimeMs = null;
@@ -810,9 +834,13 @@ export class Game {
       return;
     }
 
+    const wasPaused = this.state.mode === "paused";
     setPaused(this.state, this.state.mode === "active");
     this.resetInput();
     this.render();
+    if (wasPaused) {
+      this.canvas.focus({ preventScroll: true });
+    }
   }
 
   private readonly completeContractForDebug = (): void => {
@@ -916,6 +944,8 @@ export class Game {
     }
 
     const playableRootBounds = this.appRoot.getBoundingClientRect();
+    const activeElement = document.activeElement;
+    const activeHtmlElement = activeElement instanceof HTMLElement ? activeElement : null;
 
     return JSON.stringify({
       coordinateSystem:
@@ -924,6 +954,7 @@ export class Game {
       seed: this.state.seed,
       flow: {
         contractStarted: this.contractStarted,
+        focusedElementId: activeHtmlElement?.id || null,
       },
       elapsedSeconds: round(this.state.elapsedSeconds),
       result: this.state.result,
@@ -1274,9 +1305,11 @@ function createResultsElements(root: HTMLElement): ResultsElements {
   highestLevelLabel.textContent = "Highest level";
   actions.className = "results-card__actions";
   restartButton.type = "button";
+  restartButton.id = "results-restart";
   restartButton.className = "results-card__button";
   restartButton.textContent = "Restart";
   nextButton.type = "button";
+  nextButton.id = "results-next";
   nextButton.className = "results-card__button results-card__button--primary";
   nextButton.textContent = "Next Contract";
 
@@ -1320,9 +1353,11 @@ function createPauseElements(root: HTMLElement): PauseElements {
   summary.textContent = "Resume cutting when ready, or restart this seeded meadow.";
   actions.className = "pause-card__actions";
   resumeButton.type = "button";
+  resumeButton.id = "pause-resume";
   resumeButton.className = "pause-card__button pause-card__button--primary";
   resumeButton.textContent = "Resume";
   restartButton.type = "button";
+  restartButton.id = "pause-restart";
   restartButton.className = "pause-card__button";
   restartButton.textContent = "Restart";
 
