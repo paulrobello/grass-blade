@@ -1,3 +1,4 @@
+import * as THREE from "three";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -466,6 +467,35 @@ describe("active game state", () => {
         scene.presentation.grassNearChunks * 169 * scene.presentation.grassNearBladesPerVisual +
           scene.presentation.grassFarChunks * 169 * scene.presentation.grassFarBladesPerVisual,
       );
+    } finally {
+      scene.dispose();
+      Object.defineProperty(globalThis, "window", {
+        configurable: true,
+        value: originalWindow,
+      });
+    }
+  });
+
+  it("keeps grass chunk meshes frustum-cullable with computed bounds", () => {
+    const originalWindow = globalThis.window;
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      value: {
+        matchMedia: () => ({ matches: false }),
+      },
+    });
+    const scene = createScene(12345, resolveQualitySettings(null));
+    try {
+      let grassChunkMeshCount = 0;
+      scene.scene.traverse((object) => {
+        if (object instanceof THREE.InstancedMesh && object.name.startsWith("GB_GrassChunk_")) {
+          grassChunkMeshCount += 1;
+          expect(object.frustumCulled).toBe(true);
+          expect(object.boundingSphere).not.toBeNull();
+        }
+      });
+
+      expect(grassChunkMeshCount).toBe(128);
     } finally {
       scene.dispose();
       Object.defineProperty(globalThis, "window", {

@@ -3,7 +3,7 @@ Original prompt: "i want create a threejs based game where you are a spinning bl
 # Grass Blade Progress
 
 Last updated: 2026-07-22
-Active milestone: Phase 3 — renderer hardening: chunk culling, distance LOD, GPU cut-mask path, and production blade asset path
+Active milestone: Phase 4 — cozy presentation and accessibility, with GitHub Pages HTTPS provisioning still pending externally
 
 ## Completed foundation intent
 
@@ -109,6 +109,8 @@ Active milestone: Phase 3 — renderer hardening: chunk culling, distance LOD, G
 - [x] Added WebGL adapter diagnostics to `render_game_to_text()` so performance snapshots identify whether browser evidence came from hardware rendering or SwiftShader/software rendering.
 - [x] Added `tools/capture_performance.mjs`, `make perf-capture`, and `make perf-capture-headed` to capture reproducible desktop, low-quality, and phone-viewport screenshots, JSON state, frame timing, canvas/backing ratios, WebGL adapter strings, and a `hardwareEvidence` flag.
 - [x] Fixed the remaining portrait play-area squeeze by giving the orthographic camera a minimum world-space width on portrait viewports; canvas/backing aspect stays synchronized, while the camera now zooms out vertically instead of narrowing the horizontal playable field. `render_game_to_text()` now reports camera view width, height, and aspect diagnostics.
+- [x] Re-enabled Three.js frustum culling for the grass render chunks by computing instanced bounds per chunk, while keeping the existing manual camera-footprint visibility and near/far LOD decisions.
+- [x] Captured and archived real headed hardware performance evidence in `docs/evidence/performance/2026-07-22-headed-summary.json`; all three scenarios reported `hardwareEvidence: true` on Apple Metal via `ANGLE (Apple, ANGLE Metal Renderer: Apple M4 Max, Unspecified Version)`.
 
 ## Phase 1 verification evidence
 
@@ -207,11 +209,12 @@ Active milestone: Phase 3 — renderer hardening: chunk culling, distance LOD, G
 - `bun test tests/state.test.ts` passes after adding a portrait camera-framing regression; the new assertion verifies that a 592 by 981 viewport keeps a 15.5 world-unit camera width and expands height to preserve the display aspect instead of shrinking horizontal play space.
 - A focused 592 by 981 Playwright capture after the portrait camera fix wrote `output/playwright/mobile-aspect-portrait-width/viewport-592x981.png` plus state JSON. The inspected screenshot shows a wider, less compressed play field; state reports `canvasAspectMismatchRatio: 1`, `cameraViewWidth: 15.5`, `cameraViewHeight: 25.684966216216218`, `cameraViewAspectRatio: 0.6034658511722731`, and no browser errors.
 - The required web-game Playwright client ran against `?seed=12345` after the portrait framing fix and wrote `output/playwright/mobile-aspect-client-smoke/shot-0.png` plus `state-0.json` without browser error artifacts. The inspected landscape screenshot remains stable, and state reports the unchanged landscape camera view `27.555555555555554 by 15.5`.
-- A GitHub Pages HTTPS-enforcement retry on 2026-07-22 still failed with `The certificate does not exist yet (HTTP 404)`, so `grass-blade.pardev.net` remains live over HTTP while GitHub's custom-domain certificate provisioning is still pending.
+- `make perf-capture-headed` captured desktop default, desktop low, and 430 by 860 phone scenarios against a visible Chromium window after the frustum-culling cleanup. All three reports used `ANGLE (Apple, ANGLE Metal Renderer: Apple M4 Max, Unspecified Version)`, set `hardwareEvidence: true`, reported no browser errors, kept `canvas.aspectMismatch: 1`, and measured about `8.33 ms` average frame time with `10.0-10.2 ms` p95. The tracked archive is `docs/evidence/performance/2026-07-22-headed-summary.json`.
+- `bun test tests/state.test.ts` passes after the frustum-culling cleanup; the added regression finds all 128 grass chunk meshes, confirms `frustumCulled` remains `true`, and confirms each chunk has a computed instanced bounding sphere.
+- A GitHub Pages HTTPS-enforcement retry on 2026-07-22 after the hardware capture still failed with `The certificate does not exist yet (HTTP 404)`, so `grass-blade.pardev.net` remains live over HTTP while GitHub's custom-domain certificate provisioning is still pending.
 
 ## Remaining TODOs
 
-- [ ] Run `make perf-capture-headed` on real hardware and archive the resulting `summary.json` only if the relevant scenarios report `hardwareEvidence: true`; current automated headless evidence identifies SwiftShader/software rendering and is not a substitute for this exit criterion.
 - [ ] Retry GitHub Pages HTTPS enforcement for `grass-blade.pardev.net`; HTTP is live, but the custom-domain certificate was still pending during the last deployment check.
 
 ## Handoff rules

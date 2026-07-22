@@ -1,0 +1,127 @@
+{
+  "capturedAt": "2026-07-22",
+  "command": "make perf-capture-headed",
+  "sourceSummaryPath": "output/playwright/performance-capture/summary.json",
+  "scenarios": [
+    {
+      "name": "desktop-default",
+      "quality": "default",
+      "canvas": {
+        "cssWidth": 1280,
+        "cssHeight": 720,
+        "backingWidth": 1280,
+        "backingHeight": 720,
+        "aspectMismatch": 1,
+        "pixelRatio": 1
+      },
+      "frame": {
+        "sampledFrames": 180,
+        "totalFrames": 446,
+        "averageFrameMs": 8.325,
+        "p95FrameMs": 10,
+        "maxFrameMs": 10.3
+      },
+      "graphicsAdapter": {
+        "debugRendererAvailable": true,
+        "vendor": "Google Inc. (Apple)",
+        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4 Max, Unspecified Version)"
+      },
+      "hardwareEvidence": true,
+      "grass": {
+        "blades": 151424,
+        "visibleBladeBudget": 110864,
+        "cutMaskAppliedTexels": 289,
+        "cpuCompletedGrassMatrixUpdates": 0
+      },
+      "bladeAssetStatus": "loaded",
+      "inventory": {
+        "grass": 16,
+        "flowers": 0,
+        "fiber": 0,
+        "wood": 0
+      },
+      "errors": [],
+      "screenshotPath": "output/playwright/performance-capture/desktop-default.png"
+    },
+    {
+      "name": "desktop-low",
+      "quality": "low",
+      "canvas": {
+        "cssWidth": 1280,
+        "cssHeight": 720,
+        "backingWidth": 1280,
+        "backingHeight": 720,
+        "aspectMismatch": 1,
+        "pixelRatio": 1
+      },
+      "frame": {
+        "sampledFrames": 180,
+        "totalFrames": 448,
+        "averageFrameMs": 8.332,
+        "p95FrameMs": 10,
+        "maxFrameMs": 10.4
+      },
+      "graphicsAdapter": {
+        "debugRendererAvailable": true,
+        "vendor": "Google Inc. (Apple)",
+        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4 Max, Unspecified Version)"
+      },
+      "hardwareEvidence": true,
+      "grass": {
+        "blades": 86528,
+        "visibleBladeBudget": 66248,
+        "cutMaskAppliedTexels": 289,
+        "cpuCompletedGrassMatrixUpdates": 0
+      },
+      "bladeAssetStatus": "loaded",
+      "inventory": {
+        "grass": 16,
+        "flowers": 0,
+        "fiber": 0,
+        "wood": 0
+      },
+      "errors": [],
+      "screenshotPath": "output/playwright/performance-capture/desktop-low.png"
+    },
+    {
+      "name": "phone-default",
+      "quality": "default",
+      "canvas": {
+        "cssWidth": 430,
+        "cssHeight": 860,
+        "backingWidth": 645,
+        "backingHeight": 1290,
+        "aspectMismatch": 1,
+        "pixelRatio": 1.5
+      },
+      "frame": {
+        "sampledFrames": 180,
+        "totalFrames": 448,
+        "averageFrameMs": 8.328,
+        "p95FrameMs": 10.2,
+        "maxFrameMs": 10.4
+      },
+      "graphicsAdapter": {
+        "debugRendererAvailable": true,
+        "vendor": "Google Inc. (Apple)",
+        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4 Max, Unspecified Version)"
+      },
+      "hardwareEvidence": true,
+      "grass": {
+        "blades": 151424,
+        "visibleBladeBudget": 118976,
+        "cutMaskAppliedTexels": 289,
+        "cpuCompletedGrassMatrixUpdates": 0
+      },
+      "bladeAssetStatus": "loaded",
+      "inventory": {
+        "grass": 16,
+        "flowers": 0,
+        "fiber": 0,
+        "wood": 0
+      },
+      "errors": [],
+      "screenshotPath": "output/playwright/performance-capture/phone-default.png"
+    }
+  ]
+}

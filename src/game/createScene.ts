@@ -635,6 +635,8 @@ function addGrass(
   for (const chunk of chunks) {
     chunk.nearMesh.instanceMatrix.needsUpdate = true;
     chunk.farMesh.instanceMatrix.needsUpdate = true;
+    chunk.nearMesh.computeBoundingSphere();
+    chunk.farMesh.computeBoundingSphere();
     if (chunk.nearMesh.instanceColor !== null) {
       chunk.nearMesh.instanceColor.needsUpdate = true;
     }
@@ -905,9 +907,9 @@ function createGrassChunks(
       const centerZ = -halfField + (row + 0.5) * chunkWorldSize;
 
       nearMesh.receiveShadow = true;
-      nearMesh.frustumCulled = false;
+      nearMesh.name = `GB_GrassChunk_Near_${row}_${column}`;
       farMesh.receiveShadow = true;
-      farMesh.frustumCulled = false;
+      farMesh.name = `GB_GrassChunk_Far_${row}_${column}`;
       farMesh.visible = false;
       scene.add(nearMesh, farMesh);
       chunks.push({
