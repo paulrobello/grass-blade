@@ -77,6 +77,7 @@ export interface ContractDefinition {
     | "stone-bloom"
     | "willow-weave"
     | "petal-gate"
+    | "sunset-switchback"
     | "clear-every-patch";
   title: string;
   summary: string;
@@ -298,6 +299,14 @@ export const CONTRACT_DEFINITIONS = [
     benchmarkSeconds: 66.95,
     timeLimitSeconds: 72,
     objectives: { grass: 250, flowers: 320, fiber: 28, wood: 0 },
+  },
+  {
+    id: "sunset-switchback",
+    title: "Sunset Switchback",
+    summary: "A 74-second diagonal route through sunset flower lanes and Fiber hedges.",
+    benchmarkSeconds: 65.45,
+    timeLimitSeconds: 74,
+    objectives: { grass: 260, flowers: 300, fiber: 28, wood: 0 },
   },
   {
     id: "clear-every-patch",
