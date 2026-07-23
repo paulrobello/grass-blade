@@ -37,6 +37,7 @@ const OBJECTIVE_LABELS: Record<ObjectiveResource, string> = {
 };
 interface HudElements {
   root: HTMLElement;
+  pauseButton: HTMLButtonElement;
   timeDial: HTMLElement;
   timeLabel: HTMLElement;
   contractTitle: HTMLElement;
@@ -265,6 +266,7 @@ export class Game {
     this.canvas.addEventListener("lostpointercapture", this.onPointerEnd);
     this.results.restartButton.addEventListener("click", this.restartContract);
     this.results.nextButton.addEventListener("click", this.nextContract);
+    this.hud.pauseButton.addEventListener("click", this.onPauseButtonClick);
     this.intro.startButton.addEventListener("click", this.beginContract);
     for (const button of this.intro.contractButtons) {
       button.addEventListener("click", this.onIntroContractChoiceClick);
@@ -305,6 +307,7 @@ export class Game {
     this.canvas.removeEventListener("lostpointercapture", this.onPointerEnd);
     this.results.restartButton.removeEventListener("click", this.restartContract);
     this.results.nextButton.removeEventListener("click", this.nextContract);
+    this.hud.pauseButton.removeEventListener("click", this.onPauseButtonClick);
     this.intro.startButton.removeEventListener("click", this.beginContract);
     for (const button of this.intro.contractButtons) {
       button.removeEventListener("click", this.onIntroContractChoiceClick);
@@ -463,6 +466,7 @@ export class Game {
     this.hud.root.style.setProperty("--rpm-progress", `${Math.round(rpmProgress * 100)}%`);
     this.hud.xpFill.style.width = `${xpProgress * 100}%`;
     this.updateHudFeedback();
+    this.updatePauseButton();
     this.updateIntro();
     this.updatePause();
     this.updateResults();
@@ -507,6 +511,16 @@ export class Game {
       this.pauseFocusPlaced = true;
       this.pause.resumeButton.focus({ preventScroll: true });
     }
+  }
+
+  private updatePauseButton(): void {
+    const visible = this.contractStarted && this.state.mode !== "complete";
+    this.hud.pauseButton.hidden = !visible;
+    this.hud.pauseButton.setAttribute(
+      "aria-label",
+      this.state.mode === "paused" ? "Resume contract" : "Pause contract",
+    );
+    this.hud.pauseButton.dataset.state = this.state.mode === "paused" ? "resume" : "pause";
   }
 
   private updateResults(): void {
@@ -1023,6 +1037,10 @@ export class Game {
     this.updateAudioControls();
   };
 
+  private readonly onPauseButtonClick = (): void => {
+    this.togglePause();
+  };
+
   private togglePause(): void {
     if (!this.contractStarted || this.state.mode === "complete") {
       return;
@@ -1185,6 +1203,8 @@ export class Game {
       flow: {
         contractStarted: this.contractStarted,
         focusedElementId: activeHtmlElement?.id || null,
+        pauseButtonHidden: this.hud.pauseButton.hidden,
+        pauseButtonLabel: this.hud.pauseButton.getAttribute("aria-label"),
       },
       elapsedSeconds: round(this.state.elapsedSeconds),
       time: {
@@ -1629,8 +1649,14 @@ function deriveAspectRatio(width: number, height: number): number {
 }
 
 function getHudElements(): HudElements {
+  const pauseButton = requireElement("pause-toggle");
+  if (!(pauseButton instanceof HTMLButtonElement)) {
+    throw new Error("Expected #pause-toggle to be a button.");
+  }
+
   return {
     root: requireElement("game-hud"),
+    pauseButton,
     timeDial: requireElement("hud-time-dial"),
     timeLabel: requireElement("hud-time-label"),
     contractTitle: requireElement("hud-contract-title"),
