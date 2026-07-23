@@ -62,6 +62,7 @@ bun run typecheck
 | `make fmt`                      | Format source and project files                                               |
 | `make typecheck`                | Run TypeScript without emitting files                                         |
 | `make accessibility-check`      | Run the browser Phase 4 accessibility verifier; requires `make dev` first     |
+| `make mobile-check`             | Run the phone layout, pause-HUD, and touch-drag verifier; requires dev server |
 | `make playthrough-check`        | Run deterministic browser playthrough smoke; requires `make dev` first        |
 | `make playthrough-check-headed` | Run the playthrough in a visible browser with fullscreen coverage             |
 | `make contract-balance-capture` | Capture multi-seed cut-budget evidence for every authored contract            |

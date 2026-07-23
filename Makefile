@@ -1,4 +1,4 @@
-.PHONY: dev preview build test lint fmt fmt-check typecheck accessibility-check playthrough-check playthrough-check-headed contract-balance-capture timed-balance-capture perf-capture perf-capture-headed checkall pre-commit pre-commit-update
+.PHONY: dev preview build test lint fmt fmt-check typecheck accessibility-check mobile-check playthrough-check playthrough-check-headed contract-balance-capture timed-balance-capture perf-capture perf-capture-headed checkall pre-commit pre-commit-update
 
 dev:
 	bun run dev
@@ -26,6 +26,9 @@ typecheck:
 
 accessibility-check:
 	bun run accessibility:check
+
+mobile-check:
+	bun run mobile:check
 
 playthrough-check:
 	bun run playthrough:check

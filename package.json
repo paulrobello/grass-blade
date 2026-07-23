@@ -14,6 +14,7 @@
     "fmt": "prettier --write .",
     "fmt:check": "prettier --check .",
     "accessibility:check": "node tools/check_accessibility.mjs",
+    "mobile:check": "node tools/check_mobile.mjs",
     "playthrough:check": "node tools/check_playthrough.mjs",
     "playthrough:check:headed": "node tools/check_playthrough.mjs --headed --fullscreen --out output/playwright/playthrough-check-headed",
     "balance:contracts": "bun tools/check_contract_balance.ts",
