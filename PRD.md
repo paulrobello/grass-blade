@@ -377,6 +377,18 @@ Authored contracts are selected by deterministic contract ID and seed. The defau
 - Deterministic balance requires all dense weeds and three shrubs while preserving a small execution buffer inside the timer.
 - If the timer reaches zero before every quota is complete, the contract ends with the same `timed-out` result semantics as Timed Harvest.
 
+### Prism Prairie
+
+- Contract ID: `prism-prairie`
+- Time limit: 70 seconds.
+- Collect 235 Grass.
+- Collect 320 Flowers.
+- Collect 24 Fiber.
+- No Wood quota; this route emphasizes full flower-pocket sweeping and Fiber shrub commitment without forcing timber cuts.
+- Uses crossing diagonal meadow facets, vertical connector lanes, dense flower anchors, and carved prism-shaped pockets so the route reads as multiple intersecting paths rather than a square field.
+- Deterministic balance requires every flower target, all dense weeds, and six shrubs while preserving a small execution buffer inside the timer.
+- If the timer reaches zero before every quota is complete, the contract ends with the same `timed-out` result semantics as Timed Harvest.
+
 ### Clear Every Patch
 
 - Contract ID: `clear-every-patch`
