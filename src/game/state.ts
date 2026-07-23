@@ -76,6 +76,7 @@ export interface ContractDefinition {
     | "prism-prairie"
     | "stone-bloom"
     | "willow-weave"
+    | "petal-gate"
     | "clear-every-patch";
   title: string;
   summary: string;
@@ -289,6 +290,14 @@ export const CONTRACT_DEFINITIONS = [
     benchmarkSeconds: 78.617,
     timeLimitSeconds: 80,
     objectives: { grass: 250, flowers: 300, fiber: 24, wood: 22 },
+  },
+  {
+    id: "petal-gate",
+    title: "Petal Gate",
+    summary: "A 72-second flower-gate route that clears every bloom and Fiber hedge.",
+    benchmarkSeconds: 66.95,
+    timeLimitSeconds: 72,
+    objectives: { grass: 250, flowers: 320, fiber: 28, wood: 0 },
   },
   {
     id: "clear-every-patch",

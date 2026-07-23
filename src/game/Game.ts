@@ -1758,6 +1758,8 @@ function contractRouteBadge(contract: ContractDefinition): string {
       return "Stone chicane";
     case "willow-weave":
       return "Willow weave";
+    case "petal-gate":
+      return "Petal gate";
     case "clear-every-patch":
       return "Split clearings";
   }
