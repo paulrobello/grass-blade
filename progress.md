@@ -21,6 +21,7 @@ Active milestone: Phase 5 — expansion after first-playable evidence, with the 
 - Verification after the Timber Trail retune passed `bun test tests/state.test.ts`, focused Timber Trail balance, all-contract balance, `make mobile-check`, and `make checkall`. The inspected browser artifact is `output/playwright/timber-retune-smoke/shot-0.png`, showing the updated `250/260/28/28` Timber HUD, grove route, countdown, visible trees, and no canvas aspect mismatch.
 - Retuned Field Sprint from `120 Grass / 120 Flowers` to `175 Grass / 230 Flowers` so the 45-second soft-target sprint uses most available lane grass and a larger flower sweep while staying within the no-durable route. Focused balance now reports `43.23s / 45s` across ten validation seeds, up from `29.08s / 45s`.
 - Verification after the Field Sprint retune passed `bun test tests/state.test.ts`, focused Field Sprint balance, all-contract balance, `make mobile-check`, and `make checkall`. The inspected browser artifact is `output/playwright/field-sprint-retune-smoke/shot-0.png`, showing the updated `175/230` Field Sprint HUD, sprint-lane route, countdown, and no canvas aspect mismatch.
+- Retried native GitHub Pages HTTPS enforcement through the current REST `PUT /repos/paulrobello/grass-blade/pages` endpoint with a typed boolean `https_enforced=true`. GitHub still rejects the update with `The certificate does not exist yet`, so the repo keeps using valid Cloudflare-proxied HTTPS while native Pages enforcement remains pending.
 
 ## Completed foundation intent
 
