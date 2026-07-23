@@ -242,6 +242,18 @@ Authored contracts are selected by deterministic contract ID and seed. The defau
 - Deterministic balance requires all authored flower targets, every dense weed, and every shrub while leaving a small execution buffer inside the timer.
 - If the timer reaches zero before every quota is complete, the contract ends with the same `timed-out` result semantics as Timed Harvest.
 
+### Orchard Loop
+
+- Contract ID: `orchard-loop`
+- Time limit: 85 seconds.
+- Collect 240 Grass.
+- Collect 260 Flowers.
+- Collect 20 Fiber.
+- Collect 22 Wood.
+- Uses a looping wood route through the existing sapling and mature-tree placements, with inner orchard paths and no-growth pockets so it reads as a circuit instead of a broad square field.
+- Deterministic balance requires all five saplings, two mature trees, every dense weed, and four shrubs while preserving a visible execution buffer inside the timer.
+- If the timer reaches zero before every quota is complete, the contract ends with the same `timed-out` result semantics as Timed Harvest.
+
 ### Clear Every Patch
 
 - Contract ID: `clear-every-patch`
