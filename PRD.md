@@ -266,6 +266,18 @@ Authored contracts are selected by deterministic contract ID and seed. The defau
 - Deterministic balance requires all dense weeds and six shrubs while preserving a small execution buffer inside the timer.
 - If the timer reaches zero before every quota is complete, the contract ends with the same `timed-out` result semantics as Timed Harvest.
 
+### Harvest Spiral
+
+- Contract ID: `harvest-spiral`
+- Time limit: 80 seconds.
+- Collect 240 Grass.
+- Collect 260 Flowers.
+- Collect 24 Fiber.
+- Collect 22 Wood.
+- Uses a tightening spiral route with outer soft-target sweeps, inner Fiber pockets, and late timber cuts so the route changes direction repeatedly instead of reading as a square field.
+- Deterministic balance requires six shrubs, all five saplings, and two mature trees while preserving a small execution buffer inside the timer.
+- If the timer reaches zero before every quota is complete, the contract ends with the same `timed-out` result semantics as Timed Harvest.
+
 ### Clear Every Patch
 
 - Contract ID: `clear-every-patch`
