@@ -165,7 +165,8 @@ describe("contract navigation URLs", () => {
     expect(nextAuthoredContractId("forked-thicket")).toBe("switchback-orchard");
     expect(nextAuthoredContractId("switchback-orchard")).toBe("braided-meadow");
     expect(nextAuthoredContractId("braided-meadow")).toBe("ring-grove");
-    expect(nextAuthoredContractId("ring-grove")).toBe("clear-every-patch");
+    expect(nextAuthoredContractId("ring-grove")).toBe("twin-glade");
+    expect(nextAuthoredContractId("twin-glade")).toBe("clear-every-patch");
     expect(nextAuthoredContractId("clear-every-patch")).toBe("meadow-delivery");
     expect(nextAuthoredContractId("unknown-contract")).toBe("meadow-delivery");
     expect(nextAuthoredContractTitle("meadow-delivery")).toBe("Flower Sweep");
@@ -186,7 +187,8 @@ describe("contract navigation URLs", () => {
     expect(nextAuthoredContractTitle("forked-thicket")).toBe("Switchback Orchard");
     expect(nextAuthoredContractTitle("switchback-orchard")).toBe("Braided Meadow");
     expect(nextAuthoredContractTitle("braided-meadow")).toBe("Ring Grove");
-    expect(nextAuthoredContractTitle("ring-grove")).toBe("Clear Every Patch");
+    expect(nextAuthoredContractTitle("ring-grove")).toBe("Twin Glade");
+    expect(nextAuthoredContractTitle("twin-glade")).toBe("Clear Every Patch");
     expect(nextAuthoredContractTitle("clear-every-patch")).toBe("Meadow Delivery");
     expect(nextAuthoredContractTitle("unknown-contract")).toBe("Meadow Delivery");
   });
@@ -324,14 +326,21 @@ describe("contract navigation URLs", () => {
         nextAuthoredContractId("ring-grove"),
         "?seed=1500072530&debug=1&contract=ring-grove",
       ),
-    ).toBe("?seed=2415055461&debug=1&contract=clear-every-patch");
+    ).toBe("?seed=2415055461&debug=1&contract=twin-glade");
     expect(
       contractNavigationSearch(
         774499206,
-        nextAuthoredContractId("clear-every-patch"),
-        "?seed=2415055461&debug=1&contract=clear-every-patch",
+        nextAuthoredContractId("twin-glade"),
+        "?seed=2415055461&debug=1&contract=twin-glade",
       ),
-    ).toBe("?seed=774499206&debug=1");
+    ).toBe("?seed=774499206&debug=1&contract=clear-every-patch");
+    expect(
+      contractNavigationSearch(
+        3668339983,
+        nextAuthoredContractId("clear-every-patch"),
+        "?seed=774499206&debug=1&contract=clear-every-patch",
+      ),
+    ).toBe("?seed=3668339983&debug=1");
   });
 });
 
@@ -495,6 +504,12 @@ describe("contract chooser filters", () => {
       "Expert",
       "Ring",
     ]);
+    expect(contractCardBadges(contractById("twin-glade"))).toEqual([
+      "70s",
+      "Wood",
+      "Hard",
+      "Twin glades",
+    ]);
 
     for (const contract of CONTRACT_DEFINITIONS as readonly ContractDefinition[]) {
       expect(contractCardBadges(contract)).toHaveLength(4);
@@ -509,6 +524,7 @@ describe("contract chooser filters", () => {
     expect(primaryContractFilterId(contractById("forked-thicket"))).toBe("wood");
     expect(primaryContractFilterId(contractById("switchback-orchard"))).toBe("wood");
     expect(primaryContractFilterId(contractById("ring-grove"))).toBe("wood");
+    expect(primaryContractFilterId(contractById("twin-glade"))).toBe("wood");
     expect(primaryContractFilterId(contractById("braided-meadow"))).toBe("timed");
     expect(primaryContractFilterId(contractById("timed-harvest"))).toBe("timed");
     expect(primaryContractFilterId(contractById("reed-run"))).toBe("timed");
@@ -526,6 +542,7 @@ describe("contract chooser filters", () => {
     const switchbackOrchard = contractById("switchback-orchard");
     const braidedMeadow = contractById("braided-meadow");
     const ringGrove = contractById("ring-grove");
+    const twinGlade = contractById("twin-glade");
     const reedRun = contractById("reed-run");
     const clearEveryPatch = contractById("clear-every-patch");
 
@@ -543,6 +560,8 @@ describe("contract chooser filters", () => {
     expect(contractMatchesFilter(switchbackOrchard, "timed")).toBe(false);
     expect(contractMatchesFilter(ringGrove, "wood")).toBe(true);
     expect(contractMatchesFilter(ringGrove, "timed")).toBe(false);
+    expect(contractMatchesFilter(twinGlade, "wood")).toBe(true);
+    expect(contractMatchesFilter(twinGlade, "timed")).toBe(false);
     expect(contractMatchesFilter(braidedMeadow, "timed")).toBe(true);
     expect(contractMatchesFilter(braidedMeadow, "soft")).toBe(false);
     expect(contractMatchesFilter(reedRun, "timed")).toBe(true);

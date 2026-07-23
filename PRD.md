@@ -353,6 +353,18 @@ Authored contracts are selected by deterministic contract ID and seed. The defau
 - Deterministic balance requires all dense weeds, six shrubs, all five saplings, and one mature tree while preserving a small execution buffer inside the timer.
 - If the timer reaches zero before every quota is complete, the contract ends with the same `timed-out` result semantics as Timed Harvest.
 
+### Twin Glade
+
+- Contract ID: `twin-glade`
+- Time limit: 70 seconds.
+- Collect 230 Grass.
+- Collect 260 Flowers.
+- Collect 20 Fiber.
+- Collect 10 Wood.
+- Uses two mirrored flower-heavy glades joined by narrow lanes, with carved center pockets that make the route read as connected clearings instead of a square lawn.
+- Deterministic balance requires all dense weeds, four shrubs, and all five saplings while preserving a small execution buffer inside the timer.
+- If the timer reaches zero before every quota is complete, the contract ends with the same `timed-out` result semantics as Timed Harvest.
+
 ### Clear Every Patch
 
 - Contract ID: `clear-every-patch`

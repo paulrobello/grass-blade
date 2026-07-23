@@ -7,6 +7,7 @@ Active milestone: Phase 5 — expansion after first-playable evidence, with the 
 
 ## 2026-07-23 continuation notes
 
+- Added the `twin-glade` authored Phase 5 contract as a 70-second twin-clearing route with `230 Grass / 260 Flowers / 20 Fiber / 10 Wood`, mirrored flower glades, narrow connecting lanes, and deterministic selection of all dense weeds, four shrubs, and all five saplings. Focused deterministic balance reports `65.233s / 70s` across the standard ten validation seeds.
 - Added the `ring-grove` authored Phase 5 contract: a 75-second looped grove route with `245 Grass / 260 Flowers / 24 Fiber / 16 Wood`, a bare center clearing, route-shape badge `Ring`, all dense weeds, six shrubs, all five saplings, and one mature tree. Focused deterministic balance reports `71.017s / 75s` across the standard ten validation seeds.
 - Added route-shape contract chooser badges so each visible card now exposes four compact scan chips: pace, focus, difficulty, and arena route form. The mobile verifier now requires four non-empty badge chips on every visible card so future chooser changes cannot silently drop the route hint.
 - Added the `hedge-maze` authored contract to the in-progress Phase 5 batch: 80 seconds, `70 Grass / 30 Flowers / 18 Fiber / 0 Wood`, shrub-maze arena shape, and deterministic Fiber quota selection that consumes all twelve dense weeds plus three shrubs.
