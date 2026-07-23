@@ -31,6 +31,16 @@ const INTRO_VIEWPORTS = [
     filter: "all",
     singleColumn: false,
   },
+  {
+    name: "desktop-568x997-all-contracts",
+    width: 568,
+    height: 997,
+    contract: "timed-harvest",
+    filter: "all",
+    isMobile: false,
+    hasTouch: false,
+    deviceScaleFactor: 1,
+  },
   { name: "phone-390x664-hedge-maze", width: 390, height: 664, contract: "hedge-maze" },
   { name: "phone-390x664-clover-circuit", width: 390, height: 664, contract: "clover-circuit" },
   {
@@ -116,6 +126,10 @@ async function checkIntroChooser(browser, options, viewport) {
     assert(!metrics.cardContentEscapesCard, `${viewport.name} contract card content escapes card`);
     assert(!metrics.contractTextBlocksOverlap, `${viewport.name} contract text blocks overlap`);
     assert(!metrics.timedBadgesOverlapText, `${viewport.name} timed badges overlap card text`);
+    assert(
+      metrics.timedBadgesHaveComfortableLineHeight,
+      `${viewport.name} timed badge labels do not have enough vertical line-height`,
+    );
     if (viewport.singleColumn !== false) {
       assert(
         metrics.contractCardsSingleColumn,
@@ -312,9 +326,9 @@ async function newMobilePage(browser, viewport) {
   return browser.newPage({
     viewport: { width: viewport.width, height: viewport.height },
     screen: { width: viewport.width * 2, height: viewport.height * 2 },
-    isMobile: true,
-    hasTouch: true,
-    deviceScaleFactor: 2,
+    isMobile: viewport.isMobile ?? true,
+    hasTouch: viewport.hasTouch ?? true,
+    deviceScaleFactor: viewport.deviceScaleFactor ?? 2,
   });
 }
 
@@ -448,6 +462,7 @@ async function measureIntroChooser(page) {
       cardContentEscapesCard: cardContentEscapesCard(),
       contractTextBlocksOverlap: contractTextBlocksOverlap(),
       timedBadgesOverlapText: timedBadgesOverlapText(),
+      timedBadgesHaveComfortableLineHeight: timedBadgesHaveComfortableLineHeight(),
       contractCardsSingleColumn: contractCardsSingleColumn(),
     };
 
@@ -576,6 +591,21 @@ async function measureIntroChooser(page) {
           .filter((rect) => rect !== undefined);
         const contentBottom = Math.max(...contentRects.map((rect) => rect.bottom));
         return badgeRect.top < contentBottom + 1;
+      });
+    }
+
+    function timedBadgesHaveComfortableLineHeight() {
+      return Array.from(document.querySelectorAll(".intro-card__contract-time")).every((badge) => {
+        const contractCard = badge.closest(".intro-card__contract");
+        if (contractCard?.hidden) {
+          return true;
+        }
+        const style = window.getComputedStyle(badge);
+        const fontSize = Number.parseFloat(style.fontSize);
+        const lineHeight = Number.parseFloat(style.lineHeight);
+        return (
+          Number.isFinite(fontSize) && Number.isFinite(lineHeight) && lineHeight >= fontSize * 1.12
+        );
       });
     }
 

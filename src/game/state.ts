@@ -80,6 +80,7 @@ export interface ContractDefinition {
     | "sunset-switchback"
     | "cedar-crossroads"
     | "lagoon-braid"
+    | "wildflower-narrows"
     | "clear-every-patch";
   title: string;
   summary: string;
@@ -325,6 +326,14 @@ export const CONTRACT_DEFINITIONS = [
     benchmarkSeconds: 62.633,
     timeLimitSeconds: 70,
     objectives: { grass: 240, flowers: 300, fiber: 24, wood: 0 },
+  },
+  {
+    id: "wildflower-narrows",
+    title: "Wildflower Narrows",
+    summary: "A 66-second narrow bloom route through flower corridors and Fiber hedges.",
+    benchmarkSeconds: 64.15,
+    timeLimitSeconds: 66,
+    objectives: { grass: 230, flowers: FLOWER_TARGET_COUNT, fiber: 24, wood: 0 },
   },
   {
     id: "clear-every-patch",

@@ -461,6 +461,18 @@ Authored contracts are selected by deterministic contract ID and seed. The defau
 - Deterministic balance requires all dense weeds and six shrubs while preserving a modest execution buffer inside the timer.
 - If the timer reaches zero before every quota is complete, the contract ends with the same `timed-out` result semantics as Timed Harvest.
 
+### Wildflower Narrows
+
+- Contract ID: `wildflower-narrows`
+- Time limit: 66 seconds.
+- Collect 230 Grass.
+- Collect 320 Flowers.
+- Collect 24 Fiber.
+- No Wood quota; this route emphasizes precise soft-target sweeps through tight flower corridors and Fiber hedges.
+- Uses narrow linked bloom corridors with diagonal connectors, compact internal gaps, and one grid-aligned decorative clearing so the route reads as constrained paths instead of a square lawn.
+- Deterministic balance requires all dense weeds and six shrubs while preserving a very small execution buffer inside the timer.
+- If the timer reaches zero before every quota is complete, the contract ends with the same `timed-out` result semantics as Timed Harvest.
+
 ### Clear Every Patch
 
 - Contract ID: `clear-every-patch`
