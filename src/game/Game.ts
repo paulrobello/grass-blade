@@ -1762,6 +1762,8 @@ function contractRouteBadge(contract: ContractDefinition): string {
       return "Petal gate";
     case "sunset-switchback":
       return "Sunset switch";
+    case "cedar-crossroads":
+      return "Crossroads";
     case "clear-every-patch":
       return "Split clearings";
   }

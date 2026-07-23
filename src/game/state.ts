@@ -78,6 +78,7 @@ export interface ContractDefinition {
     | "willow-weave"
     | "petal-gate"
     | "sunset-switchback"
+    | "cedar-crossroads"
     | "clear-every-patch";
   title: string;
   summary: string;
@@ -307,6 +308,14 @@ export const CONTRACT_DEFINITIONS = [
     benchmarkSeconds: 65.45,
     timeLimitSeconds: 74,
     objectives: { grass: 260, flowers: 300, fiber: 28, wood: 0 },
+  },
+  {
+    id: "cedar-crossroads",
+    title: "Cedar Crossroads",
+    summary: "An 86-second four-way timber route through cedar lanes and flower crossings.",
+    benchmarkSeconds: 75.117,
+    timeLimitSeconds: 86,
+    objectives: { grass: 260, flowers: 260, fiber: 24, wood: 22 },
   },
   {
     id: "clear-every-patch",
