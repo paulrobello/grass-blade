@@ -30,6 +30,25 @@ describe("quality settings", () => {
     });
   });
 
+  it("uses low quality for low-cost contexts unless a preset is explicit", () => {
+    expect(resolveQualitySettings(null, { prefersLowCost: true })).toEqual({
+      preset: "low",
+      antialias: false,
+      maxPixelRatio: 1,
+      grassBladesPerVisual: 8,
+      shadowsEnabled: false,
+      shadowMapSize: 0,
+    });
+    expect(resolveQualitySettings("default", { prefersLowCost: true })).toEqual({
+      preset: "default",
+      antialias: true,
+      maxPixelRatio: 1.5,
+      grassBladesPerVisual: 14,
+      shadowsEnabled: true,
+      shadowMapSize: 1024,
+    });
+  });
+
   it("uses lower render-cost settings for low quality", () => {
     expect(resolveQualitySettings("low")).toEqual({
       preset: "low",

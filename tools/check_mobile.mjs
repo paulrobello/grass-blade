@@ -79,6 +79,11 @@ async function checkIntroChooser(browser, options, viewport) {
     );
     const state = await renderState(page);
     assertEqual(state.contract.id, contractId, `${viewport.name} starts selected contract`);
+    assertEqual(
+      state.performance.qualityPreset,
+      "low",
+      `${viewport.name} uses low-cost quality by default`,
+    );
     assertNoBrowserErrors(errors, viewport.name);
 
     return {
@@ -120,6 +125,11 @@ async function checkActiveHud(browser, options, viewport) {
     await waitForState(page, (state) => state.mode === "active");
     const state = await renderState(page);
     assertEqual(state.flow.pauseButtonHidden, false, `${viewport.name} pause button stays enabled`);
+    assertEqual(
+      state.performance.qualityPreset,
+      "low",
+      `${viewport.name} uses low-cost quality by default`,
+    );
     assertNoBrowserErrors(errors, viewport.name);
 
     const screenshotPath = path.join(options.outputDir, `${viewport.name}-hud.png`);
@@ -189,6 +199,11 @@ async function checkTouchDrag(browser, options) {
     );
     const afterRelease = await renderState(page);
     assertEqual(afterRelease.controls.input.active.forward, false, "touch release clears movement");
+    assertEqual(
+      afterRelease.performance.qualityPreset,
+      "low",
+      "touch-drag uses low-cost quality by default",
+    );
     assertNoBrowserErrors(errors, "touch-drag");
 
     return {

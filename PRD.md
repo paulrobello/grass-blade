@@ -406,7 +406,7 @@ If Grass Blade copies or substantially derives upstream code, add a third-party 
 - Use chunk frustum culling; never disable culling for the entire field.
 - Avoid per-rendered-blade JavaScript objects, raycasts, or allocations during the frame loop.
 - Pool particles, collection motes, temporary labels, and severed-target presentation objects.
-- Clamp renderer pixel ratio and expose quality presets. Presets may reduce shadow cost, shader detail, blade segments, effects, and distant instance density, but must retain continuous grass coverage and recognizable flower drifts.
+- Clamp renderer pixel ratio and expose quality presets. Presets may reduce shadow cost, shader detail, blade segments, effects, and distant instance density, but must retain continuous grass coverage and recognizable flower drifts. Touch/coarse-pointer and narrow mobile browser contexts default to the low-cost preset unless an explicit quality URL override is supplied.
 - The build and tests must report accidental frame-loop allocations or unbounded collections when practical.
 
 ## Accessibility and comfort targets

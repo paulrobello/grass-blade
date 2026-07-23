@@ -9,6 +9,10 @@ export interface QualitySettings {
   shadowMapSize: number;
 }
 
+export interface QualityContext {
+  prefersLowCost: boolean;
+}
+
 const DEFAULT_QUALITY: QualitySettings = {
   preset: "default",
   antialias: true,
@@ -27,8 +31,15 @@ const LOW_QUALITY: QualitySettings = {
   shadowMapSize: 0,
 };
 
-export function resolveQualitySettings(rawPreset: string | null): QualitySettings {
+export function resolveQualitySettings(
+  rawPreset: string | null,
+  context: QualityContext = { prefersLowCost: false },
+): QualitySettings {
   if (rawPreset === "low") {
+    return LOW_QUALITY;
+  }
+
+  if (rawPreset === null && context.prefersLowCost) {
     return LOW_QUALITY;
   }
 

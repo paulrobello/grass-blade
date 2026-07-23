@@ -103,7 +103,7 @@ The browser-facing automation contract lets the game be observed and driven with
 - `window.__grassBladeReady` becomes `true` when the scene is controllable.
 - `window.render_game_to_text()` returns a concise JSON snapshot of visible game state.
 - `window.advanceTime(milliseconds)` switches automation to manual time, advances exact 60 Hz ticks, and renders.
-- `?quality=low` selects the low preset, disables antialiasing and shadow rendering, caps renderer pixel ratio at 1.0, and renders eight grass blades per visual tuft. The default preset keeps antialiasing and 1024px shadows, caps pixel ratio at 1.5, and renders fourteen grass blades per tuft.
+- `?quality=low` selects the low preset, disables antialiasing and shadow rendering, caps renderer pixel ratio at 1.0, and renders eight grass blades per visual tuft. Touch/coarse-pointer and narrow mobile viewports use this low-cost preset by default unless the URL explicitly supplies `?quality=default`. The default desktop preset keeps antialiasing and 1024px shadows, caps pixel ratio at 1.5, and renders fourteen grass blades per tuft.
 - `?contrast=high` forces high-contrast interface styling; `?contrast=standard` forces the standard interface during contrast-regression testing.
 - `?motion=reduced` forces reduced-motion presentation; `?motion=standard` forces standard presentation during motion-regression testing.
 - `?muted=1`, `?masterVolume=<0-100>`, `?musicVolume=<0-100>`, and `?effectsVolume=<0-100>` set initial audio state for deterministic audio-control checks.

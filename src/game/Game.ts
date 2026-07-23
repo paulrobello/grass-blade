@@ -181,7 +181,9 @@ export class Game {
     this.appRoot = requireAppRoot(canvas);
     this.state = createInitialState(seed, contractId);
     const searchParams = new URLSearchParams(window.location.search);
-    this.quality = resolveQualitySettings(searchParams.get("quality"));
+    this.quality = resolveQualitySettings(searchParams.get("quality"), {
+      prefersLowCost: prefersLowCostRendering(),
+    });
     this.accessibilitySettings = resolveAccessibilitySettings({
       contrastQuery: searchParams.get("contrast"),
       forcedColorsActive: window.matchMedia("(forced-colors: active)").matches,
@@ -1366,6 +1368,13 @@ export class Game {
       isNewBest: update.isNewBest,
     };
   }
+}
+
+function prefersLowCostRendering(): boolean {
+  const coarsePointer = window.matchMedia("(pointer: coarse)").matches;
+  const touchCapable = navigator.maxTouchPoints > 0;
+  const narrowViewport = Math.min(window.innerWidth, window.innerHeight) <= 640;
+  return coarsePointer || touchCapable || narrowViewport;
 }
 
 function requireAppRoot(canvas: HTMLCanvasElement): HTMLElement {

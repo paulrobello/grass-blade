@@ -22,6 +22,8 @@ Active milestone: Phase 5 — expansion after first-playable evidence, with the 
 - Retuned Field Sprint from `120 Grass / 120 Flowers` to `175 Grass / 230 Flowers` so the 45-second soft-target sprint uses most available lane grass and a larger flower sweep while staying within the no-durable route. Focused balance now reports `43.23s / 45s` across ten validation seeds, up from `29.08s / 45s`.
 - Verification after the Field Sprint retune passed `bun test tests/state.test.ts`, focused Field Sprint balance, all-contract balance, `make mobile-check`, and `make checkall`. The inspected browser artifact is `output/playwright/field-sprint-retune-smoke/shot-0.png`, showing the updated `175/230` Field Sprint HUD, sprint-lane route, countdown, and no canvas aspect mismatch.
 - Retried native GitHub Pages HTTPS enforcement through the current REST `PUT /repos/paulrobello/grass-blade/pages` endpoint with a typed boolean `https_enforced=true`. GitHub still rejects the update with `The certificate does not exist yet`, so the repo keeps using valid Cloudflare-proxied HTTPS while native Pages enforcement remains pending.
+- Added automatic low-cost quality selection for touch/coarse-pointer or narrow mobile viewports when no explicit `quality` query is supplied. Desktop default quality and explicit `?quality=default` remain unchanged; mobile checks now assert `qualityPreset: "low"` from `render_game_to_text()`.
+- Focused verification for the mobile quality default passed `bun test tests/quality.test.ts`, `make mobile-check`, and the required desktop Playwright smoke at `output/playwright/mobile-quality-default-desktop-smoke/shot-0.png`; the desktop state reports `qualityPreset: "default"` with `canvasAspectMismatchRatio: 1`.
 
 ## Completed foundation intent
 
