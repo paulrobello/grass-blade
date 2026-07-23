@@ -449,6 +449,18 @@ Authored contracts are selected by deterministic contract ID and seed. The defau
 - Deterministic balance requires all dense weeds, six shrubs, all five saplings, and two mature trees while preserving a moderate execution buffer inside the timer.
 - If the timer reaches zero before every quota is complete, the contract ends with the same `timed-out` result semantics as Timed Harvest.
 
+### Lagoon Braid
+
+- Contract ID: `lagoon-braid`
+- Time limit: 70 seconds.
+- Collect 240 Grass.
+- Collect 300 Flowers.
+- Collect 24 Fiber.
+- No Wood quota; this route keeps the focus on dense flower banks and Fiber hedges without forcing timber cuts.
+- Uses two braided lagoon-bank routes with diagonal connectors, alternating flower pockets, and internal no-growth pools so the player traces a weaving route instead of clearing a square field.
+- Deterministic balance requires all dense weeds and six shrubs while preserving a modest execution buffer inside the timer.
+- If the timer reaches zero before every quota is complete, the contract ends with the same `timed-out` result semantics as Timed Harvest.
+
 ### Clear Every Patch
 
 - Contract ID: `clear-every-patch`
