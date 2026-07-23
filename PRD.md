@@ -302,6 +302,18 @@ Authored contracts are selected by deterministic contract ID and seed. The defau
 - Deterministic balance requires all dense weeds, six shrubs, all five saplings, and two mature trees while preserving a small execution buffer inside the timer.
 - If the timer reaches zero before every quota is complete, the contract ends with the same `timed-out` result semantics as Timed Harvest.
 
+### Switchback Orchard
+
+- Contract ID: `switchback-orchard`
+- Time limit: 90 seconds.
+- Collect 270 Grass.
+- Collect 300 Flowers.
+- Collect 28 Fiber.
+- Collect 28 Wood.
+- Uses a zig-zag orchard route that doubles back through broad flower lanes, Fiber shrubs, saplings, and repeated mature-tree cuts.
+- Deterministic balance requires all dense weeds, all eight shrubs, all five saplings, and three mature trees while preserving a small execution buffer inside the timer.
+- If the timer reaches zero before every quota is complete, the contract ends with the same `timed-out` result semantics as Timed Harvest.
+
 ### Clear Every Patch
 
 - Contract ID: `clear-every-patch`

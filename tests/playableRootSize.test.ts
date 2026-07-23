@@ -157,7 +157,8 @@ describe("contract navigation URLs", () => {
     expect(nextAuthoredContractId("brook-bend")).toBe("harvest-spiral");
     expect(nextAuthoredContractId("harvest-spiral")).toBe("crescent-grove");
     expect(nextAuthoredContractId("crescent-grove")).toBe("forked-thicket");
-    expect(nextAuthoredContractId("forked-thicket")).toBe("clear-every-patch");
+    expect(nextAuthoredContractId("forked-thicket")).toBe("switchback-orchard");
+    expect(nextAuthoredContractId("switchback-orchard")).toBe("clear-every-patch");
     expect(nextAuthoredContractId("clear-every-patch")).toBe("meadow-delivery");
     expect(nextAuthoredContractId("unknown-contract")).toBe("meadow-delivery");
     expect(nextAuthoredContractTitle("meadow-delivery")).toBe("Flower Sweep");
@@ -174,7 +175,8 @@ describe("contract navigation URLs", () => {
     expect(nextAuthoredContractTitle("brook-bend")).toBe("Harvest Spiral");
     expect(nextAuthoredContractTitle("harvest-spiral")).toBe("Crescent Grove");
     expect(nextAuthoredContractTitle("crescent-grove")).toBe("Forked Thicket");
-    expect(nextAuthoredContractTitle("forked-thicket")).toBe("Clear Every Patch");
+    expect(nextAuthoredContractTitle("forked-thicket")).toBe("Switchback Orchard");
+    expect(nextAuthoredContractTitle("switchback-orchard")).toBe("Clear Every Patch");
     expect(nextAuthoredContractTitle("clear-every-patch")).toBe("Meadow Delivery");
     expect(nextAuthoredContractTitle("unknown-contract")).toBe("Meadow Delivery");
   });
@@ -284,7 +286,14 @@ describe("contract navigation URLs", () => {
         nextAuthoredContractId("forked-thicket"),
         "?seed=2126699815&debug=1&contract=forked-thicket",
       ),
-    ).toBe("?seed=486168288&debug=1&contract=clear-every-patch");
+    ).toBe("?seed=486168288&debug=1&contract=switchback-orchard");
+    expect(
+      contractNavigationSearch(
+        3140604057,
+        nextAuthoredContractId("switchback-orchard"),
+        "?seed=486168288&debug=1&contract=switchback-orchard",
+      ),
+    ).toBe("?seed=3140604057&debug=1&contract=clear-every-patch");
     expect(
       contractNavigationSearch(
         774499206,
@@ -359,6 +368,7 @@ describe("contract chooser filters", () => {
     expect(primaryContractFilterId(contractById("orchard-loop"))).toBe("wood");
     expect(primaryContractFilterId(contractById("crescent-grove"))).toBe("wood");
     expect(primaryContractFilterId(contractById("forked-thicket"))).toBe("wood");
+    expect(primaryContractFilterId(contractById("switchback-orchard"))).toBe("wood");
     expect(primaryContractFilterId(contractById("timed-harvest"))).toBe("timed");
     expect(primaryContractFilterId(contractById("brook-bend"))).toBe("timed");
     expect(primaryContractFilterId(contractById("field-sprint"))).toBe("soft");
@@ -371,6 +381,7 @@ describe("contract chooser filters", () => {
     const fieldSprint = contractById("field-sprint");
     const crescentGrove = contractById("crescent-grove");
     const forkedThicket = contractById("forked-thicket");
+    const switchbackOrchard = contractById("switchback-orchard");
     const clearEveryPatch = contractById("clear-every-patch");
 
     expect(contractMatchesFilter(timberTrail, "all")).toBe(true);
@@ -383,6 +394,8 @@ describe("contract chooser filters", () => {
     expect(contractMatchesFilter(crescentGrove, "timed")).toBe(false);
     expect(contractMatchesFilter(forkedThicket, "wood")).toBe(true);
     expect(contractMatchesFilter(forkedThicket, "timed")).toBe(false);
+    expect(contractMatchesFilter(switchbackOrchard, "wood")).toBe(true);
+    expect(contractMatchesFilter(switchbackOrchard, "timed")).toBe(false);
     expect(contractMatchesFilter(clearEveryPatch, "clear")).toBe(true);
   });
 });

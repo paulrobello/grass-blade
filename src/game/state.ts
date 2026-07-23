@@ -67,6 +67,7 @@ export interface ContractDefinition {
     | "harvest-spiral"
     | "crescent-grove"
     | "forked-thicket"
+    | "switchback-orchard"
     | "clear-every-patch";
   title: string;
   summary: string;
@@ -192,6 +193,13 @@ export const CONTRACT_DEFINITIONS = [
     summary: "An 85-second three-way branch route through tangled flowers, shrubs, and timber.",
     timeLimitSeconds: 85,
     objectives: { grass: 260, flowers: 280, fiber: 24, wood: 22 },
+  },
+  {
+    id: "switchback-orchard",
+    title: "Switchback Orchard",
+    summary: "A 90-second zig-zag orchard route through flowers, Fiber, and timber.",
+    timeLimitSeconds: 90,
+    objectives: { grass: 270, flowers: 300, fiber: 28, wood: 28 },
   },
   {
     id: "clear-every-patch",
