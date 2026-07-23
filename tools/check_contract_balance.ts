@@ -321,9 +321,37 @@ function selectContractTargets(state: GameState): TargetState[] {
   return [
     ...targetsForKind(state, "grass", state.objectives.grass.target),
     ...targetsForKind(state, "flower", state.objectives.flowers.target),
-    ...targetsForKind(state, "denseWeed", state.objectives.fiber.target),
+    ...targetsForFiberQuota(state, state.objectives.fiber.target),
     ...targetsForWoodQuota(state, state.objectives.wood.target),
   ];
+}
+
+function targetsForFiberQuota(state: GameState, fiberQuota: number): TargetState[] {
+  if (fiberQuota <= 0) {
+    return [];
+  }
+
+  const targets: TargetState[] = [];
+  let remainingFiber = fiberQuota;
+  for (const target of state.targets) {
+    if (target.kind !== "denseWeed" && target.kind !== "shrub") {
+      continue;
+    }
+    if (remainingFiber <= 0) {
+      break;
+    }
+
+    targets.push(target);
+    remainingFiber -= target.yield;
+  }
+
+  if (remainingFiber > 0) {
+    throw new Error(
+      `${state.contract.id} needs ${fiberQuota} Fiber but only found ${fiberQuota - remainingFiber}`,
+    );
+  }
+
+  return targets;
 }
 
 function targetsForWoodQuota(state: GameState, woodQuota: number): TargetState[] {

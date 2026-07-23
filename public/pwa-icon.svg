@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Grass Blade app icon">
+  <defs>
+    <linearGradient id="grass" x1="70" y1="24" x2="444" y2="488" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#e2ff73" />
+      <stop offset="0.45" stop-color="#67d649" />
+      <stop offset="1" stop-color="#168d3d" />
+    </linearGradient>
+    <linearGradient id="hub" x1="170" y1="130" x2="342" y2="382" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#8bf5ff" />
+      <stop offset="0.58" stop-color="#29b8df" />
+      <stop offset="1" stop-color="#1677a6" />
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="18" stdDeviation="12" flood-color="#134525" flood-opacity="0.35" />
+    </filter>
+  </defs>
+  <rect width="512" height="512" rx="116" fill="url(#grass)" />
+  <path d="M70 390c37-94 50-170 40-260 48 58 77 119 88 183 10-71 45-141 105-210-12 94 3 188 46 282 19-78 54-142 105-192-8 82 8 157 48 225-91 47-341 42-432-28Z" fill="#0b8f3f" opacity="0.55" />
+  <g filter="url(#shadow)">
+    <path d="M256 236c-19-87 29-155 122-190 10 101-29 165-109 209Z" fill="#f9fbff" />
+    <path d="M276 256c87-19 155 29 190 122-101 10-165-29-209-109Z" fill="#f9fbff" />
+    <path d="M256 276c19 87-29 155-122 190-10-101 29-165 109-209Z" fill="#f9fbff" />
+    <path d="M236 256c-87 19-155-29-190-122 101-10 165 29 209 109Z" fill="#f9fbff" />
+    <circle cx="256" cy="256" r="94" fill="#f2fbff" />
+    <circle cx="256" cy="256" r="74" fill="url(#hub)" />
+    <circle cx="256" cy="256" r="43" fill="#dcfbff" />
+    <circle cx="256" cy="256" r="27" fill="#0099bb" />
+  </g>
+</svg>

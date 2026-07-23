@@ -170,6 +170,7 @@ export class Game {
   private manualTime = false;
   private started = false;
   private contractStarted = false;
+  private introSelectionScrolled = false;
   private pauseFocusPlaced = false;
   private resultsFocusPlaced = false;
   private recordedBestResultRevision: number | null = null;
@@ -485,9 +486,13 @@ export class Game {
   private updateIntro(): void {
     this.intro.overlay.hidden = this.contractStarted;
     setText(this.intro.contractEyebrow, this.state.contract.title);
+    let selectedButton: HTMLButtonElement | null = null;
     for (const button of this.intro.contractButtons) {
       const contractId = button.dataset.contractId;
       const selected = contractId === this.state.contract.id;
+      if (selected) {
+        selectedButton = button;
+      }
       const bestTime =
         contractId === undefined ? null : contractBestTimeForId(this.bestTimes, contractId);
       const bestTimeLabel = button.querySelector<HTMLElement>("[data-contract-best]");
@@ -496,6 +501,11 @@ export class Game {
       if (bestTimeLabel !== null) {
         setText(bestTimeLabel, `Best: ${formatOptionalBestTime(bestTime)}`);
       }
+    }
+
+    if (!this.introSelectionScrolled && selectedButton !== null && !this.contractStarted) {
+      selectedButton.scrollIntoView({ block: "nearest", inline: "nearest" });
+      this.introSelectionScrolled = true;
     }
   }
 

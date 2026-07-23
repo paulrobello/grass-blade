@@ -5,6 +5,14 @@ Original prompt: "i want create a threejs based game where you are a spinning bl
 Last updated: 2026-07-23
 Active milestone: Phase 5 — expansion after first-playable evidence, with the custom-domain site served over valid HTTPS through Cloudflare and native GitHub Pages HTTPS enforcement still optional/pending
 
+## 2026-07-23 continuation notes
+
+- Added the `hedge-maze` authored contract to the in-progress Phase 5 batch: 80 seconds, `70 Grass / 30 Flowers / 18 Fiber / 0 Wood`, shrub-maze arena shape, and deterministic Fiber quota selection that consumes all twelve dense weeds plus three shrubs.
+- Raised `timed-harvest` from `165 Grass / 200 Flowers / 12 Fiber` to `170 Grass / 300 Flowers / 18 Fiber`. Deterministic balance evidence at seed `12345` now completes in `56.70s` of the 60-second limit with `485` cut targets and level 8, leaving only `3.30s` in the isolated quota-cut model.
+- Added mobile PWA install support for the GitHub Pages site: fullscreen manifest, Apple/fullscreen meta tags, app icons, and a production-only service worker. Dev builds intentionally do not register the service worker to avoid stale local caches during iteration.
+- Fixed the mobile contract-card overlap by anchoring timed badges inside each card footer with reserved padding. The mobile checker now asserts that contract-card rectangles do not intersect and includes a 592 by 981 Timed Harvest intro case matching the reported phone screenshot shape.
+- Focused verification passed: `bun test tests/state.test.ts tests/playableRootSize.test.ts tests/pwa.test.ts`, `bun run balance:timed -- --seed 12345 --out output/balance/timed-harvest-tuned`, `bun run balance:contracts -- --contract timed-harvest`, `bun run balance:contracts -- --contract hedge-maze`, and `make mobile-check`.
+
 ## Completed foundation intent
 
 - [x] Defined the top-down cozy-arcade product contract in `PRD.md`.

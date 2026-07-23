@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Grass Blade maskable app icon">
+  <rect width="512" height="512" fill="#67c84a" />
+  <circle cx="256" cy="256" r="228" fill="#9bea54" />
+  <path d="M68 427c44-116 62-216 55-324 54 74 88 146 102 217 22-92 74-176 156-253-27 120-15 235 38 344-117 58-269 65-351 16Z" fill="#0d8f3a" opacity="0.55" />
+  <g>
+    <path d="M256 236c-19-87 29-155 122-190 10 101-29 165-109 209Z" fill="#f9fbff" />
+    <path d="M276 256c87-19 155 29 190 122-101 10-165-29-209-109Z" fill="#f9fbff" />
+    <path d="M256 276c19 87-29 155-122 190-10-101 29-165 109-209Z" fill="#f9fbff" />
+    <path d="M236 256c-87 19-155-29-190-122 101-10 165 29 209 109Z" fill="#f9fbff" />
+    <circle cx="256" cy="256" r="96" fill="#e5f8ff" />
+    <circle cx="256" cy="256" r="74" fill="#2bc4e5" />
+    <circle cx="256" cy="256" r="43" fill="#dbfbff" />
+    <circle cx="256" cy="256" r="27" fill="#0099bb" />
+  </g>
+</svg>

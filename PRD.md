@@ -186,15 +186,27 @@ Authored contracts are selected by deterministic contract ID and seed. The defau
 - Rocks remain blockers only; they never award resources or XP, and route gaps must correspond to visible rock obstacles rather than invisible collision.
 - If the timer reaches zero before every quota is complete, the contract ends with the same `timed-out` result semantics as Timed Harvest.
 
+### Hedge Maze
+
+- Contract ID: `hedge-maze`
+- Time limit: 80 seconds.
+- Collect 70 Grass.
+- Collect 30 Flowers.
+- Collect 18 Fiber.
+- No Wood quota.
+- Uses a shrub-maze route that turns durable hedge cutting into the Fiber objective.
+- The deterministic quota path requires all twelve dense weeds plus three shrubs, so progress bars and durable-target blocking are part of the intended route.
+- If the timer reaches zero before every quota is complete, the contract ends with the same `timed-out` result semantics as Timed Harvest.
+
 ### Timed Harvest
 
 - Contract ID: `timed-harvest`
 - Time limit: 60 seconds.
-- Collect 165 Grass.
-- Collect 200 Flowers.
-- Collect 12 Fiber.
+- Collect 170 Grass.
+- Collect 300 Flowers.
+- Collect 18 Fiber.
 - No Wood quota; the timed contract intentionally avoids level-gating on saplings.
-- Uses a loop-shaped endurance route challenge with sustained grass, flower, and fiber quotas plus a countdown HUD.
+- Uses a loop-shaped endurance route challenge with nearly full grass coverage, most flower pockets, dense weeds, and shrub-level Fiber work plus a countdown HUD.
 - If the timer reaches zero before every quota is complete, the contract ends with a `timed-out` result. The result card shows `Time Up`, final partial inventory, targets cut, highest level, Restart, and Next Contract.
 
 ### Field Sprint

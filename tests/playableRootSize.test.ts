@@ -144,7 +144,8 @@ describe("contract navigation URLs", () => {
     expect(nextAuthoredContractId("flower-sweep")).toBe("woodland-cleanup");
     expect(nextAuthoredContractId("woodland-cleanup")).toBe("timber-trail");
     expect(nextAuthoredContractId("timber-trail")).toBe("rock-garden");
-    expect(nextAuthoredContractId("rock-garden")).toBe("timed-harvest");
+    expect(nextAuthoredContractId("rock-garden")).toBe("hedge-maze");
+    expect(nextAuthoredContractId("hedge-maze")).toBe("timed-harvest");
     expect(nextAuthoredContractId("timed-harvest")).toBe("field-sprint");
     expect(nextAuthoredContractId("field-sprint")).toBe("weed-rush");
     expect(nextAuthoredContractId("weed-rush")).toBe("clear-every-patch");
@@ -154,7 +155,8 @@ describe("contract navigation URLs", () => {
     expect(nextAuthoredContractTitle("flower-sweep")).toBe("Woodland Cleanup");
     expect(nextAuthoredContractTitle("woodland-cleanup")).toBe("Timber Trail");
     expect(nextAuthoredContractTitle("timber-trail")).toBe("Rock Garden");
-    expect(nextAuthoredContractTitle("rock-garden")).toBe("Timed Harvest");
+    expect(nextAuthoredContractTitle("rock-garden")).toBe("Hedge Maze");
+    expect(nextAuthoredContractTitle("hedge-maze")).toBe("Timed Harvest");
     expect(nextAuthoredContractTitle("timed-harvest")).toBe("Field Sprint");
     expect(nextAuthoredContractTitle("field-sprint")).toBe("Weed Rush");
     expect(nextAuthoredContractTitle("weed-rush")).toBe("Clear Every Patch");
@@ -197,7 +199,14 @@ describe("contract navigation URLs", () => {
         nextAuthoredContractId("rock-garden"),
         "?seed=2027808453&debug=1&contract=rock-garden",
       ),
-    ).toBe("?seed=3872777624&debug=1&contract=timed-harvest");
+    ).toBe("?seed=3872777624&debug=1&contract=hedge-maze");
+    expect(
+      contractNavigationSearch(
+        1401181199,
+        nextAuthoredContractId("hedge-maze"),
+        "?seed=3872777624&debug=1&contract=hedge-maze",
+      ),
+    ).toBe("?seed=1401181199&debug=1&contract=timed-harvest");
     expect(
       contractNavigationSearch(
         3872777624,

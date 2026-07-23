@@ -1023,6 +1023,7 @@ body {
     min-height: 0;
     padding: 0.1rem 0.15rem 0.35rem;
     gap: 0.42rem;
+    grid-auto-rows: minmax(5.6rem, auto);
     overflow-y: auto;
     overscroll-behavior: contain;
     scrollbar-gutter: stable;
@@ -1030,9 +1031,11 @@ body {
   }
 
   .intro-card__contract {
+    position: relative;
     min-height: 0;
     gap: 0.14rem;
-    padding: 0.48rem;
+    overflow: hidden;
+    padding: 0.48rem 0.48rem 1.72rem;
   }
 
   .intro-card__contract-name {
@@ -1051,6 +1054,14 @@ body {
 
   .intro-card__contract-best {
     font-size: 0.52rem;
+  }
+
+  .intro-card__contract-time {
+    position: absolute;
+    right: 0.48rem;
+    bottom: 0.36rem;
+    left: 0.48rem;
+    text-align: center;
   }
 
   .intro-card__controls {
@@ -1675,7 +1686,7 @@ body {
 
   .intro-card__contract {
     min-height: 0;
-    padding: 0.32rem 0.36rem;
+    padding: 0.32rem 0.36rem 1.28rem;
   }
 
   .intro-card__contract-title {
@@ -1703,7 +1714,10 @@ body {
   }
 
   .intro-card__contract-time {
+    right: 0.36rem;
     padding: 0.1rem 0.32rem;
+    bottom: 0.26rem;
+    left: 0.36rem;
     font-size: 0.46rem;
   }
 

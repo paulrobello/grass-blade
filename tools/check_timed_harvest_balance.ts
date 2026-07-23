@@ -158,9 +158,37 @@ function selectQuotaTargets(state: GameState): TargetState[] {
   return [
     ...targetsForKind(state, "grass", state.objectives.grass.target),
     ...targetsForKind(state, "flower", state.objectives.flowers.target),
-    ...targetsForKind(state, "denseWeed", state.objectives.fiber.target),
+    ...targetsForFiberQuota(state, state.objectives.fiber.target),
     ...targetsForKind(state, "sapling", Math.ceil(state.objectives.wood.target / 2)),
   ];
+}
+
+function targetsForFiberQuota(state: GameState, fiberQuota: number): TargetState[] {
+  if (fiberQuota <= 0) {
+    return [];
+  }
+
+  const targets: TargetState[] = [];
+  let remainingFiber = fiberQuota;
+  for (const target of state.targets) {
+    if (target.kind !== "denseWeed" && target.kind !== "shrub") {
+      continue;
+    }
+    if (remainingFiber <= 0) {
+      break;
+    }
+
+    targets.push(target);
+    remainingFiber -= target.yield;
+  }
+
+  if (remainingFiber > 0) {
+    throw new Error(
+      `Timed Harvest needs ${fiberQuota} Fiber but only found ${fiberQuota - remainingFiber}`,
+    );
+  }
+
+  return targets;
 }
 
 function targetsForKind(state: GameState, kind: TargetKind, count: number): TargetState[] {

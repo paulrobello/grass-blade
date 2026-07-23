@@ -8,6 +8,7 @@ const DEFAULT_URL = "http://127.0.0.1:4209/?seed=12345&debug=1";
 const DEFAULT_OUTPUT_DIR = "output/playwright/mobile-check";
 
 const INTRO_VIEWPORTS = [
+  { name: "phone-592x981-timed-harvest", width: 592, height: 981, contract: "timed-harvest" },
   { name: "phone-390x664", width: 390, height: 664 },
   { name: "phone-375x548", width: 375, height: 548 },
   { name: "phone-320x568", width: 320, height: 568 },
@@ -49,9 +50,10 @@ async function main() {
 async function checkIntroChooser(browser, options, viewport) {
   const page = await newMobilePage(browser, viewport);
   const errors = collectBrowserErrors(page);
+  const contractId = viewport.contract ?? "field-sprint";
 
   try {
-    await openGame(page, scenarioUrl(options.url, { contract: "field-sprint" }));
+    await openGame(page, scenarioUrl(options.url, { contract: contractId }));
     const metrics = await measureIntroChooser(page);
     assert(metrics.cardFitsViewport, `${viewport.name} intro card overflows viewport`);
     assert(metrics.startButtonVisible, `${viewport.name} Start button is not fully visible`);
@@ -63,6 +65,7 @@ async function checkIntroChooser(browser, options, viewport) {
       metrics.selectedContractVisible,
       `${viewport.name} selected contract card is clipped outside list`,
     );
+    assert(!metrics.contractCardsOverlap, `${viewport.name} contract cards overlap`);
 
     const introPath = path.join(options.outputDir, `${viewport.name}-intro.png`);
     await page.screenshot({ path: introPath, fullPage: false });
@@ -73,7 +76,7 @@ async function checkIntroChooser(browser, options, viewport) {
       (state) => state.mode === "active" && state.flow.contractStarted === true,
     );
     const state = await renderState(page);
-    assertEqual(state.contract.id, "field-sprint", `${viewport.name} starts selected contract`);
+    assertEqual(state.contract.id, contractId, `${viewport.name} starts selected contract`);
     assertNoBrowserErrors(errors, viewport.name);
 
     return {
@@ -264,6 +267,9 @@ async function measureIntroChooser(page) {
     const card = requiredElement(".intro-card");
     const list = requiredElement(".intro-card__contract-list");
     const selected = requiredElement(".intro-card__contract--selected");
+    const contractRects = Array.from(document.querySelectorAll(".intro-card__contract")).map(
+      (element) => toRect(element.getBoundingClientRect()),
+    );
     const viewportHeight = window.visualViewport?.height ?? window.innerHeight;
     const viewportWidth = window.visualViewport?.width ?? window.innerWidth;
     const buttonRect = toRect(button.getBoundingClientRect());
@@ -281,6 +287,7 @@ async function measureIntroChooser(page) {
       contractListScrollable: list.scrollHeight > list.clientHeight,
       contractListClientHeight: list.clientHeight,
       contractListScrollHeight: list.scrollHeight,
+      contractCardsOverlap: hasIntersectingRects(contractRects),
       cardFitsViewport:
         cardRect.left >= -0.5 &&
         cardRect.right <= viewportWidth + 0.5 &&
@@ -298,6 +305,27 @@ async function measureIntroChooser(page) {
         selectedRect.top >= listRect.top - 0.5 &&
         selectedRect.bottom <= listRect.bottom + 0.5,
     };
+
+    function hasIntersectingRects(rects) {
+      for (let outer = 0; outer < rects.length; outer += 1) {
+        for (let inner = outer + 1; inner < rects.length; inner += 1) {
+          const first = rects[outer];
+          const second = rects[inner];
+          if (first === undefined || second === undefined) {
+            continue;
+          }
+          if (
+            first.left < second.right - 0.5 &&
+            first.right > second.left + 0.5 &&
+            first.top < second.bottom - 0.5 &&
+            first.bottom > second.top + 0.5
+          ) {
+            return true;
+          }
+        }
+      }
+      return false;
+    }
   });
 }
 

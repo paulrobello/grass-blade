@@ -31,6 +31,7 @@ export type ArenaLayoutId =
   | "woodland-cleanup"
   | "timber-trail"
   | "rock-garden"
+  | "hedge-maze"
   | "timed-harvest"
   | "field-sprint"
   | "weed-rush"
@@ -41,6 +42,7 @@ export type ArenaShape =
   | "woodland-clearings"
   | "timber-groves"
   | "rock-slalom"
+  | "hedge-maze"
   | "timed-loop"
   | "sprint-lanes"
   | "weed-switchbacks"
@@ -493,6 +495,7 @@ function resolveArenaLayoutId(arenaId: string): ArenaLayoutId {
     case "woodland-cleanup":
     case "timber-trail":
     case "rock-garden":
+    case "hedge-maze":
     case "timed-harvest":
     case "field-sprint":
     case "weed-rush":
@@ -513,6 +516,8 @@ function resolveArenaShape(arenaId: ArenaLayoutId): ArenaShape {
       return "timber-groves";
     case "rock-garden":
       return "rock-slalom";
+    case "hedge-maze":
+      return "hedge-maze";
     case "timed-harvest":
       return "timed-loop";
     case "field-sprint":
@@ -652,6 +657,31 @@ function createFlowerClusterCenters(
       ],
       random,
       0.62,
+    );
+  }
+
+  if (arenaId === "hedge-maze") {
+    return jitterAnchors(
+      [
+        [-7, -7],
+        [-1, -8],
+        [6, -7],
+        [10, -2],
+        [7, 4],
+        [1, 7],
+        [-6, 7],
+        [-11, 3],
+        [-9, -3],
+        [-3, -1],
+        [3, 1],
+        [9, 7],
+        [2, 12],
+        [-4, 12],
+        [-12, 9],
+        [12, -7],
+      ],
+      random,
+      0.58,
     );
   }
 
@@ -862,6 +892,26 @@ export function isPointInArenaGrowth(arenaId: ArenaLayoutId, x: number, z: numbe
         !isPointInCircle(x, z, -14.2, 12.8, 1.9) &&
         !isPointInCircle(x, z, 14.5, -13.3, 1.85) &&
         !isPointInCircle(x, z, 4.1, -12.7, 1.7)
+      );
+    case "hedge-maze":
+      return (
+        (isPointInCapsule(x, z, -12, -8, 12, -7, 2.5) ||
+          isPointInCapsule(x, z, 12, -7, 9, 7, 2.45) ||
+          isPointInCapsule(x, z, 9, 7, -8, 8, 2.45) ||
+          isPointInCapsule(x, z, -8, 8, -12, -8, 2.45) ||
+          isPointInCapsule(x, z, -6, 0, 7, 0, 2.05) ||
+          isPointInCapsule(x, z, -2, -11, 2, 12, 2.0) ||
+          isPointInCircle(x, z, -12, -8, 3.7) ||
+          isPointInCircle(x, z, 12, -7, 3.7) ||
+          isPointInCircle(x, z, 9, 7, 3.7) ||
+          isPointInCircle(x, z, -8, 8, 3.7) ||
+          isPointInCircle(x, z, 0, 0, 4.2)) &&
+        !isPointInCircle(x, z, 6.2, -6.2, 1.75) &&
+        !isPointInCircle(x, z, -6.4, -6.2, 1.75) &&
+        !isPointInCircle(x, z, -6.1, 6.1, 1.75) &&
+        !isPointInCircle(x, z, 6.5, 6, 1.75) &&
+        !isPointInCircle(x, z, 11.2, -2.4, 1.65) &&
+        !isPointInCircle(x, z, -11.4, 2.7, 1.65)
       );
     case "timed-harvest":
       return (

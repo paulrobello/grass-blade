@@ -57,6 +57,7 @@ export interface ContractDefinition {
     | "woodland-cleanup"
     | "timber-trail"
     | "rock-garden"
+    | "hedge-maze"
     | "timed-harvest"
     | "field-sprint"
     | "weed-rush"
@@ -117,11 +118,18 @@ export const CONTRACT_DEFINITIONS = [
     objectives: { grass: 100, flowers: 80, fiber: 8, wood: 4 },
   },
   {
+    id: "hedge-maze",
+    title: "Hedge Maze",
+    summary: "An 80-second shrub maze that turns durable hedges into the Fiber objective.",
+    timeLimitSeconds: 80,
+    objectives: { grass: 70, flowers: 30, fiber: 18, wood: 0 },
+  },
+  {
     id: "timed-harvest",
     title: "Timed Harvest",
     summary: "A 60-second grass, flower, and fiber endurance route with no room to wander.",
     timeLimitSeconds: 60,
-    objectives: { grass: 165, flowers: 200, fiber: 12, wood: 0 },
+    objectives: { grass: 170, flowers: 300, fiber: 18, wood: 0 },
   },
   {
     id: "field-sprint",
