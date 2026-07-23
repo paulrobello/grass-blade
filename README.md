@@ -64,7 +64,7 @@ bun run typecheck
 | `make accessibility-check`      | Run the browser Phase 4 accessibility verifier; requires `make dev` first     |
 | `make playthrough-check`        | Run deterministic browser playthrough smoke; requires `make dev` first        |
 | `make playthrough-check-headed` | Run the playthrough in a visible browser with fullscreen coverage             |
-| `make contract-balance-capture` | Capture deterministic cut-budget evidence for every authored contract         |
+| `make contract-balance-capture` | Capture multi-seed cut-budget evidence for every authored contract            |
 | `make perf-capture`             | Capture default headless performance screenshots and JSON summaries           |
 | `make perf-capture-headed`      | Capture the same scenarios in a visible browser for hardware-adapter evidence |
 | `make checkall`                 | Run formatting verification, lint, typecheck, tests, and build                |

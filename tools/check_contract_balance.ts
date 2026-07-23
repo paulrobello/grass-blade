@@ -19,11 +19,23 @@ import type { TargetKind } from "../src/game/world";
 const DEFAULT_OUTPUT_DIR = "output/balance/contracts";
 const CUT_FRAME_LIMIT = 900;
 const TIMED_EPSILON_SECONDS = FIXED_TIME_STEP_SECONDS / 2;
+const DEFAULT_VALIDATION_SEEDS = [
+  MEADOW_SEED,
+  1,
+  42,
+  707,
+  12345,
+  98765,
+  314159,
+  2654448114,
+  3456789012,
+  4000000000,
+] as const;
 
 type Resource = keyof InventoryState;
 
 interface BalanceOptions {
-  seed: number;
+  seeds: number[];
   outputDir: string;
   contractId: ContractDefinition["id"] | "all";
 }
@@ -62,6 +74,25 @@ interface ContractBalanceReport {
   contracts: ContractBalanceSummary[];
 }
 
+interface ContractTimingAggregate {
+  contract: ContractDefinition["id"];
+  runs: number;
+  minElapsedSeconds: number;
+  averageElapsedSeconds: number;
+  maxElapsedSeconds: number;
+  minHighestLevel: number;
+  maxHighestLevel: number;
+  maxCutTargets: number;
+  statuses: Record<ContractBalanceSummary["status"], number>;
+}
+
+interface MultiSeedBalanceReport {
+  seeds: number[];
+  status: "pass" | "fail";
+  aggregate: ContractTimingAggregate[];
+  reports: ContractBalanceReport[];
+}
+
 const idleInput: MovementInput = {
   left: false,
   right: false,
@@ -73,19 +104,25 @@ async function main(): Promise<void> {
   const options = parseArgs(process.argv.slice(2));
   await fs.mkdir(options.outputDir, { recursive: true });
 
-  const report = runContractBalanceReport(options);
-  const summaryPath = path.join(options.outputDir, `seed-${options.seed}.json`);
+  const report = runMultiSeedBalanceReport(options);
+  const summaryPath =
+    options.seeds.length === 1
+      ? path.join(options.outputDir, `seed-${options.seeds[0]}.json`)
+      : path.join(options.outputDir, "summary.json");
   await fs.writeFile(summaryPath, `${JSON.stringify(report, null, 2)}\n`);
+  if (options.seeds.length > 1) {
+    await writePerSeedReports(options.outputDir, report.reports);
+  }
 
-  const oneLine = report.contracts
+  const oneLine = report.aggregate
     .map(
       (contract) =>
-        `${contract.contract}:${contract.status}@${contract.elapsedSeconds.toFixed(2)}s`,
+        `${contract.contract}:${contract.minElapsedSeconds.toFixed(2)}-${contract.maxElapsedSeconds.toFixed(2)}s avg=${contract.averageElapsedSeconds.toFixed(2)}s`,
     )
     .join(" ");
 
   console.log(
-    `contract balance capture: ${report.status} seed=${options.seed} wrote ${summaryPath}`,
+    `contract balance capture: ${report.status} seeds=${options.seeds.length} wrote ${summaryPath}`,
   );
   console.log(oneLine);
 
@@ -94,18 +131,91 @@ async function main(): Promise<void> {
   }
 }
 
-function runContractBalanceReport(options: BalanceOptions): ContractBalanceReport {
+function runMultiSeedBalanceReport(options: BalanceOptions): MultiSeedBalanceReport {
+  const reports = options.seeds.map((seed) => runContractBalanceReport(seed, options.contractId));
+  const failed = reports.some((report) => report.status !== "pass");
+
+  return {
+    seeds: options.seeds,
+    status: failed ? "fail" : "pass",
+    aggregate: aggregateContractTiming(reports),
+    reports,
+  };
+}
+
+function runContractBalanceReport(
+  seed: number,
+  contractId: BalanceOptions["contractId"],
+): ContractBalanceReport {
   const contracts =
-    options.contractId === "all"
+    contractId === "all"
       ? CONTRACT_DEFINITIONS
-      : CONTRACT_DEFINITIONS.filter((contract) => contract.id === options.contractId);
-  const summaries = contracts.map((contract) => runContractBalanceCapture(options.seed, contract));
+      : CONTRACT_DEFINITIONS.filter((contract) => contract.id === contractId);
+  const summaries = contracts.map((contract) => runContractBalanceCapture(seed, contract));
   const failed = summaries.some((summary) => summary.status !== "complete");
 
   return {
-    seed: options.seed,
+    seed,
     status: failed ? "fail" : "pass",
     contracts: summaries,
+  };
+}
+
+async function writePerSeedReports(
+  outputDir: string,
+  reports: readonly ContractBalanceReport[],
+): Promise<void> {
+  await Promise.all(
+    reports.map((report) =>
+      fs.writeFile(
+        path.join(outputDir, `seed-${report.seed}.json`),
+        `${JSON.stringify(report, null, 2)}\n`,
+      ),
+    ),
+  );
+}
+
+function aggregateContractTiming(
+  reports: readonly ContractBalanceReport[],
+): ContractTimingAggregate[] {
+  const contractIds = new Set<ContractDefinition["id"]>();
+  for (const report of reports) {
+    for (const contract of report.contracts) {
+      contractIds.add(contract.contract);
+    }
+  }
+
+  return [...contractIds].map((contractId) => {
+    const runs = reports
+      .flatMap((report) => report.contracts)
+      .filter((contract) => contract.contract === contractId);
+    const elapsed = runs.map((contract) => contract.elapsedSeconds);
+    const highestLevels = runs.map((contract) => contract.highestLevel);
+    const statuses = createEmptyStatusCounts();
+    for (const run of runs) {
+      statuses[run.status] += 1;
+    }
+
+    return {
+      contract: contractId,
+      runs: runs.length,
+      minElapsedSeconds: round(Math.min(...elapsed)),
+      averageElapsedSeconds: round(elapsed.reduce((sum, value) => sum + value, 0) / elapsed.length),
+      maxElapsedSeconds: round(Math.max(...elapsed)),
+      minHighestLevel: Math.min(...highestLevels),
+      maxHighestLevel: Math.max(...highestLevels),
+      maxCutTargets: Math.max(...runs.map((contract) => contract.cutTargets)),
+      statuses,
+    };
+  });
+}
+
+function createEmptyStatusCounts(): Record<ContractBalanceSummary["status"], number> {
+  return {
+    complete: 0,
+    "timed-out": 0,
+    incomplete: 0,
+    "late-complete": 0,
   };
 }
 
@@ -341,7 +451,7 @@ function round(value: number): number {
 
 function parseArgs(args: string[]): BalanceOptions {
   const options: BalanceOptions = {
-    seed: MEADOW_SEED,
+    seeds: [...DEFAULT_VALIDATION_SEEDS],
     outputDir: DEFAULT_OUTPUT_DIR,
     contractId: "all",
   };
@@ -350,7 +460,10 @@ function parseArgs(args: string[]): BalanceOptions {
     const arg = args[index];
     const next = args[index + 1];
     if (arg === "--seed" && next !== undefined) {
-      options.seed = Number.parseInt(next, 10);
+      options.seeds = [parseSeed(next)];
+      index += 1;
+    } else if (arg === "--seeds" && next !== undefined) {
+      options.seeds = parseSeeds(next);
       index += 1;
     } else if (arg === "--out" && next !== undefined) {
       options.outputDir = next;
@@ -366,11 +479,31 @@ function parseArgs(args: string[]): BalanceOptions {
     }
   }
 
-  if (!Number.isInteger(options.seed) || options.seed < 0) {
-    throw new Error(`Invalid --seed value: ${options.seed}`);
+  return options;
+}
+
+function parseSeed(value: string): number {
+  const seed = Number.parseInt(value, 10);
+  if (!Number.isInteger(seed) || seed < 0 || seed > 0xffffffff) {
+    throw new Error(`Invalid seed value: ${value}`);
+  }
+  return seed;
+}
+
+function parseSeeds(value: string): number[] {
+  if (value === "default") {
+    return [...DEFAULT_VALIDATION_SEEDS];
   }
 
-  return options;
+  const seeds = value
+    .split(",")
+    .map((entry) => entry.trim())
+    .filter((entry) => entry.length > 0)
+    .map(parseSeed);
+  if (seeds.length === 0) {
+    throw new Error("At least one seed is required");
+  }
+  return seeds;
 }
 
 function parseContractId(value: string): BalanceOptions["contractId"] {
@@ -389,7 +522,8 @@ function printHelp(): void {
   console.log(`Usage: bun tools/check_contract_balance.ts [options]
 
 Options:
-  --seed <uint32>       Seed to run. Default: ${MEADOW_SEED}
+  --seed <uint32>       Run one seed instead of the default validation set.
+  --seeds <list>        Comma-separated uint32 seeds, or "default".
   --contract <id|all>   Contract to capture. Default: all
   --out <dir>           Output directory. Default: ${DEFAULT_OUTPUT_DIR}
   --help                Show this help.
@@ -397,7 +531,8 @@ Options:
 This is a deterministic balance evidence capture. It isolates each required
 target at full blade contact, cuts through normal fixed-step simulation, and
 writes quota size, target mix, completion status, elapsed cut-budget seconds,
-and cut-event timing for every authored contract.
+cut-event timing, and aggregate min/average/max timing for every authored
+contract across the selected seeds.
 `);
 }
 
