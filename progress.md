@@ -15,6 +15,7 @@ Active milestone: Phase 5 — expansion after first-playable evidence, with the 
 - Retuned Hedge Maze after first balance evidence showed the 80-second route only needed `24.07s` of isolated cut budget. It now requires `183 Grass / 300 Flowers / 28 Fiber / 0 Wood`, forcing the full shrub/dense-weed Fiber route and most of the maze's soft targets.
 - Focused Hedge Maze balance now reports `61.70s / 80s` across ten validation seeds. The mobile checker includes a `390 by 664` Hedge Maze chooser case so the longer quota copy is covered against card overlap and selected-card clipping.
 - Fixed the follow-up mobile chooser card stacking report by making timed contract badges participate in normal mobile card flow instead of absolutely positioning them over later rows. The mobile checker now asserts timed badges stay below each card's quota/best text, and the inspected `592 by 981` plus `390 by 664` screenshots show no timed-badge overlap.
+- Retuned Weed Rush from `40 Grass / 20 Flowers / 6 Fiber` to `150 Grass / 220 Flowers / 18 Fiber` so the 55-second switchback contract uses most of its route instead of ending after the first few pockets. Focused balance now reports `47.92s / 55s` across ten validation seeds, up from `13.12s / 55s`, while the all-contract capture still completes every authored contract.
 
 ## Completed foundation intent
 

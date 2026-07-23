@@ -143,7 +143,7 @@ export const CONTRACT_DEFINITIONS = [
     title: "Weed Rush",
     summary: "A 55-second switchback route that mixes soft cuts with dense Fiber weeds.",
     timeLimitSeconds: 55,
-    objectives: { grass: 40, flowers: 20, fiber: 6, wood: 0 },
+    objectives: { grass: 150, flowers: 220, fiber: 18, wood: 0 },
   },
   {
     id: "clear-every-patch",

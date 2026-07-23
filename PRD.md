@@ -223,9 +223,9 @@ Authored contracts are selected by deterministic contract ID and seed. The defau
 
 - Contract ID: `weed-rush`
 - Time limit: 55 seconds.
-- Collect 40 Grass.
-- Collect 20 Flowers.
-- Collect 6 Fiber.
+- Collect 150 Grass.
+- Collect 220 Flowers.
+- Collect 18 Fiber.
 - No Wood quota; this timed route emphasizes dense weeds without forcing sapling level-gating.
 - Uses a switchback route with dense Fiber weed clusters, flower pockets, and internal soft-growth gaps.
 - If the timer reaches zero before every quota is complete, the contract ends with the same `timed-out` result semantics as Timed Harvest.

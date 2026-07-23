@@ -499,23 +499,23 @@ describe("active game state", () => {
       timeLimitSeconds: 55,
       completionMode: "quota",
     });
-    expect(state.objectives.grass.target).toBe(40);
-    expect(state.objectives.flowers.target).toBe(20);
-    expect(state.objectives.fiber.target).toBe(6);
+    expect(state.objectives.grass.target).toBe(150);
+    expect(state.objectives.flowers.target).toBe(220);
+    expect(state.objectives.fiber.target).toBe(18);
     expect(state.objectives.wood.target).toBe(0);
 
     completeContractThroughQuotaCuts(state);
 
     expect(state.mode).toBe("complete");
     expect(state.elapsedSeconds).toBeLessThan(55);
-    expect(state.inventory).toEqual({ grass: 40, flowers: 20, fiber: 6, wood: 0 });
+    expect(state.inventory).toEqual({ grass: 150, flowers: 220, fiber: 18, wood: 0 });
     expect(state.result).toMatchObject({
       status: "complete",
       timeLimitSeconds: 55,
-      cutTargets: 66,
-      highestLevel: 4,
-      finalInventory: { grass: 40, flowers: 20, fiber: 6, wood: 0 },
-      completionRevision: 66,
+      cutTargets: 385,
+      highestLevel: 8,
+      finalInventory: { grass: 150, flowers: 220, fiber: 18, wood: 0 },
+      completionRevision: 385,
     });
   });
 
@@ -900,7 +900,9 @@ describe("active game state", () => {
     );
     expect(timed.grassCells.length).toBeGreaterThanOrEqual(timedState.objectives.grass.target);
     expect(sprint.grassCells.length).toBeGreaterThan(sprintState.objectives.grass.target);
-    expect(weedRush.grassCells.length).toBeGreaterThan(weedRushState.objectives.grass.target);
+    expect(weedRush.grassCells.length).toBeGreaterThanOrEqual(
+      weedRushState.objectives.grass.target,
+    );
     expect(clearEveryPatch.grassCells.length).toBe(clearEveryPatchState.objectives.grass.target);
   });
 
