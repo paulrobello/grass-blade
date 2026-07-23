@@ -73,6 +73,7 @@ export interface ContractDefinition {
     | "ring-grove"
     | "twin-glade"
     | "frost-ribbons"
+    | "prism-prairie"
     | "clear-every-patch";
   title: string;
   summary: string;
@@ -262,6 +263,14 @@ export const CONTRACT_DEFINITIONS = [
     benchmarkSeconds: 56.95,
     timeLimitSeconds: 65,
     objectives: { grass: 220, flowers: 280, fiber: 18, wood: 0 },
+  },
+  {
+    id: "prism-prairie",
+    title: "Prism Prairie",
+    summary: "A 70-second flower-prism route through crossing meadow facets.",
+    benchmarkSeconds: 64.4,
+    timeLimitSeconds: 70,
+    objectives: { grass: 235, flowers: 320, fiber: 24, wood: 0 },
   },
   {
     id: "clear-every-patch",
