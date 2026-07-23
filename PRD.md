@@ -230,6 +230,18 @@ Authored contracts are selected by deterministic contract ID and seed. The defau
 - Uses a switchback route with dense Fiber weed clusters, flower pockets, and internal soft-growth gaps.
 - If the timer reaches zero before every quota is complete, the contract ends with the same `timed-out` result semantics as Timed Harvest.
 
+### Clover Circuit
+
+- Contract ID: `clover-circuit`
+- Time limit: 75 seconds.
+- Collect 240 Grass.
+- Collect 320 Flowers.
+- Collect 28 Fiber.
+- No Wood quota; this route tests flower-pocket commitment and every Fiber target without forcing sapling level-gating.
+- Uses a figure-eight circuit with two loop lobes, a central crossing, inner no-growth pockets, and dense flower/Fiber clusters spread around the loop.
+- Deterministic balance requires all authored flower targets, every dense weed, and every shrub while leaving a small execution buffer inside the timer.
+- If the timer reaches zero before every quota is complete, the contract ends with the same `timed-out` result semantics as Timed Harvest.
+
 ### Clear Every Patch
 
 - Contract ID: `clear-every-patch`

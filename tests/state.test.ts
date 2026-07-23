@@ -521,6 +521,38 @@ describe("active game state", () => {
     });
   });
 
+  it("creates and completes the authored Clover Circuit contract before the clock expires", () => {
+    const state = createInitialState(12345, "clover-circuit");
+
+    expect(state.contract).toEqual({
+      id: "clover-circuit",
+      title: "Clover Circuit",
+      summary: "A 75-second figure-eight route around dense flower and Fiber pockets.",
+      timeLimitSeconds: 75,
+      completionMode: "quota",
+    });
+    expect(state.objectives.grass.target).toBe(240);
+    expect(state.objectives.flowers.target).toBe(320);
+    expect(state.objectives.fiber.target).toBe(28);
+    expect(state.objectives.wood.target).toBe(0);
+
+    completeContractThroughQuotaCuts(state);
+
+    expect(state.mode).toBe("complete");
+    expect(state.elapsedSeconds).toBeLessThan(75);
+    expect(state.inventory).toEqual({ grass: 240, flowers: 320, fiber: 28, wood: 0 });
+    expect(state.result).toMatchObject({
+      status: "complete",
+      timeLimitSeconds: 75,
+      cutTargets: 580,
+      highestLevel: 8,
+      finalInventory: { grass: 240, flowers: 320, fiber: 28, wood: 0 },
+      completionRevision: 580,
+    });
+    expect(state.targets.filter((target) => target.kind === "denseWeed")).toHaveLength(12);
+    expect(state.targets.filter((target) => target.kind === "shrub")).toHaveLength(8);
+  });
+
   it("creates and completes the authored Clear Every Patch contract only after all soft patches are cut", () => {
     const state = createInitialState(12345, "clear-every-patch");
     const expectedGrassTargets = state.targets.filter((target) => target.kind === "grass").length;
@@ -762,6 +794,7 @@ describe("active game state", () => {
     const timed = createMeadowLayout(12345, "timed-harvest");
     const sprint = createMeadowLayout(12345, "field-sprint");
     const weedRush = createMeadowLayout(12345, "weed-rush");
+    const cloverCircuit = createMeadowLayout(12345, "clover-circuit");
     const clearEveryPatch = createMeadowLayout(12345, "clear-every-patch");
     const unknown = createMeadowLayout(12345, "unknown-contract");
 
@@ -775,6 +808,7 @@ describe("active game state", () => {
     expect(timed.arenaShape).toBe("timed-loop");
     expect(sprint.arenaShape).toBe("sprint-lanes");
     expect(weedRush.arenaShape).toBe("weed-switchbacks");
+    expect(cloverCircuit.arenaShape).toBe("figure-eight-circuit");
     expect(clearEveryPatch.arenaShape).toBe("split-clearings");
     expect(flowerSweep.flowerTargets).toHaveLength(FLOWER_TARGET_COUNT);
     expect(woodland.flowerTargets).toHaveLength(FLOWER_TARGET_COUNT);
@@ -784,6 +818,7 @@ describe("active game state", () => {
     expect(timed.flowerTargets).toHaveLength(FLOWER_TARGET_COUNT);
     expect(sprint.flowerTargets).toHaveLength(FLOWER_TARGET_COUNT);
     expect(weedRush.flowerTargets).toHaveLength(FLOWER_TARGET_COUNT);
+    expect(cloverCircuit.flowerTargets).toHaveLength(FLOWER_TARGET_COUNT);
     expect(clearEveryPatch.flowerTargets).toHaveLength(FLOWER_TARGET_COUNT);
     expect(meadow.boundaryMarkers.length).toBeGreaterThan(100);
     expect(flowerSweep.boundaryMarkers.length).toBeGreaterThan(80);

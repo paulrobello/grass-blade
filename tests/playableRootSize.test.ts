@@ -148,7 +148,8 @@ describe("contract navigation URLs", () => {
     expect(nextAuthoredContractId("hedge-maze")).toBe("timed-harvest");
     expect(nextAuthoredContractId("timed-harvest")).toBe("field-sprint");
     expect(nextAuthoredContractId("field-sprint")).toBe("weed-rush");
-    expect(nextAuthoredContractId("weed-rush")).toBe("clear-every-patch");
+    expect(nextAuthoredContractId("weed-rush")).toBe("clover-circuit");
+    expect(nextAuthoredContractId("clover-circuit")).toBe("clear-every-patch");
     expect(nextAuthoredContractId("clear-every-patch")).toBe("meadow-delivery");
     expect(nextAuthoredContractId("unknown-contract")).toBe("meadow-delivery");
     expect(nextAuthoredContractTitle("meadow-delivery")).toBe("Flower Sweep");
@@ -159,7 +160,8 @@ describe("contract navigation URLs", () => {
     expect(nextAuthoredContractTitle("hedge-maze")).toBe("Timed Harvest");
     expect(nextAuthoredContractTitle("timed-harvest")).toBe("Field Sprint");
     expect(nextAuthoredContractTitle("field-sprint")).toBe("Weed Rush");
-    expect(nextAuthoredContractTitle("weed-rush")).toBe("Clear Every Patch");
+    expect(nextAuthoredContractTitle("weed-rush")).toBe("Clover Circuit");
+    expect(nextAuthoredContractTitle("clover-circuit")).toBe("Clear Every Patch");
     expect(nextAuthoredContractTitle("clear-every-patch")).toBe("Meadow Delivery");
     expect(nextAuthoredContractTitle("unknown-contract")).toBe("Meadow Delivery");
   });
@@ -227,14 +229,21 @@ describe("contract navigation URLs", () => {
         nextAuthoredContractId("weed-rush"),
         "?seed=1222246375&debug=1&contract=weed-rush",
       ),
-    ).toBe("?seed=3041725071&debug=1&contract=clear-every-patch");
+    ).toBe("?seed=3041725071&debug=1&contract=clover-circuit");
     expect(
       contractNavigationSearch(
         1401193544,
-        nextAuthoredContractId("clear-every-patch"),
-        "?seed=3041725071&debug=1&contract=clear-every-patch",
+        nextAuthoredContractId("clover-circuit"),
+        "?seed=3041725071&debug=1&contract=clover-circuit",
       ),
-    ).toBe("?seed=1401193544&debug=1");
+    ).toBe("?seed=1401193544&debug=1&contract=clear-every-patch");
+    expect(
+      contractNavigationSearch(
+        4055629313,
+        nextAuthoredContractId("clear-every-patch"),
+        "?seed=1401193544&debug=1&contract=clear-every-patch",
+      ),
+    ).toBe("?seed=4055629313&debug=1");
   });
 });
 

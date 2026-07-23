@@ -61,6 +61,7 @@ export interface ContractDefinition {
     | "timed-harvest"
     | "field-sprint"
     | "weed-rush"
+    | "clover-circuit"
     | "clear-every-patch";
   title: string;
   summary: string;
@@ -144,6 +145,13 @@ export const CONTRACT_DEFINITIONS = [
     summary: "A 55-second switchback route that mixes soft cuts with dense Fiber weeds.",
     timeLimitSeconds: 55,
     objectives: { grass: 150, flowers: 220, fiber: 18, wood: 0 },
+  },
+  {
+    id: "clover-circuit",
+    title: "Clover Circuit",
+    summary: "A 75-second figure-eight route around dense flower and Fiber pockets.",
+    timeLimitSeconds: 75,
+    objectives: { grass: 240, flowers: 320, fiber: 28, wood: 0 },
   },
   {
     id: "clear-every-patch",
