@@ -11,6 +11,8 @@ import {
   BEST_TIMES_STORAGE_KEY,
   applyPlayableRootSize,
   contractCardBadges,
+  contractMedalForTime,
+  contractMedalTargets,
   contractMatchesFilter,
   contractNavigationSearch,
   derivePlayableRootSize,
@@ -377,6 +379,44 @@ describe("contract best times", () => {
         "meadow-delivery": 81,
       }),
     ).toBe('{"meadow-delivery":81,"field-sprint":39.112}');
+  });
+
+  it("derives target-time medals from balanced contract benchmarks", () => {
+    expect(contractMedalTargets(contractById("field-sprint"))).toEqual({
+      goldSeconds: 43,
+      silverSeconds: 44,
+      bronzeSeconds: 45,
+    });
+    expect(contractMedalTargets(contractById("timed-harvest"))).toEqual({
+      goldSeconds: 57,
+      silverSeconds: 59,
+      bronzeSeconds: 60,
+    });
+    expect(contractMedalTargets(contractById("meadow-delivery"))).toEqual({
+      goldSeconds: 29,
+      silverSeconds: 33,
+      bronzeSeconds: 38,
+    });
+
+    for (const contract of CONTRACT_DEFINITIONS as readonly ContractDefinition[]) {
+      const targets = contractMedalTargets(contract);
+      expect(targets.goldSeconds).toBeGreaterThan(0);
+      expect(targets.silverSeconds).toBeGreaterThanOrEqual(targets.goldSeconds);
+      expect(targets.bronzeSeconds).toBeGreaterThanOrEqual(targets.silverSeconds);
+      if (contract.timeLimitSeconds !== undefined) {
+        expect(targets.bronzeSeconds).toBe(contract.timeLimitSeconds);
+      }
+    }
+  });
+
+  it("awards the best medal reached by a completed time", () => {
+    expect(contractMedalForTime("field-sprint", 43)).toBe("gold");
+    expect(contractMedalForTime("field-sprint", 44)).toBe("silver");
+    expect(contractMedalForTime("field-sprint", 45)).toBe("bronze");
+    expect(contractMedalForTime("field-sprint", 46)).toBeNull();
+    expect(contractMedalForTime("unknown-contract", 30)).toBeNull();
+    expect(contractMedalForTime("field-sprint", null)).toBeNull();
+    expect(contractMedalForTime("field-sprint", Number.NaN)).toBeNull();
   });
 });
 

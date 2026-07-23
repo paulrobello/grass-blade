@@ -37,6 +37,13 @@ const OBJECTIVE_LABELS: Record<ObjectiveResource, string> = {
 };
 
 type ContractDifficultyLabel = "Easy" | "Medium" | "Hard" | "Expert";
+export type ContractMedalRank = "gold" | "silver" | "bronze";
+
+export interface ContractMedalTargets {
+  goldSeconds: number;
+  silverSeconds: number;
+  bronzeSeconds: number;
+}
 
 interface HudElements {
   root: HTMLElement;
@@ -82,6 +89,7 @@ interface ResultsElements {
   summary: HTMLElement;
   elapsed: HTMLElement;
   bestTime: HTMLElement;
+  medal: HTMLElement;
   cutTargets: HTMLElement;
   highestLevel: HTMLElement;
   restartButton: HTMLButtonElement;
@@ -538,10 +546,14 @@ export class Game {
       const bestTime =
         contractId === undefined ? null : contractBestTimeForId(this.bestTimes, contractId);
       const bestTimeLabel = button.querySelector<HTMLElement>("[data-contract-best]");
+      const medalGoalLabel = button.querySelector<HTMLElement>("[data-contract-medal-goal]");
       button.classList.toggle("intro-card__contract--selected", selected);
       button.setAttribute("aria-pressed", selected ? "true" : "false");
-      if (bestTimeLabel !== null) {
-        setText(bestTimeLabel, `Best: ${formatOptionalBestTime(bestTime)}`);
+      if (bestTimeLabel !== null && contract !== undefined) {
+        setText(bestTimeLabel, formatContractBestLine(contract, bestTime));
+      }
+      if (medalGoalLabel !== null && contract !== undefined) {
+        setText(medalGoalLabel, formatContractMedalGoal(contract));
       }
     }
     this.intro.overlay.dataset.contractFilter = this.activeContractFilter;
@@ -592,6 +604,10 @@ export class Game {
 
     const timedOut = result.status === "timed-out";
     const bestSnapshot = this.updateBestTimeForResult(result);
+    const resultMedal =
+      result.status === "complete"
+        ? contractMedalForTime(this.state.contract.id, result.completedAtSeconds)
+        : null;
     this.results.overlay.hidden = false;
     this.results.overlay.setAttribute(
       "aria-label",
@@ -615,6 +631,8 @@ export class Game {
         : formatOptionalBestTime(bestSnapshot.bestSeconds),
     );
     this.results.bestTime.classList.toggle("results-card__best--new", bestSnapshot.isNewBest);
+    setText(this.results.medal, formatContractMedalRank(resultMedal));
+    this.results.medal.dataset.medal = resultMedal ?? "none";
     setText(this.results.cutTargets, String(result.cutTargets));
     setText(this.results.highestLevel, `LV ${result.highestLevel}`);
     setText(this.results.nextButton, `Next: ${nextAuthoredContractTitle(this.state.contract.id)}`);
@@ -1296,6 +1314,15 @@ export class Game {
         bestTimes: this.bestTimes,
         currentBestSeconds: this.bestTimes[this.state.contract.id] ?? null,
         currentBestTime: formatOptionalBestTime(this.bestTimes[this.state.contract.id] ?? null),
+        currentBestMedal: contractMedalForTime(
+          this.state.contract.id,
+          this.bestTimes[this.state.contract.id] ?? null,
+        ),
+        medalTargets: contractMedalTargetsForId(this.state.contract.id),
+        resultMedal:
+          this.state.result?.status === "complete"
+            ? contractMedalForTime(this.state.contract.id, this.state.result.completedAtSeconds)
+            : null,
         resultIsNewBest:
           this.state.result === null
             ? false
@@ -1500,6 +1527,62 @@ export function contractCardBadges(contract: ContractDefinition): string[] {
     contractFocusBadge(contract),
     contractDifficultyBadge(contract),
   ];
+}
+
+export function contractMedalTargets(contract: ContractDefinition): ContractMedalTargets {
+  if (contract.timeLimitSeconds !== undefined) {
+    const bronzeSeconds = contract.timeLimitSeconds;
+    const goldSeconds = Math.max(
+      1,
+      Math.min(bronzeSeconds - 2, Math.ceil(contract.benchmarkSeconds)),
+    );
+    const silverSeconds = Math.max(
+      goldSeconds + 1,
+      Math.min(bronzeSeconds - 1, Math.ceil((goldSeconds + bronzeSeconds) / 2)),
+    );
+
+    return { goldSeconds, silverSeconds, bronzeSeconds };
+  }
+
+  return {
+    goldSeconds: Math.ceil(contract.benchmarkSeconds * 1.1),
+    silverSeconds: Math.ceil(contract.benchmarkSeconds * 1.25),
+    bronzeSeconds: Math.ceil(contract.benchmarkSeconds * 1.45),
+  };
+}
+
+export function contractMedalTargetsForId(contractId: string): ContractMedalTargets | null {
+  const contract = CONTRACT_DEFINITIONS.find((candidate) => candidate.id === contractId);
+  return contract === undefined ? null : contractMedalTargets(contract);
+}
+
+export function contractMedalForTime(
+  contractId: string,
+  completedAtSeconds: number | null,
+): ContractMedalRank | null {
+  if (
+    completedAtSeconds === null ||
+    !Number.isFinite(completedAtSeconds) ||
+    completedAtSeconds < 0
+  ) {
+    return null;
+  }
+
+  const targets = contractMedalTargetsForId(contractId);
+  if (targets === null) {
+    return null;
+  }
+
+  if (completedAtSeconds <= targets.goldSeconds) {
+    return "gold";
+  }
+  if (completedAtSeconds <= targets.silverSeconds) {
+    return "silver";
+  }
+  if (completedAtSeconds <= targets.bronzeSeconds) {
+    return "bronze";
+  }
+  return null;
 }
 
 export function nextAuthoredContractTitle(currentContractId: string): string {
@@ -1988,6 +2071,7 @@ function createIntroElements(
     const badges = document.createElement("span");
     const contractSummary = document.createElement("span");
     const quotas = document.createElement("span");
+    const medalGoal = document.createElement("span");
     const timeLimit = document.createElement("span");
     const bestTime = document.createElement("span");
 
@@ -2013,12 +2097,15 @@ function createIntroElements(
     bestTime.className = "intro-card__contract-best";
     bestTime.dataset.contractBest = "true";
     bestTime.textContent = "Best: —";
+    medalGoal.className = "intro-card__contract-medal-goal";
+    medalGoal.dataset.contractMedalGoal = "true";
+    medalGoal.textContent = formatContractMedalGoal(contract);
     if (contract.timeLimitSeconds !== undefined) {
       timeLimit.className = "intro-card__contract-time";
       timeLimit.textContent = `${contract.timeLimitSeconds} sec`;
-      button.append(name, badges, contractSummary, quotas, bestTime, timeLimit);
+      button.append(name, badges, contractSummary, quotas, bestTime, medalGoal, timeLimit);
     } else {
-      button.append(name, badges, contractSummary, quotas, bestTime);
+      button.append(name, badges, contractSummary, quotas, bestTime, medalGoal);
     }
     contractList.append(button);
     contractButtons.push(button);
@@ -2049,6 +2136,8 @@ function createResultsElements(root: HTMLElement): ResultsElements {
   const elapsed = document.createElement("dd");
   const bestTimeLabel = document.createElement("dt");
   const bestTime = document.createElement("dd");
+  const medalLabel = document.createElement("dt");
+  const medal = document.createElement("dd");
   const cutTargetsLabel = document.createElement("dt");
   const cutTargets = document.createElement("dd");
   const highestLevelLabel = document.createElement("dt");
@@ -2072,9 +2161,12 @@ function createResultsElements(root: HTMLElement): ResultsElements {
   stats.className = "results-card__stats";
   elapsedLabel.textContent = "Time";
   bestTimeLabel.textContent = "Best";
+  medalLabel.textContent = "Medal";
   cutTargetsLabel.textContent = "Targets cut";
   highestLevelLabel.textContent = "Highest level";
   bestTime.textContent = "—";
+  medal.textContent = "—";
+  medal.className = "results-card__medal";
   actions.className = "results-card__actions";
   restartButton.type = "button";
   restartButton.id = "results-restart";
@@ -2090,6 +2182,8 @@ function createResultsElements(root: HTMLElement): ResultsElements {
     elapsed,
     bestTimeLabel,
     bestTime,
+    medalLabel,
+    medal,
     cutTargetsLabel,
     cutTargets,
     highestLevelLabel,
@@ -2107,6 +2201,7 @@ function createResultsElements(root: HTMLElement): ResultsElements {
     summary,
     elapsed,
     bestTime,
+    medal,
     cutTargets,
     highestLevel,
     restartButton,
@@ -2223,6 +2318,29 @@ function formatElapsedTime(seconds: number): string {
 
 function formatOptionalBestTime(seconds: number | null): string {
   return seconds === null ? "—" : formatElapsedTime(seconds);
+}
+
+function formatContractBestLine(contract: ContractDefinition, bestSeconds: number | null): string {
+  if (bestSeconds === null) {
+    return "Best: —";
+  }
+
+  const medal = contractMedalForTime(contract.id, bestSeconds);
+  const medalText = medal === null ? "" : ` · ${formatContractMedalRank(medal)}`;
+  return `Best: ${formatElapsedTime(bestSeconds)}${medalText}`;
+}
+
+function formatContractMedalGoal(contract: ContractDefinition): string {
+  const targets = contractMedalTargets(contract);
+  return `Gold ≤ ${formatElapsedTime(targets.goldSeconds)}`;
+}
+
+function formatContractMedalRank(rank: ContractMedalRank | null): string {
+  if (rank === null) {
+    return "—";
+  }
+
+  return `${rank[0]?.toUpperCase() ?? ""}${rank.slice(1)}`;
 }
 
 function clamp(value: number, minimum: number, maximum: number): number {

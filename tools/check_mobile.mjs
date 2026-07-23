@@ -476,6 +476,7 @@ async function measureIntroChooser(page) {
           ".intro-card__contract-badges",
           ".intro-card__contract-quotas",
           ".intro-card__contract-best",
+          ".intro-card__contract-medal-goal",
           ".intro-card__contract-time",
         ]
           .map((selector) => contractCard.querySelector(selector))
@@ -507,6 +508,7 @@ async function measureIntroChooser(page) {
           ".intro-card__contract-badges",
           ".intro-card__contract-quotas",
           ".intro-card__contract-best",
+          ".intro-card__contract-medal-goal",
           ".intro-card__contract-time",
         ]
           .map((selector) => contractCard.querySelector(selector)?.getBoundingClientRect())
@@ -558,6 +560,7 @@ async function measureIntroChooser(page) {
           ".intro-card__contract-badges",
           ".intro-card__contract-quotas",
           ".intro-card__contract-best",
+          ".intro-card__contract-medal-goal",
         ]
           .map((selector) => contractCard.querySelector(selector)?.getBoundingClientRect())
           .filter((rect) => rect !== undefined);
