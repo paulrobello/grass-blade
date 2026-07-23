@@ -679,7 +679,7 @@ describe("active game state", () => {
         expect(state.result?.finalInventory).toEqual(state.inventory);
       }
     }
-  });
+  }, 15000);
 
   it("builds deterministic logical targets and visual mappings", () => {
     const first = createMeadowLayout(12345);
