@@ -278,6 +278,18 @@ Authored contracts are selected by deterministic contract ID and seed. The defau
 - Deterministic balance requires six shrubs, all five saplings, and two mature trees while preserving a small execution buffer inside the timer.
 - If the timer reaches zero before every quota is complete, the contract ends with the same `timed-out` result semantics as Timed Harvest.
 
+### Crescent Grove
+
+- Contract ID: `crescent-grove`
+- Time limit: 75 seconds.
+- Collect 220 Grass.
+- Collect 240 Flowers.
+- Collect 20 Fiber.
+- Collect 16 Wood.
+- Uses a crescent-shaped grove route with flower banks around the outer curve, open inner no-growth pockets, Fiber shrubs, and a timber finish.
+- Deterministic balance requires all dense weeds, four shrubs, all five saplings, and one mature tree while preserving a small execution buffer inside the timer.
+- If the timer reaches zero before every quota is complete, the contract ends with the same `timed-out` result semantics as Timed Harvest.
+
 ### Clear Every Patch
 
 - Contract ID: `clear-every-patch`
