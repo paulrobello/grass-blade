@@ -110,6 +110,7 @@ async function checkIntroChooser(browser, options, viewport) {
       metrics.contractCardMinWidth >= 240,
       `${viewport.name} contract cards are too narrow: ${metrics.contractCardMinWidth}px`,
     );
+    assert(metrics.contractBadgesVisible, `${viewport.name} contract badges are not visible`);
     assert(!metrics.cardContentEscapesCard, `${viewport.name} contract card content escapes card`);
     assert(!metrics.contractTextBlocksOverlap, `${viewport.name} contract text blocks overlap`);
     assert(!metrics.timedBadgesOverlapText, `${viewport.name} timed badges overlap card text`);
@@ -408,6 +409,7 @@ async function measureIntroChooser(page) {
         contractRects.length > 0
           ? Math.round(Math.min(...contractRects.map((rect) => rect.width)) * 1000) / 1000
           : 0,
+      contractBadgesVisible: contractBadgesVisible(),
       filterButtonsVisible:
         filterRects.length > 0 && filterRects.every((rect) => rect.width > 0 && rect.height > 0),
       filterButtonsInsideCard: filterRects.every(
@@ -471,6 +473,7 @@ async function measureIntroChooser(page) {
         }
         const contentElements = [
           ".intro-card__contract-name",
+          ".intro-card__contract-badges",
           ".intro-card__contract-quotas",
           ".intro-card__contract-best",
           ".intro-card__contract-time",
@@ -501,6 +504,7 @@ async function measureIntroChooser(page) {
         }
         const contentRects = [
           ".intro-card__contract-name",
+          ".intro-card__contract-badges",
           ".intro-card__contract-quotas",
           ".intro-card__contract-best",
           ".intro-card__contract-time",
@@ -514,6 +518,26 @@ async function measureIntroChooser(page) {
           return nextRect !== undefined && rect.bottom > nextRect.top + 0.5;
         });
       });
+    }
+
+    function contractBadgesVisible() {
+      return Array.from(document.querySelectorAll(".intro-card__contract")).every(
+        (contractCard) => {
+          if (contractCard.hidden) {
+            return true;
+          }
+          const badges = contractCard.querySelector(".intro-card__contract-badges");
+          if (badges === null) {
+            return false;
+          }
+          const badgeRects = Array.from(badges.querySelectorAll(".intro-card__contract-badge")).map(
+            (badge) => badge.getBoundingClientRect(),
+          );
+          return (
+            badgeRects.length >= 3 && badgeRects.every((rect) => rect.width > 0 && rect.height > 0)
+          );
+        },
+      );
     }
 
     function timedBadgesOverlapText() {
@@ -531,6 +555,7 @@ async function measureIntroChooser(page) {
         }
         const contentRects = [
           ".intro-card__contract-name",
+          ".intro-card__contract-badges",
           ".intro-card__contract-quotas",
           ".intro-card__contract-best",
         ]

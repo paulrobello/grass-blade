@@ -351,7 +351,7 @@ Authored contracts are selected by deterministic contract ID and seed. The defau
 
 Later contracts may choose quota delivery or authored clear-patch goals from deterministic templates. Over-collection is allowed and still grants XP. Contract completion occurs in the same simulation tick that the final quota is awarded or the final clear-patch target is cut.
 
-Successful completions update the local best time for that specific authored contract only when faster than the previous record. The intro contract chooser and results card show each available record; failed timed-out runs preserve the previous best.
+Successful completions update the local best time for that specific authored contract only when faster than the previous record. The intro contract chooser and results card show each available record; failed timed-out runs preserve the previous best. Each chooser card also shows compact derived tags for pace, focus resource, and difficulty so the expanding contract list remains scannable on mobile.
 
 Flower drifts are visual patches made from twenty smaller authoritative flower targets per drift. Cutting one edge pocket must not collect or visually topple the whole patch; fully clearing a patch requires sweeping through all of its flower sub-targets.
 

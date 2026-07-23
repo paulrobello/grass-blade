@@ -10,6 +10,7 @@ import {
 import {
   BEST_TIMES_STORAGE_KEY,
   applyPlayableRootSize,
+  contractCardBadges,
   contractMatchesFilter,
   contractNavigationSearch,
   derivePlayableRootSize,
@@ -380,6 +381,26 @@ describe("contract best times", () => {
 });
 
 describe("contract chooser filters", () => {
+  it("derives compact card badges from contract pacing and quotas", () => {
+    expect(contractCardBadges(contractById("meadow-delivery"))).toEqual([
+      "No timer",
+      "Wood",
+      "Easy",
+    ]);
+    expect(contractCardBadges(contractById("field-sprint"))).toEqual([
+      "45s",
+      "Soft cuts",
+      "Medium",
+    ]);
+    expect(contractCardBadges(contractById("timed-harvest"))).toEqual(["60s", "Fiber", "Hard"]);
+    expect(contractCardBadges(contractById("timber-trail"))).toEqual(["90s", "Wood", "Expert"]);
+    expect(contractCardBadges(contractById("clear-every-patch"))).toEqual([
+      "Full clear",
+      "Patch clear",
+      "Expert",
+    ]);
+  });
+
   it("chooses a compact primary filter for each selected contract type", () => {
     expect(primaryContractFilterId(contractById("meadow-delivery"))).toBe("wood");
     expect(primaryContractFilterId(contractById("timber-trail"))).toBe("wood");

@@ -920,6 +920,25 @@ body {
   letter-spacing: -0.025em;
 }
 
+.intro-card__contract-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.18rem;
+}
+
+.intro-card__contract-badge {
+  padding: 0.1rem 0.28rem;
+  border: 0.08rem solid rgb(38 52 125 / 22%);
+  border-radius: 999px;
+  background: rgb(255 255 255 / 52%);
+  color: #26347d;
+  font-size: 0.48rem;
+  font-weight: 950;
+  letter-spacing: 0.045em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
 .intro-card__contract-summary {
   color: #4b5a70;
   font-size: 0.66rem;
@@ -1106,6 +1125,15 @@ body {
   .intro-card__contract-name {
     font-size: 0.82rem;
     line-height: 1.04;
+  }
+
+  .intro-card__contract-badges {
+    gap: 0.14rem;
+  }
+
+  .intro-card__contract-badge {
+    padding: 0.08rem 0.24rem;
+    font-size: 0.42rem;
   }
 
   .intro-card__contract-summary {
@@ -1704,6 +1732,10 @@ body {
     font-size: 0.76rem;
   }
 
+  .intro-card__contract-badge {
+    font-size: 0.38rem;
+  }
+
   .intro-card__contract-quotas {
     font-size: 0.48rem;
   }
@@ -1795,6 +1827,15 @@ body {
   .intro-card__contract-name {
     font-size: 0.66rem;
     line-height: 1.04;
+  }
+
+  .intro-card__contract-badges {
+    gap: 0.1rem;
+  }
+
+  .intro-card__contract-badge {
+    padding: 0.06rem 0.18rem;
+    font-size: 0.34rem;
   }
 
   .intro-card__contract-summary {

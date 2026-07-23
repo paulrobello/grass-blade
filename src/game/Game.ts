@@ -35,6 +35,9 @@ const OBJECTIVE_LABELS: Record<ObjectiveResource, string> = {
   fiber: "Fiber",
   wood: "Wood",
 };
+
+type ContractDifficultyLabel = "Easy" | "Medium" | "Hard" | "Expert";
+
 interface HudElements {
   root: HTMLElement;
   pauseButton: HTMLButtonElement;
@@ -1491,6 +1494,14 @@ export function nextAuthoredContractId(currentContractId: string): ContractDefin
   return CONTRACT_DEFINITIONS[nextIndex]?.id ?? DEFAULT_CONTRACT_ID;
 }
 
+export function contractCardBadges(contract: ContractDefinition): string[] {
+  return [
+    contractPaceBadge(contract),
+    contractFocusBadge(contract),
+    contractDifficultyBadge(contract),
+  ];
+}
+
 export function nextAuthoredContractTitle(currentContractId: string): string {
   const nextContractId = nextAuthoredContractId(currentContractId);
   return (
@@ -1524,6 +1535,52 @@ export function contractMatchesFilter(
   }
 
   return primaryContractFilterId(contract) === filterId;
+}
+
+function contractPaceBadge(contract: ContractDefinition): string {
+  if (contract.completionMode === "clear-patches") {
+    return "Full clear";
+  }
+  if (contract.timeLimitSeconds !== undefined) {
+    return `${contract.timeLimitSeconds}s`;
+  }
+  return "No timer";
+}
+
+function contractFocusBadge(contract: ContractDefinition): string {
+  if (contract.completionMode === "clear-patches") {
+    return "Patch clear";
+  }
+  if (contract.objectives.wood > 0) {
+    return "Wood";
+  }
+  if (contract.objectives.fiber > 0) {
+    return "Fiber";
+  }
+  return "Soft cuts";
+}
+
+function contractDifficultyBadge(contract: ContractDefinition): ContractDifficultyLabel {
+  if (contract.completionMode === "clear-patches") {
+    return "Expert";
+  }
+
+  const softTargets = contract.objectives.grass + contract.objectives.flowers;
+  const durablePressure = contract.objectives.fiber * 3.4 + contract.objectives.wood * 5.1;
+  const timerPressure =
+    contract.timeLimitSeconds === undefined ? 0 : Math.max(0, 90 - contract.timeLimitSeconds) * 1.7;
+  const difficultyScore = softTargets / 18 + durablePressure + timerPressure;
+
+  if (difficultyScore < 55) {
+    return "Easy";
+  }
+  if (difficultyScore < 120) {
+    return "Medium";
+  }
+  if (difficultyScore < 215) {
+    return "Hard";
+  }
+  return "Expert";
 }
 
 function parseContractFilterId(value: string | undefined): ContractFilterId | null {
@@ -1928,6 +1985,7 @@ function createIntroElements(
   for (const contract of contracts) {
     const button = document.createElement("button");
     const name = document.createElement("span");
+    const badges = document.createElement("span");
     const contractSummary = document.createElement("span");
     const quotas = document.createElement("span");
     const timeLimit = document.createElement("span");
@@ -1940,6 +1998,14 @@ function createIntroElements(
     button.setAttribute("aria-pressed", "false");
     name.className = "intro-card__contract-name";
     name.textContent = contract.title;
+    badges.className = "intro-card__contract-badges";
+    badges.setAttribute("aria-label", "Contract tags");
+    for (const label of contractCardBadges(contract)) {
+      const badge = document.createElement("span");
+      badge.className = "intro-card__contract-badge";
+      badge.textContent = label;
+      badges.append(badge);
+    }
     contractSummary.className = "intro-card__contract-summary";
     contractSummary.textContent = contract.summary;
     quotas.className = "intro-card__contract-quotas";
@@ -1950,9 +2016,9 @@ function createIntroElements(
     if (contract.timeLimitSeconds !== undefined) {
       timeLimit.className = "intro-card__contract-time";
       timeLimit.textContent = `${contract.timeLimitSeconds} sec`;
-      button.append(name, contractSummary, quotas, bestTime, timeLimit);
+      button.append(name, badges, contractSummary, quotas, bestTime, timeLimit);
     } else {
-      button.append(name, contractSummary, quotas, bestTime);
+      button.append(name, badges, contractSummary, quotas, bestTime);
     }
     contractList.append(button);
     contractButtons.push(button);
