@@ -75,6 +75,7 @@ export interface ContractDefinition {
     | "frost-ribbons"
     | "prism-prairie"
     | "stone-bloom"
+    | "willow-weave"
     | "clear-every-patch";
   title: string;
   summary: string;
@@ -280,6 +281,14 @@ export const CONTRACT_DEFINITIONS = [
     benchmarkSeconds: 62.633,
     timeLimitSeconds: 68,
     objectives: { grass: 240, flowers: 300, fiber: 24, wood: 0 },
+  },
+  {
+    id: "willow-weave",
+    title: "Willow Weave",
+    summary: "An 80-second woven grove route that mixes flower lanes, Fiber, and timber.",
+    benchmarkSeconds: 78.617,
+    timeLimitSeconds: 80,
+    objectives: { grass: 250, flowers: 300, fiber: 24, wood: 22 },
   },
   {
     id: "clear-every-patch",
