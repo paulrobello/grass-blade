@@ -351,6 +351,10 @@ Active milestone: Phase 5 — expansion after first-playable evidence, with the 
 - Focused mobile browser metrics at 390 by 844 and 320 by 640 verified positive gaps between the objective tray and pause button (`13.61px` and `25.95px`) with no browser errors. The inspected artifacts are `output/playwright/mobile-hud-overlap-fix/390x844.png`, `320x640.png`, and `summary.json`.
 - The required web-game Playwright client reran against `?seed=12345&debug=1&contract=meadow-delivery` after the HUD-overlap fix and wrote `output/playwright/mobile-hud-overlap-client-smoke/shot-0.png` plus `state-0.json` without browser error artifacts.
 - `make checkall` passes after the mobile HUD-overlap fix. The full gate covers formatting verification, ESLint, strict TypeScript, 130 deterministic Vitest tests across eight files, and the Vite production build.
+- Reworked the phone-width intro contract chooser so the card is viewport-constrained instead of relying on a sticky Start button over overflowing content. On mobile the contract summaries collapse, the controls hint hides, the contract grid becomes the only scrollable region when needed, and Start Cutting remains in the fixed card flow.
+- Focused mobile checks at 390 by 664, 375 by 548, 320 by 568, and a cramped 320 by 480 verified the intro card fits the viewport, Start does not overlap the contract list, tapping Start enters active gameplay, and no browser errors occur. Inspected artifacts are under `output/playwright/mobile-contract-modal-after/`.
+- The required web-game Playwright client reran against `?seed=12345&debug=1&contract=field-sprint` after the contract-modal fix and wrote `output/playwright/mobile-contract-modal-client-smoke/shot-0.png` plus `state-0.json`; the inspected screenshot is active gameplay after Start, state reports `contractStarted: true`, and no browser error artifact exists.
+- `make checkall` passes after the mobile contract-modal fix. The full gate covers formatting verification, ESLint, strict TypeScript, 130 deterministic Vitest tests across eight files, and the Vite production build.
 
 ## Remaining TODOs
 
