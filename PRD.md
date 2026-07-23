@@ -314,6 +314,18 @@ Authored contracts are selected by deterministic contract ID and seed. The defau
 - Deterministic balance requires all dense weeds, all eight shrubs, all five saplings, and three mature trees while preserving a small execution buffer inside the timer.
 - If the timer reaches zero before every quota is complete, the contract ends with the same `timed-out` result semantics as Timed Harvest.
 
+### Braided Meadow
+
+- Contract ID: `braided-meadow`
+- Time limit: 65 seconds.
+- Collect 230 Grass.
+- Collect 300 Flowers.
+- Collect 20 Fiber.
+- No Wood quota; this route emphasizes interwoven soft-target lanes and hedge-level Fiber pressure without forcing timber cuts.
+- Uses two braided flower lanes with crossover links, carved interior gaps, and alternating left/right sweeps so the route reads as a woven meadow instead of a square lawn.
+- Deterministic balance requires all dense weeds and four shrubs while preserving a small execution buffer inside the timer.
+- If the timer reaches zero before every quota is complete, the contract ends with the same `timed-out` result semantics as Timed Harvest.
+
 ### Clear Every Patch
 
 - Contract ID: `clear-every-patch`

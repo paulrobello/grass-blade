@@ -68,6 +68,7 @@ export interface ContractDefinition {
     | "crescent-grove"
     | "forked-thicket"
     | "switchback-orchard"
+    | "braided-meadow"
     | "clear-every-patch";
   title: string;
   summary: string;
@@ -200,6 +201,13 @@ export const CONTRACT_DEFINITIONS = [
     summary: "A 90-second zig-zag orchard route through flowers, Fiber, and timber.",
     timeLimitSeconds: 90,
     objectives: { grass: 270, flowers: 300, fiber: 28, wood: 28 },
+  },
+  {
+    id: "braided-meadow",
+    title: "Braided Meadow",
+    summary: "A 65-second braided route through interwoven flower lanes and Fiber hedges.",
+    timeLimitSeconds: 65,
+    objectives: { grass: 230, flowers: 300, fiber: 20, wood: 0 },
   },
   {
     id: "clear-every-patch",

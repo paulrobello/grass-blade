@@ -42,6 +42,7 @@ export type ArenaLayoutId =
   | "crescent-grove"
   | "forked-thicket"
   | "switchback-orchard"
+  | "braided-meadow"
   | "clear-every-patch";
 export type ArenaShape =
   | "starter-meadow-paths"
@@ -60,6 +61,7 @@ export type ArenaShape =
   | "crescent-grove"
   | "forked-thicket"
   | "switchback-orchard"
+  | "braided-meadow"
   | "split-clearings";
 
 const DENSE_WEED_CLUSTER_CENTERS = [
@@ -520,6 +522,7 @@ function resolveArenaLayoutId(arenaId: string): ArenaLayoutId {
     case "crescent-grove":
     case "forked-thicket":
     case "switchback-orchard":
+    case "braided-meadow":
     case "clear-every-patch":
       return arenaId;
     default:
@@ -559,6 +562,8 @@ function resolveArenaShape(arenaId: ArenaLayoutId): ArenaShape {
       return "forked-thicket";
     case "switchback-orchard":
       return "switchback-orchard";
+    case "braided-meadow":
+      return "braided-meadow";
     case "clear-every-patch":
       return "split-clearings";
     case "meadow-delivery":
@@ -942,6 +947,35 @@ function createFlowerClusterCenters(
       ],
       random,
       0.6,
+    );
+  }
+
+  if (arenaId === "braided-meadow") {
+    return jitterAnchors(
+      [
+        [-15, -13],
+        [-7, -15],
+        [2, -13],
+        [11, -15],
+        [16, -9],
+        [8, -7],
+        [-2, -7],
+        [-12, -8],
+        [-15, -1],
+        [-6, 0],
+        [4, 1],
+        [14, -1],
+        [12, 7],
+        [3, 8],
+        [-7, 7],
+        [-16, 6],
+        [-11, 13],
+        [-2, 15],
+        [8, 13],
+        [16, 15],
+      ],
+      random,
+      0.58,
     );
   }
 
@@ -1339,6 +1373,39 @@ export function isPointInArenaGrowth(arenaId: ArenaLayoutId, x: number, z: numbe
         !isPointInCircle(x, z, 0, 8, 1.95) &&
         !isPointInCircle(x, z, -8, 4, 1.8) &&
         !isPointInCircle(x, z, 8, 11, 1.8)
+      );
+    case "braided-meadow":
+      return (
+        (isPointInCapsule(x, z, -17, -14, -8, -16, 2.35) ||
+          isPointInCapsule(x, z, -8, -16, 4, -13, 2.35) ||
+          isPointInCapsule(x, z, 4, -13, 16, -15, 2.35) ||
+          isPointInCapsule(x, z, 16, -15, 9, -7, 2.35) ||
+          isPointInCapsule(x, z, 9, -7, -9, -8, 2.35) ||
+          isPointInCapsule(x, z, -9, -8, -16, -1, 2.35) ||
+          isPointInCapsule(x, z, -16, -1, -5, 1, 2.35) ||
+          isPointInCapsule(x, z, -5, 1, 6, -1, 2.35) ||
+          isPointInCapsule(x, z, 6, -1, 16, 2, 2.35) ||
+          isPointInCapsule(x, z, 16, 2, 9, 9, 2.35) ||
+          isPointInCapsule(x, z, 9, 9, -8, 7, 2.35) ||
+          isPointInCapsule(x, z, -8, 7, -16, 11, 2.35) ||
+          isPointInCapsule(x, z, -16, 11, -6, 16, 2.25) ||
+          isPointInCapsule(x, z, -6, 16, 5, 13, 2.25) ||
+          isPointInCapsule(x, z, 5, 13, 17, 16, 2.25) ||
+          isPointInCapsule(x, z, -8, -16, -5, 1, 1.65) ||
+          isPointInCapsule(x, z, 4, -13, 6, -1, 1.65) ||
+          isPointInCapsule(x, z, -5, 1, -8, 7, 1.65) ||
+          isPointInCapsule(x, z, 6, -1, 9, 9, 1.65) ||
+          isPointInCircle(x, z, -17, -14, 3.35) ||
+          isPointInCircle(x, z, 16, -15, 3.35) ||
+          isPointInCircle(x, z, -16, -1, 3.35) ||
+          isPointInCircle(x, z, 16, 2, 3.35) ||
+          isPointInCircle(x, z, -16, 11, 3.3) ||
+          isPointInCircle(x, z, 17, 16, 3.25) ||
+          isPointInCircle(x, z, 0, 0, 3.0)) &&
+        !isPointInCircle(x, z, 0, -10, 1.9) &&
+        !isPointInCircle(x, z, 0, 6, 1.95) &&
+        !isPointInCircle(x, z, -12, 4, 1.75) &&
+        !isPointInCircle(x, z, 12, -5, 1.75)
       );
     case "clear-every-patch":
       return (
