@@ -371,6 +371,13 @@ Active milestone: Phase 5 — expansion after first-playable evidence, with the 
 - `make mobile-check` still passes with eight chooser cards at 390 by 664, 375 by 548, 320 by 568, and 320 by 480, plus active-HUD and touch-drag checks.
 - The required web-game Playwright client ran against `?seed=12345&debug=1&contract=timber-trail`; the inspected screenshot shows the active Timber Trail grove route, countdown HUD, visible Wood quota, saplings/trees, and flowers, while state reports expected `60/16/8/16` targets and `contractStarted: true`.
 - `make checkall` passes after the Timber Trail batch. The full gate covers formatting verification, ESLint, strict TypeScript, 132 deterministic Vitest tests across eight files, and the Vite production build.
+- Retuned Timed Harvest again after live play could still complete it in about eight seconds. The contract now requires `165 Grass / 200 Flowers / 12 Fiber / 0 Wood`, which stays within the authored timed-loop arena's available target counts while forcing a much larger flower sweep and all twelve dense weeds.
+- The focused Timed Harvest balance capture now reports `43.82s / 60s` isolated cut budget across all ten validation seeds, up from `28.23s / 60s`, with 377 required cut targets and highest blade level 8.
+- Focused reducer/navigation tests pass after the retune: `bun test tests/state.test.ts tests/playableRootSize.test.ts` covers 99 tests, including Timed Harvest completion with the raised quotas, all-contract seeded completion, arena capacity, and the existing best-time navigation coverage.
+- `make contract-balance-capture` passes across ten seeds after the retune, with every authored contract complete and aggregate timings Meadow Delivery `25.87s`, Flower Sweep `51.25s`, Woodland Cleanup `33.07s`, Timber Trail `40.28s / 90s`, Timed Harvest `43.82s / 60s`, Field Sprint `29.08s / 45s`, Weed Rush `13.12s / 55s`, and Clear Every Patch `57.15s`.
+- `make mobile-check` still passes with eight chooser cards at 390 by 664, 375 by 548, 320 by 568, and 320 by 480, plus active-HUD and touch-drag checks.
+- The required web-game Playwright client ran against `?seed=12345&debug=1&contract=timed-harvest` after the retune and wrote `output/playwright/timed-harvest-retune-smoke/shot-0.png` plus state without browser error artifacts. The inspected screenshot shows active Timed Harvest gameplay with the new `165/200/12` HUD targets, countdown, lush flowers, and the two-blade cutter in the timed-loop arena.
+- `make checkall` passes after the Timed Harvest retune. The full gate covers formatting verification, ESLint, strict TypeScript, 132 deterministic Vitest tests across eight files, and the Vite production build.
 
 ## Remaining TODOs
 

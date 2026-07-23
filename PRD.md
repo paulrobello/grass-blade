@@ -178,9 +178,9 @@ Authored contracts are selected by deterministic contract ID and seed. The defau
 
 - Contract ID: `timed-harvest`
 - Time limit: 60 seconds.
-- Collect 140 Grass.
-- Collect 80 Flowers.
-- Collect 8 Fiber.
+- Collect 165 Grass.
+- Collect 200 Flowers.
+- Collect 12 Fiber.
 - No Wood quota; the timed contract intentionally avoids level-gating on saplings.
 - Uses a loop-shaped endurance route challenge with sustained grass, flower, and fiber quotas plus a countdown HUD.
 - If the timer reaches zero before every quota is complete, the contract ends with a `timed-out` result. The result card shows `Time Up`, final partial inventory, targets cut, highest level, Restart, and Next Contract.

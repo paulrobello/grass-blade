@@ -113,7 +113,7 @@ export const CONTRACT_DEFINITIONS = [
     title: "Timed Harvest",
     summary: "A 60-second grass, flower, and fiber endurance route with no room to wander.",
     timeLimitSeconds: 60,
-    objectives: { grass: 140, flowers: 80, fiber: 8, wood: 0 },
+    objectives: { grass: 165, flowers: 200, fiber: 12, wood: 0 },
   },
   {
     id: "field-sprint",
