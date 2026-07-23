@@ -437,6 +437,18 @@ Authored contracts are selected by deterministic contract ID and seed. The defau
 - Deterministic balance requires all dense weeds and all shrubs while preserving a moderate execution buffer inside the timer.
 - If the timer reaches zero before every quota is complete, the contract ends with the same `timed-out` result semantics as Timed Harvest.
 
+### Cedar Crossroads
+
+- Contract ID: `cedar-crossroads`
+- Time limit: 86 seconds.
+- Collect 260 Grass.
+- Collect 260 Flowers.
+- Collect 24 Fiber.
+- Collect 22 Wood.
+- Uses a four-way timber route with crossing cedar lanes, diagonal cut-throughs, flower pockets, and compact no-growth pockets so the player alternates direction instead of sweeping a square field.
+- Deterministic balance requires all dense weeds, six shrubs, all five saplings, and two mature trees while preserving a moderate execution buffer inside the timer.
+- If the timer reaches zero before every quota is complete, the contract ends with the same `timed-out` result semantics as Timed Harvest.
+
 ### Clear Every Patch
 
 - Contract ID: `clear-every-patch`
