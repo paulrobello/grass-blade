@@ -67,6 +67,7 @@ async function checkIntroChooser(browser, options, viewport) {
       `${viewport.name} selected contract card is clipped outside list`,
     );
     assert(!metrics.contractCardsOverlap, `${viewport.name} contract cards overlap`);
+    assert(!metrics.timedBadgesOverlapText, `${viewport.name} timed badges overlap card text`);
 
     const introPath = path.join(options.outputDir, `${viewport.name}-intro.png`);
     await page.screenshot({ path: introPath, fullPage: false });
@@ -305,6 +306,7 @@ async function measureIntroChooser(page) {
         selectedRect.right <= listRect.right + 0.5 &&
         selectedRect.top >= listRect.top - 0.5 &&
         selectedRect.bottom <= listRect.bottom + 0.5,
+      timedBadgesOverlapText: timedBadgesOverlapText(),
     };
 
     function hasIntersectingRects(rects) {
@@ -326,6 +328,25 @@ async function measureIntroChooser(page) {
         }
       }
       return false;
+    }
+
+    function timedBadgesOverlapText() {
+      return Array.from(document.querySelectorAll(".intro-card__contract-time")).some((badge) => {
+        const contractCard = badge.closest(".intro-card__contract");
+        if (contractCard === null) {
+          return true;
+        }
+        const badgeRect = badge.getBoundingClientRect();
+        const contentRects = [
+          ".intro-card__contract-name",
+          ".intro-card__contract-quotas",
+          ".intro-card__contract-best",
+        ]
+          .map((selector) => contractCard.querySelector(selector)?.getBoundingClientRect())
+          .filter((rect) => rect !== undefined);
+        const contentBottom = Math.max(...contentRects.map((rect) => rect.bottom));
+        return badgeRect.top < contentBottom + 1;
+      });
     }
   });
 }

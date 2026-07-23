@@ -14,6 +14,7 @@ Active milestone: Phase 5 — expansion after first-playable evidence, with the 
 - Focused verification passed: `bun test tests/state.test.ts tests/playableRootSize.test.ts tests/pwa.test.mjs`, `bun run balance:timed -- --seed 12345 --out output/balance/timed-harvest-tuned`, `bun run balance:contracts -- --contract timed-harvest`, `bun run balance:contracts -- --contract hedge-maze`, and `make mobile-check`.
 - Retuned Hedge Maze after first balance evidence showed the 80-second route only needed `24.07s` of isolated cut budget. It now requires `183 Grass / 300 Flowers / 28 Fiber / 0 Wood`, forcing the full shrub/dense-weed Fiber route and most of the maze's soft targets.
 - Focused Hedge Maze balance now reports `61.70s / 80s` across ten validation seeds. The mobile checker includes a `390 by 664` Hedge Maze chooser case so the longer quota copy is covered against card overlap and selected-card clipping.
+- Fixed the follow-up mobile chooser card stacking report by making timed contract badges participate in normal mobile card flow instead of absolutely positioning them over later rows. The mobile checker now asserts timed badges stay below each card's quota/best text, and the inspected `592 by 981` plus `390 by 664` screenshots show no timed-badge overlap.
 
 ## Completed foundation intent
 
