@@ -56,6 +56,7 @@ export interface ContractDefinition {
     | "flower-sweep"
     | "woodland-cleanup"
     | "timber-trail"
+    | "rock-garden"
     | "timed-harvest"
     | "field-sprint"
     | "weed-rush"
@@ -107,6 +108,13 @@ export const CONTRACT_DEFINITIONS = [
     summary: "A 90-second wood route that grows into mature-tree cutting.",
     timeLimitSeconds: 90,
     objectives: { grass: 60, flowers: 16, fiber: 8, wood: 16 },
+  },
+  {
+    id: "rock-garden",
+    title: "Rock Garden",
+    summary: "A 70-second obstacle slalom around visible stones and mixed harvest pockets.",
+    timeLimitSeconds: 70,
+    objectives: { grass: 100, flowers: 80, fiber: 8, wood: 4 },
   },
   {
     id: "timed-harvest",

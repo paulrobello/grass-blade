@@ -397,6 +397,36 @@ describe("active game state", () => {
     expect(state.targets.filter((target) => target.kind === "matureTree")).toHaveLength(1);
   });
 
+  it("creates and completes the authored Rock Garden contract before the clock expires", () => {
+    const state = createInitialState(12345, "rock-garden");
+
+    expect(state.contract).toEqual({
+      id: "rock-garden",
+      title: "Rock Garden",
+      summary: "A 70-second obstacle slalom around visible stones and mixed harvest pockets.",
+      timeLimitSeconds: 70,
+      completionMode: "quota",
+    });
+    expect(state.objectives.grass.target).toBe(100);
+    expect(state.objectives.flowers.target).toBe(80);
+    expect(state.objectives.fiber.target).toBe(8);
+    expect(state.objectives.wood.target).toBe(4);
+
+    completeContractThroughQuotaCuts(state);
+
+    expect(state.mode).toBe("complete");
+    expect(state.elapsedSeconds).toBeLessThan(70);
+    expect(state.inventory).toEqual({ grass: 100, flowers: 80, fiber: 8, wood: 4 });
+    expect(state.result).toMatchObject({
+      status: "complete",
+      timeLimitSeconds: 70,
+      cutTargets: 190,
+      highestLevel: 6,
+      finalInventory: { grass: 100, flowers: 80, fiber: 8, wood: 4 },
+      completionRevision: 190,
+    });
+  });
+
   it("creates and completes the authored Field Sprint contract before the clock expires", () => {
     const state = createInitialState(12345, "field-sprint");
 
@@ -693,6 +723,7 @@ describe("active game state", () => {
     const flowerSweep = createMeadowLayout(12345, "flower-sweep");
     const woodland = createMeadowLayout(12345, "woodland-cleanup");
     const timber = createMeadowLayout(12345, "timber-trail");
+    const rockGarden = createMeadowLayout(12345, "rock-garden");
     const timed = createMeadowLayout(12345, "timed-harvest");
     const sprint = createMeadowLayout(12345, "field-sprint");
     const weedRush = createMeadowLayout(12345, "weed-rush");
@@ -704,6 +735,7 @@ describe("active game state", () => {
     expect(flowerSweep.arenaShape).toBe("branching-flower-corridors");
     expect(woodland.arenaShape).toBe("woodland-clearings");
     expect(timber.arenaShape).toBe("timber-groves");
+    expect(rockGarden.arenaShape).toBe("rock-slalom");
     expect(timed.arenaShape).toBe("timed-loop");
     expect(sprint.arenaShape).toBe("sprint-lanes");
     expect(weedRush.arenaShape).toBe("weed-switchbacks");
@@ -711,6 +743,7 @@ describe("active game state", () => {
     expect(flowerSweep.flowerTargets).toHaveLength(FLOWER_TARGET_COUNT);
     expect(woodland.flowerTargets).toHaveLength(FLOWER_TARGET_COUNT);
     expect(timber.flowerTargets).toHaveLength(FLOWER_TARGET_COUNT);
+    expect(rockGarden.flowerTargets).toHaveLength(FLOWER_TARGET_COUNT);
     expect(timed.flowerTargets).toHaveLength(FLOWER_TARGET_COUNT);
     expect(sprint.flowerTargets).toHaveLength(FLOWER_TARGET_COUNT);
     expect(weedRush.flowerTargets).toHaveLength(FLOWER_TARGET_COUNT);
@@ -719,6 +752,7 @@ describe("active game state", () => {
     expect(flowerSweep.boundaryMarkers.length).toBeGreaterThan(80);
     expect(woodland.boundaryMarkers.length).toBeGreaterThan(80);
     expect(timber.boundaryMarkers.length).toBeGreaterThan(120);
+    expect(rockGarden.boundaryMarkers.length).toBeGreaterThan(120);
     expect(timed.boundaryMarkers.length).toBeGreaterThan(75);
     expect(sprint.boundaryMarkers.length).toBeGreaterThan(80);
     expect(weedRush.boundaryMarkers.length).toBeGreaterThan(100);
@@ -727,6 +761,7 @@ describe("active game state", () => {
     expect(flowerSweep.grassVisuals).toHaveLength(GRASS_VISUAL_COLUMNS * GRASS_VISUAL_COLUMNS);
     expect(woodland.grassVisuals).toHaveLength(GRASS_VISUAL_COLUMNS * GRASS_VISUAL_COLUMNS);
     expect(timber.grassVisuals).toHaveLength(GRASS_VISUAL_COLUMNS * GRASS_VISUAL_COLUMNS);
+    expect(rockGarden.grassVisuals).toHaveLength(GRASS_VISUAL_COLUMNS * GRASS_VISUAL_COLUMNS);
     expect(timed.grassVisuals).toHaveLength(GRASS_VISUAL_COLUMNS * GRASS_VISUAL_COLUMNS);
     expect(sprint.grassVisuals).toHaveLength(GRASS_VISUAL_COLUMNS * GRASS_VISUAL_COLUMNS);
     expect(weedRush.grassVisuals).toHaveLength(GRASS_VISUAL_COLUMNS * GRASS_VISUAL_COLUMNS);
@@ -734,6 +769,7 @@ describe("active game state", () => {
     expect(flowerSweep.grassCells.length).toBeGreaterThan(120);
     expect(woodland.grassCells.length).toBeGreaterThan(160);
     expect(timber.grassCells.length).toBeGreaterThan(260);
+    expect(rockGarden.grassCells.length).toBeGreaterThan(200);
     expect(timed.grassCells.length).toBeGreaterThan(120);
     expect(sprint.grassCells.length).toBeGreaterThan(140);
     expect(weedRush.grassCells.length).toBeGreaterThan(190);
@@ -741,6 +777,7 @@ describe("active game state", () => {
     expect(flowerSweep.grassCells.length).toBeLessThan(meadow.grassCells.length * 0.72);
     expect(woodland.grassCells.length).toBeLessThan(meadow.grassCells.length * 0.78);
     expect(timber.grassCells.length).toBeLessThan(meadow.grassCells.length * 0.7);
+    expect(rockGarden.grassCells.length).toBeLessThan(meadow.grassCells.length * 0.6);
     expect(timed.grassCells.length).toBeLessThan(meadow.grassCells.length * 0.5);
     expect(sprint.grassCells.length).toBeLessThan(meadow.grassCells.length * 0.5);
     expect(weedRush.grassCells.length).toBeLessThan(meadow.grassCells.length * 0.55);
@@ -760,6 +797,9 @@ describe("active game state", () => {
     expect(countVisibleGrassVisuals(timber)).toBeLessThan(
       GRASS_VISUAL_COLUMNS * GRASS_VISUAL_COLUMNS * 0.7,
     );
+    expect(countVisibleGrassVisuals(rockGarden)).toBeLessThan(
+      GRASS_VISUAL_COLUMNS * GRASS_VISUAL_COLUMNS * 0.62,
+    );
     expect(countVisibleGrassVisuals(timed)).toBeLessThan(
       GRASS_VISUAL_COLUMNS * GRASS_VISUAL_COLUMNS * 0.5,
     );
@@ -776,6 +816,7 @@ describe("active game state", () => {
     const flowerState = createInitialState(12345, "flower-sweep");
     const woodlandState = createInitialState(12345, "woodland-cleanup");
     const timberState = createInitialState(12345, "timber-trail");
+    const rockGardenState = createInitialState(12345, "rock-garden");
     const timedState = createInitialState(12345, "timed-harvest");
     const sprintState = createInitialState(12345, "field-sprint");
     const weedRushState = createInitialState(12345, "weed-rush");
@@ -788,6 +829,9 @@ describe("active game state", () => {
     );
     expect(timberState.targets.filter((target) => target.kind === "grass")).toHaveLength(
       timber.grassCells.length,
+    );
+    expect(rockGardenState.targets.filter((target) => target.kind === "grass")).toHaveLength(
+      rockGarden.grassCells.length,
     );
     expect(timedState.targets.filter((target) => target.kind === "grass")).toHaveLength(
       timed.grassCells.length,
@@ -804,6 +848,7 @@ describe("active game state", () => {
     expect(flowerSweep.grassCells.length).toBeGreaterThan(flowerState.objectives.grass.target);
     expect(woodland.grassCells.length).toBeGreaterThan(woodlandState.objectives.grass.target);
     expect(timber.grassCells.length).toBeGreaterThan(timberState.objectives.grass.target);
+    expect(rockGarden.grassCells.length).toBeGreaterThan(rockGardenState.objectives.grass.target);
     expect(timed.grassCells.length).toBeGreaterThan(timedState.objectives.grass.target);
     expect(sprint.grassCells.length).toBeGreaterThan(sprintState.objectives.grass.target);
     expect(weedRush.grassCells.length).toBeGreaterThan(weedRushState.objectives.grass.target);
@@ -815,6 +860,7 @@ describe("active game state", () => {
     const flowerSweep = createMeadowLayout(12345, "flower-sweep");
     const woodland = createMeadowLayout(12345, "woodland-cleanup");
     const timber = createMeadowLayout(12345, "timber-trail");
+    const rockGarden = createMeadowLayout(12345, "rock-garden");
     const timed = createMeadowLayout(12345, "timed-harvest");
     const sprint = createMeadowLayout(12345, "field-sprint");
     const weedRush = createMeadowLayout(12345, "weed-rush");
@@ -846,6 +892,13 @@ describe("active game state", () => {
     expect(hasGrassCellNear(timber, -2.8, 4.2)).toBe(false);
     expect(hasGrassCellNear(timber, 4.2, 3.6)).toBe(false);
     expect(hasGrassCellNear(timber, 18, 0)).toBe(false);
+
+    expect(hasGrassCellNear(rockGarden, -16, -6)).toBe(true);
+    expect(hasGrassCellNear(rockGarden, 2, 2)).toBe(true);
+    expect(hasGrassCellNear(rockGarden, 13, 7)).toBe(true);
+    expect(hasGrassCellNear(rockGarden, -14.5, -2.5)).toBe(false);
+    expect(hasGrassCellNear(rockGarden, 13.7, 3.4)).toBe(false);
+    expect(hasGrassCellNear(rockGarden, 17, 17)).toBe(false);
 
     expect(hasGrassCellNear(timed, -8, -2)).toBe(true);
     expect(hasGrassCellNear(timed, 8, 2)).toBe(true);
