@@ -1746,6 +1746,8 @@ function contractRouteBadge(contract: ContractDefinition): string {
       return "Zig-zag";
     case "braided-meadow":
       return "Braided";
+    case "ring-grove":
+      return "Ring";
     case "clear-every-patch":
       return "Split clearings";
   }

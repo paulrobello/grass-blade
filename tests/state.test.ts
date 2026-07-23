@@ -803,6 +803,40 @@ describe("active game state", () => {
     expect(state.targets.filter((target) => target.kind === "matureTree")).toHaveLength(0);
   });
 
+  it("creates and completes the authored Ring Grove contract before the clock expires", () => {
+    const state = createInitialState(12345, "ring-grove");
+
+    expect(state.contract).toEqual({
+      id: "ring-grove",
+      title: "Ring Grove",
+      summary: "A 75-second loop around a bare center clearing and timber pockets.",
+      timeLimitSeconds: 75,
+      completionMode: "quota",
+    });
+    expect(state.objectives.grass.target).toBe(245);
+    expect(state.objectives.flowers.target).toBe(260);
+    expect(state.objectives.fiber.target).toBe(24);
+    expect(state.objectives.wood.target).toBe(16);
+
+    completeContractThroughQuotaCuts(state);
+
+    expect(state.mode).toBe("complete");
+    expect(state.elapsedSeconds).toBeLessThan(75);
+    expect(state.inventory).toEqual({ grass: 245, flowers: 260, fiber: 24, wood: 16 });
+    expect(state.result).toMatchObject({
+      status: "complete",
+      timeLimitSeconds: 75,
+      cutTargets: 529,
+      highestLevel: 8,
+      finalInventory: { grass: 245, flowers: 260, fiber: 24, wood: 16 },
+      completionRevision: 529,
+    });
+    expect(state.targets.filter((target) => target.kind === "denseWeed")).toHaveLength(12);
+    expect(state.targets.filter((target) => target.kind === "shrub")).toHaveLength(6);
+    expect(state.targets.filter((target) => target.kind === "sapling")).toHaveLength(5);
+    expect(state.targets.filter((target) => target.kind === "matureTree")).toHaveLength(1);
+  });
+
   it("creates and completes the authored Clear Every Patch contract only after all soft patches are cut", () => {
     const state = createInitialState(12345, "clear-every-patch");
     const expectedGrassTargets = state.targets.filter((target) => target.kind === "grass").length;
@@ -1074,6 +1108,7 @@ describe("active game state", () => {
     const forkedThicket = createMeadowLayout(12345, "forked-thicket");
     const switchbackOrchard = createMeadowLayout(12345, "switchback-orchard");
     const braidedMeadow = createMeadowLayout(12345, "braided-meadow");
+    const ringGrove = createMeadowLayout(12345, "ring-grove");
     const clearEveryPatch = createMeadowLayout(12345, "clear-every-patch");
     const unknown = createMeadowLayout(12345, "unknown-contract");
 
@@ -1096,6 +1131,7 @@ describe("active game state", () => {
     expect(forkedThicket.arenaShape).toBe("forked-thicket");
     expect(switchbackOrchard.arenaShape).toBe("switchback-orchard");
     expect(braidedMeadow.arenaShape).toBe("braided-meadow");
+    expect(ringGrove.arenaShape).toBe("ring-grove");
     expect(clearEveryPatch.arenaShape).toBe("split-clearings");
     expect(flowerSweep.flowerTargets).toHaveLength(FLOWER_TARGET_COUNT);
     expect(woodland.flowerTargets).toHaveLength(FLOWER_TARGET_COUNT);
@@ -1289,6 +1325,10 @@ describe("active game state", () => {
     expect(braidedMeadowState.targets.filter((target) => target.kind === "grass")).toHaveLength(
       braidedMeadow.grassCells.length,
     );
+    const ringGroveState = createInitialState(12345, "ring-grove");
+    expect(ringGroveState.targets.filter((target) => target.kind === "grass")).toHaveLength(
+      ringGrove.grassCells.length,
+    );
     expect(clearEveryPatchState.targets.filter((target) => target.kind === "grass")).toHaveLength(
       clearEveryPatch.grassCells.length,
     );
@@ -1326,6 +1366,9 @@ describe("active game state", () => {
     expect(braidedMeadow.grassCells.length).toBeGreaterThanOrEqual(
       braidedMeadowState.objectives.grass.target,
     );
+    expect(ringGrove.grassCells.length).toBeGreaterThanOrEqual(
+      ringGroveState.objectives.grass.target,
+    );
     expect(clearEveryPatch.grassCells.length).toBe(clearEveryPatchState.objectives.grass.target);
   });
 
@@ -1347,6 +1390,7 @@ describe("active game state", () => {
     const forkedThicket = createMeadowLayout(12345, "forked-thicket");
     const switchbackOrchard = createMeadowLayout(12345, "switchback-orchard");
     const braidedMeadow = createMeadowLayout(12345, "braided-meadow");
+    const ringGrove = createMeadowLayout(12345, "ring-grove");
     const clearEveryPatch = createMeadowLayout(12345, "clear-every-patch");
 
     expect(hasGrassCellNear(meadow, 0, -18)).toBe(true);
@@ -1481,6 +1525,14 @@ describe("active game state", () => {
     expect(hasGrassCellNear(braidedMeadow, -12, 4)).toBe(false);
     expect(hasGrassCellNear(braidedMeadow, 12, -5)).toBe(false);
     expect(hasGrassCellNear(braidedMeadow, 0, 18)).toBe(false);
+
+    expect(hasGrassCellNear(ringGrove, 0, -16, 1.0)).toBe(true);
+    expect(hasGrassCellNear(ringGrove, 16, 0, 1.0)).toBe(true);
+    expect(hasGrassCellNear(ringGrove, 0, 16, 1.0)).toBe(true);
+    expect(hasGrassCellNear(ringGrove, -16, 0, 1.0)).toBe(true);
+    expect(hasGrassCellNear(ringGrove, 0, 0)).toBe(false);
+    expect(hasGrassCellNear(ringGrove, 0, -8)).toBe(false);
+    expect(hasGrassCellNear(ringGrove, 17, 17)).toBe(false);
 
     expect(hasGrassCellNear(clearEveryPatch, -12, -12)).toBe(true);
     expect(hasGrassCellNear(clearEveryPatch, 12, 5)).toBe(true);

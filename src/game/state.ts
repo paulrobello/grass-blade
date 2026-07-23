@@ -70,6 +70,7 @@ export interface ContractDefinition {
     | "forked-thicket"
     | "switchback-orchard"
     | "braided-meadow"
+    | "ring-grove"
     | "clear-every-patch";
   title: string;
   summary: string;
@@ -235,6 +236,14 @@ export const CONTRACT_DEFINITIONS = [
     benchmarkSeconds: 60.35,
     timeLimitSeconds: 65,
     objectives: { grass: 230, flowers: 300, fiber: 20, wood: 0 },
+  },
+  {
+    id: "ring-grove",
+    title: "Ring Grove",
+    summary: "A 75-second loop around a bare center clearing and timber pockets.",
+    benchmarkSeconds: 71.017,
+    timeLimitSeconds: 75,
+    objectives: { grass: 245, flowers: 260, fiber: 24, wood: 16 },
   },
   {
     id: "clear-every-patch",

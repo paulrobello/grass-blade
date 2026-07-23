@@ -341,6 +341,18 @@ Authored contracts are selected by deterministic contract ID and seed. The defau
 - Deterministic balance requires all dense weeds and four shrubs while preserving a small execution buffer inside the timer.
 - If the timer reaches zero before every quota is complete, the contract ends with the same `timed-out` result semantics as Timed Harvest.
 
+### Ring Grove
+
+- Contract ID: `ring-grove`
+- Time limit: 75 seconds.
+- Collect 245 Grass.
+- Collect 260 Flowers.
+- Collect 24 Fiber.
+- Collect 16 Wood.
+- Uses a looped grove route around a bare center clearing, with inner timber pockets and four cardinal route bends so the level reads as a ring instead of a square lawn.
+- Deterministic balance requires all dense weeds, six shrubs, all five saplings, and one mature tree while preserving a small execution buffer inside the timer.
+- If the timer reaches zero before every quota is complete, the contract ends with the same `timed-out` result semantics as Timed Harvest.
+
 ### Clear Every Patch
 
 - Contract ID: `clear-every-patch`
