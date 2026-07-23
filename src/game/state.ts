@@ -136,7 +136,7 @@ export const CONTRACT_DEFINITIONS = [
     title: "Field Sprint",
     summary: "A 45-second flower-lane sprint with only soft targets.",
     timeLimitSeconds: 45,
-    objectives: { grass: 120, flowers: 120, fiber: 0, wood: 0 },
+    objectives: { grass: 175, flowers: 230, fiber: 0, wood: 0 },
   },
   {
     id: "weed-rush",

@@ -471,8 +471,8 @@ describe("active game state", () => {
       timeLimitSeconds: 45,
       completionMode: "quota",
     });
-    expect(state.objectives.grass.target).toBe(120);
-    expect(state.objectives.flowers.target).toBe(120);
+    expect(state.objectives.grass.target).toBe(175);
+    expect(state.objectives.flowers.target).toBe(230);
     expect(state.objectives.fiber.target).toBe(0);
     expect(state.objectives.wood.target).toBe(0);
 
@@ -480,14 +480,14 @@ describe("active game state", () => {
 
     expect(state.mode).toBe("complete");
     expect(state.elapsedSeconds).toBeLessThan(45);
-    expect(state.inventory).toEqual({ grass: 120, flowers: 120, fiber: 0, wood: 0 });
+    expect(state.inventory).toEqual({ grass: 175, flowers: 230, fiber: 0, wood: 0 });
     expect(state.result).toMatchObject({
       status: "complete",
       timeLimitSeconds: 45,
-      cutTargets: 240,
-      highestLevel: 7,
-      finalInventory: { grass: 120, flowers: 120, fiber: 0, wood: 0 },
-      completionRevision: 240,
+      cutTargets: 405,
+      highestLevel: 8,
+      finalInventory: { grass: 175, flowers: 230, fiber: 0, wood: 0 },
+      completionRevision: 405,
     });
   });
 

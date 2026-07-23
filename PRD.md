@@ -213,10 +213,10 @@ Authored contracts are selected by deterministic contract ID and seed. The defau
 
 - Contract ID: `field-sprint`
 - Time limit: 45 seconds.
-- Collect 120 Grass.
-- Collect 120 Flowers.
+- Collect 175 Grass.
+- Collect 230 Flowers.
 - No Fiber or Wood quota; this is a soft-target speed contract.
-- Uses narrow connected lanes with flower-heavy pockets and a countdown HUD.
+- Uses narrow connected lanes with flower-heavy pockets, most of the available lane grass, and a countdown HUD.
 - If the timer reaches zero before every quota is complete, the contract ends with the same `timed-out` result semantics as Timed Harvest.
 
 ### Weed Rush
