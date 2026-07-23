@@ -16,6 +16,13 @@ const INTRO_VIEWPORTS = [
     contract: "timed-harvest",
     rootFontSizePx: 20,
   },
+  {
+    name: "phone-592x981-all-contracts",
+    width: 592,
+    height: 981,
+    contract: "timed-harvest",
+    filter: "all",
+  },
   { name: "phone-390x664-hedge-maze", width: 390, height: 664, contract: "hedge-maze" },
   { name: "phone-390x664-clover-circuit", width: 390, height: 664, contract: "clover-circuit" },
   {

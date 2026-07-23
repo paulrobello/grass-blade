@@ -1,24 +1,10 @@
 /* global caches, self */
 
-const CACHE_NAME = "grass-blade-v2";
-const APP_SHELL_URLS = [
-  "./index.html",
-  "./manifest.webmanifest",
-  "./pwa-icon.svg",
-  "./pwa-maskable-icon.svg",
-  "./pwa-icon-180.png",
-  "./pwa-icon-192.png",
-  "./pwa-icon-512.png",
-  "./pwa-maskable-icon-512.png",
-];
+const CACHE_NAME = "grass-blade-v3";
+const CACHE_PREFIX = "grass-blade-";
 
 self.addEventListener("install", (event) => {
-  event.waitUntil(
-    caches
-      .open(CACHE_NAME)
-      .then((cache) => cache.addAll(APP_SHELL_URLS))
-      .then(() => self.skipWaiting()),
-  );
+  event.waitUntil(self.skipWaiting());
 });
 
 self.addEventListener("activate", (event) => {
@@ -26,7 +12,11 @@ self.addEventListener("activate", (event) => {
     caches
       .keys()
       .then((keys) =>
-        Promise.all(keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))),
+        Promise.all(
+          keys
+            .filter((key) => key.startsWith(CACHE_PREFIX) && key !== CACHE_NAME)
+            .map((key) => caches.delete(key)),
+        ),
       )
       .then(() => self.clients.claim()),
   );
@@ -47,7 +37,7 @@ self.addEventListener("fetch", (event) => {
   }
 
   if (event.request.mode === "navigate" || event.request.destination === "document") {
-    event.respondWith(networkFirst(event.request, "./index.html"));
+    event.respondWith(networkFirst(event.request));
     return;
   }
 

@@ -48,16 +48,19 @@ describe("mobile PWA install metadata", () => {
     });
   });
 
-  it("provides an update-safe offline service worker", () => {
+  it("provides an update-safe service worker for installed clients", () => {
     const serviceWorkerSource = fs.readFileSync(serviceWorkerPath, "utf8");
 
     expect(serviceWorkerSource).toContain('self.addEventListener("install"');
-    expect(serviceWorkerSource).toContain('"./index.html"');
-    expect(serviceWorkerSource).toContain('"./manifest.webmanifest"');
-    expect(serviceWorkerSource).toContain('"./pwa-icon-512.png"');
+    expect(serviceWorkerSource).toContain("self.skipWaiting()");
+    expect(serviceWorkerSource).toContain('const CACHE_NAME = "grass-blade-v3"');
+    expect(serviceWorkerSource).toContain('const CACHE_PREFIX = "grass-blade-"');
+    expect(serviceWorkerSource).toContain("key.startsWith(CACHE_PREFIX)");
+    expect(serviceWorkerSource).toContain("caches.delete(key)");
     expect(serviceWorkerSource).toContain('self.addEventListener("fetch"');
     expect(serviceWorkerSource).toContain('event.request.mode === "navigate"');
     expect(serviceWorkerSource).toContain('requestUrl.pathname.startsWith("/assets/")');
-    expect(serviceWorkerSource).toContain('networkFirst(event.request, "./index.html")');
+    expect(serviceWorkerSource).toContain("event.respondWith(networkFirst(event.request))");
+    expect(serviceWorkerSource).not.toContain('"./index.html"');
   });
 });
