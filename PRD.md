@@ -425,6 +425,18 @@ Authored contracts are selected by deterministic contract ID and seed. The defau
 - Deterministic balance requires every flower target, all dense weeds, and all shrubs while preserving a small execution buffer inside the timer.
 - If the timer reaches zero before every quota is complete, the contract ends with the same `timed-out` result semantics as Timed Harvest.
 
+### Sunset Switchback
+
+- Contract ID: `sunset-switchback`
+- Time limit: 74 seconds.
+- Collect 260 Grass.
+- Collect 300 Flowers.
+- Collect 28 Fiber.
+- No Wood quota; this route keeps pressure on full dense-weed and shrub Fiber commitment while avoiding another timber gate.
+- Uses a diagonal switchback route with sunset-toned flower anchors, alternating open lanes, and compact internal no-growth pockets so the player sweeps back and forth instead of clearing a square field.
+- Deterministic balance requires all dense weeds and all shrubs while preserving a moderate execution buffer inside the timer.
+- If the timer reaches zero before every quota is complete, the contract ends with the same `timed-out` result semantics as Timed Harvest.
+
 ### Clear Every Patch
 
 - Contract ID: `clear-every-patch`
