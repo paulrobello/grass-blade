@@ -1,4 +1,4 @@
-.PHONY: dev preview build test lint fmt fmt-check typecheck accessibility-check playthrough-check playthrough-check-headed timed-balance-capture perf-capture perf-capture-headed checkall pre-commit pre-commit-update
+.PHONY: dev preview build test lint fmt fmt-check typecheck accessibility-check playthrough-check playthrough-check-headed contract-balance-capture timed-balance-capture perf-capture perf-capture-headed checkall pre-commit pre-commit-update
 
 dev:
 	bun run dev
@@ -32,6 +32,9 @@ playthrough-check:
 
 playthrough-check-headed:
 	bun run playthrough:check:headed
+
+contract-balance-capture:
+	bun run balance:contracts
 
 timed-balance-capture:
 	bun run balance:timed
