@@ -401,6 +401,18 @@ Authored contracts are selected by deterministic contract ID and seed. The defau
 - Deterministic balance requires most flower targets, all dense weeds, and six shrubs while preserving a small execution buffer inside the timer.
 - If the timer reaches zero before every quota is complete, the contract ends with the same `timed-out` result semantics as Timed Harvest.
 
+### Willow Weave
+
+- Contract ID: `willow-weave`
+- Time limit: 80 seconds.
+- Collect 250 Grass.
+- Collect 300 Flowers.
+- Collect 24 Fiber.
+- Collect 22 Wood.
+- Uses a woven grove route that braids flower lanes through saplings, shrubs, and mature-tree pockets, so the player alternates soft clearing with larger blocked targets.
+- Deterministic balance requires all dense weeds, six shrubs, all five saplings, and two mature trees while preserving a very small execution buffer inside the timer.
+- If the timer reaches zero before every quota is complete, the contract ends with the same `timed-out` result semantics as Timed Harvest.
+
 ### Clear Every Patch
 
 - Contract ID: `clear-every-patch`
