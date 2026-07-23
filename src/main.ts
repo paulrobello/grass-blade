@@ -48,9 +48,22 @@ function registerServiceWorker(): void {
   window.addEventListener(
     "load",
     () => {
-      navigator.serviceWorker.register("/service-worker.js").catch((error: unknown) => {
-        console.warn("Grass Blade service worker registration failed", error);
+      const hadController = navigator.serviceWorker.controller !== null;
+      let reloadedForControllerUpdate = false;
+      navigator.serviceWorker.addEventListener("controllerchange", () => {
+        if (!hadController || reloadedForControllerUpdate) {
+          return;
+        }
+        reloadedForControllerUpdate = true;
+        window.location.reload();
       });
+
+      navigator.serviceWorker
+        .register("/service-worker.js")
+        .then((registration) => registration.update())
+        .catch((error: unknown) => {
+          console.warn("Grass Blade service worker registration failed", error);
+        });
     },
     { once: true },
   );

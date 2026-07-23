@@ -48,7 +48,7 @@ describe("mobile PWA install metadata", () => {
     });
   });
 
-  it("provides an offline app-shell service worker", () => {
+  it("provides an update-safe offline service worker", () => {
     const serviceWorkerSource = fs.readFileSync(serviceWorkerPath, "utf8");
 
     expect(serviceWorkerSource).toContain('self.addEventListener("install"');
@@ -56,5 +56,8 @@ describe("mobile PWA install metadata", () => {
     expect(serviceWorkerSource).toContain('"./manifest.webmanifest"');
     expect(serviceWorkerSource).toContain('"./pwa-icon-512.png"');
     expect(serviceWorkerSource).toContain('self.addEventListener("fetch"');
+    expect(serviceWorkerSource).toContain('event.request.mode === "navigate"');
+    expect(serviceWorkerSource).toContain('requestUrl.pathname.startsWith("/assets/")');
+    expect(serviceWorkerSource).toContain('networkFirst(event.request, "./index.html")');
   });
 });
