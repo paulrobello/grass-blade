@@ -31,6 +31,7 @@ export type ArenaLayoutId =
   | "woodland-cleanup"
   | "timed-harvest"
   | "field-sprint"
+  | "weed-rush"
   | "clear-every-patch";
 export type ArenaShape =
   | "starter-meadow-paths"
@@ -38,6 +39,7 @@ export type ArenaShape =
   | "woodland-clearings"
   | "timed-loop"
   | "sprint-lanes"
+  | "weed-switchbacks"
   | "split-clearings";
 
 const DENSE_WEED_CLUSTER_CENTERS = [
@@ -487,6 +489,7 @@ function resolveArenaLayoutId(arenaId: string): ArenaLayoutId {
     case "woodland-cleanup":
     case "timed-harvest":
     case "field-sprint":
+    case "weed-rush":
     case "clear-every-patch":
       return arenaId;
     default:
@@ -504,6 +507,8 @@ function resolveArenaShape(arenaId: ArenaLayoutId): ArenaShape {
       return "timed-loop";
     case "field-sprint":
       return "sprint-lanes";
+    case "weed-rush":
+      return "weed-switchbacks";
     case "clear-every-patch":
       return "split-clearings";
     case "meadow-delivery":
@@ -612,6 +617,31 @@ function createFlowerClusterCenters(
       ],
       random,
       0.55,
+    );
+  }
+
+  if (arenaId === "weed-rush") {
+    return jitterAnchors(
+      [
+        [-13, -13],
+        [-8, -11],
+        [-3, -8],
+        [3, -5],
+        [9, -3],
+        [14, 0],
+        [8, 3],
+        [2, 6],
+        [-4, 8],
+        [-11, 11],
+        [-6, 14],
+        [0, 15],
+        [6, 12],
+        [11, 8],
+        [4, 1],
+        [-5, -1],
+      ],
+      random,
+      0.58,
     );
   }
 
@@ -748,6 +778,21 @@ export function isPointInArenaGrowth(arenaId: ArenaLayoutId, x: number, z: numbe
           isPointInCircle(x, z, 0, 0, 3.7)) &&
         !isPointInCircle(x, z, -2, -2, 1.9) &&
         !isPointInCircle(x, z, 5, 7, 2.0)
+      );
+    case "weed-rush":
+      return (
+        (isPointInCapsule(x, z, -15, -14, 14, 0, 2.55) ||
+          isPointInCapsule(x, z, 14, 0, -12, 12, 2.55) ||
+          isPointInCapsule(x, z, -12, 12, 8, 14, 2.3) ||
+          isPointInCapsule(x, z, -6, -2, 10, 8, 2.1) ||
+          isPointInCircle(x, z, -15, -14, 3.9) ||
+          isPointInCircle(x, z, 14, 0, 4.0) ||
+          isPointInCircle(x, z, -12, 12, 3.8) ||
+          isPointInCircle(x, z, 8, 14, 3.5) ||
+          isPointInCircle(x, z, 0, 0, 3.9)) &&
+        !isPointInCircle(x, z, -1, -6, 2.05) &&
+        !isPointInCircle(x, z, 6, 5, 2.0) &&
+        !isPointInCircle(x, z, -8, 5, 1.8)
       );
     case "clear-every-patch":
       return (

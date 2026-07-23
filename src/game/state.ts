@@ -57,6 +57,7 @@ export interface ContractDefinition {
     | "woodland-cleanup"
     | "timed-harvest"
     | "field-sprint"
+    | "weed-rush"
     | "clear-every-patch";
   title: string;
   summary: string;
@@ -102,9 +103,9 @@ export const CONTRACT_DEFINITIONS = [
   {
     id: "timed-harvest",
     title: "Timed Harvest",
-    summary: "A 60-second grass, flower, and fiber route with no room to wander.",
+    summary: "A 60-second grass, flower, and fiber endurance route with no room to wander.",
     timeLimitSeconds: 60,
-    objectives: { grass: 22, flowers: 6, fiber: 2, wood: 0 },
+    objectives: { grass: 140, flowers: 80, fiber: 8, wood: 0 },
   },
   {
     id: "field-sprint",
@@ -112,6 +113,13 @@ export const CONTRACT_DEFINITIONS = [
     summary: "A 45-second flower-lane sprint with only soft targets.",
     timeLimitSeconds: 45,
     objectives: { grass: 120, flowers: 120, fiber: 0, wood: 0 },
+  },
+  {
+    id: "weed-rush",
+    title: "Weed Rush",
+    summary: "A 55-second switchback route that mixes soft cuts with dense Fiber weeds.",
+    timeLimitSeconds: 55,
+    objectives: { grass: 40, flowers: 20, fiber: 6, wood: 0 },
   },
   {
     id: "clear-every-patch",

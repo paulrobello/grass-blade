@@ -2,7 +2,7 @@
 
 Status: Active product source of truth
 Owner: Paul Robello
-Last updated: 2026-07-22
+Last updated: 2026-07-23
 
 ## Product summary
 
@@ -166,11 +166,11 @@ Authored contracts are selected by deterministic contract ID and seed. The defau
 
 - Contract ID: `timed-harvest`
 - Time limit: 60 seconds.
-- Collect 22 Grass.
-- Collect 6 Flowers.
-- Collect 2 Fiber.
+- Collect 140 Grass.
+- Collect 80 Flowers.
+- Collect 8 Fiber.
 - No Wood quota; the timed contract intentionally avoids level-gating on saplings.
-- Uses a loop-shaped route challenge with lighter grass, flower, and fiber quotas plus a countdown HUD.
+- Uses a loop-shaped endurance route challenge with sustained grass, flower, and fiber quotas plus a countdown HUD.
 - If the timer reaches zero before every quota is complete, the contract ends with a `timed-out` result. The result card shows `Time Up`, final partial inventory, targets cut, highest level, Restart, and Next Contract.
 
 ### Field Sprint
@@ -181,6 +181,17 @@ Authored contracts are selected by deterministic contract ID and seed. The defau
 - Collect 120 Flowers.
 - No Fiber or Wood quota; this is a soft-target speed contract.
 - Uses narrow connected lanes with flower-heavy pockets and a countdown HUD.
+- If the timer reaches zero before every quota is complete, the contract ends with the same `timed-out` result semantics as Timed Harvest.
+
+### Weed Rush
+
+- Contract ID: `weed-rush`
+- Time limit: 55 seconds.
+- Collect 40 Grass.
+- Collect 20 Flowers.
+- Collect 6 Fiber.
+- No Wood quota; this timed route emphasizes dense weeds without forcing sapling level-gating.
+- Uses a switchback route with dense Fiber weed clusters, flower pockets, and internal soft-growth gaps.
 - If the timer reaches zero before every quota is complete, the contract ends with the same `timed-out` result semantics as Timed Harvest.
 
 ### Clear Every Patch
