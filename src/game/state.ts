@@ -64,6 +64,7 @@ export interface ContractDefinition {
     | "clover-circuit"
     | "orchard-loop"
     | "brook-bend"
+    | "harvest-spiral"
     | "clear-every-patch";
   title: string;
   summary: string;
@@ -168,6 +169,13 @@ export const CONTRACT_DEFINITIONS = [
     summary: "A 60-second S-bend route through flower banks and Fiber weeds.",
     timeLimitSeconds: 60,
     objectives: { grass: 200, flowers: 250, fiber: 24, wood: 0 },
+  },
+  {
+    id: "harvest-spiral",
+    title: "Harvest Spiral",
+    summary: "An 80-second spiral route that tightens from soft sweeps into timber cuts.",
+    timeLimitSeconds: 80,
+    objectives: { grass: 240, flowers: 260, fiber: 24, wood: 22 },
   },
   {
     id: "clear-every-patch",

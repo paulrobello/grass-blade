@@ -861,6 +861,7 @@ describe("active game state", () => {
     const cloverCircuit = createMeadowLayout(12345, "clover-circuit");
     const orchardLoop = createMeadowLayout(12345, "orchard-loop");
     const brookBend = createMeadowLayout(12345, "brook-bend");
+    const harvestSpiral = createMeadowLayout(12345, "harvest-spiral");
     const clearEveryPatch = createMeadowLayout(12345, "clear-every-patch");
     const unknown = createMeadowLayout(12345, "unknown-contract");
 
@@ -877,6 +878,7 @@ describe("active game state", () => {
     expect(cloverCircuit.arenaShape).toBe("figure-eight-circuit");
     expect(orchardLoop.arenaShape).toBe("orchard-loop");
     expect(brookBend.arenaShape).toBe("brook-bend");
+    expect(harvestSpiral.arenaShape).toBe("harvest-spiral");
     expect(clearEveryPatch.arenaShape).toBe("split-clearings");
     expect(flowerSweep.flowerTargets).toHaveLength(FLOWER_TARGET_COUNT);
     expect(woodland.flowerTargets).toHaveLength(FLOWER_TARGET_COUNT);
@@ -889,6 +891,7 @@ describe("active game state", () => {
     expect(cloverCircuit.flowerTargets).toHaveLength(FLOWER_TARGET_COUNT);
     expect(orchardLoop.flowerTargets).toHaveLength(FLOWER_TARGET_COUNT);
     expect(brookBend.flowerTargets).toHaveLength(FLOWER_TARGET_COUNT);
+    expect(harvestSpiral.flowerTargets).toHaveLength(FLOWER_TARGET_COUNT);
     expect(clearEveryPatch.flowerTargets).toHaveLength(FLOWER_TARGET_COUNT);
     expect(meadow.boundaryMarkers.length).toBeGreaterThan(100);
     expect(flowerSweep.boundaryMarkers.length).toBeGreaterThan(80);
@@ -901,6 +904,7 @@ describe("active game state", () => {
     expect(weedRush.boundaryMarkers.length).toBeGreaterThan(100);
     expect(orchardLoop.boundaryMarkers.length).toBeGreaterThan(110);
     expect(brookBend.boundaryMarkers.length).toBeGreaterThan(95);
+    expect(harvestSpiral.boundaryMarkers.length).toBeGreaterThan(120);
     expect(clearEveryPatch.boundaryMarkers.length).toBeGreaterThan(90);
     expect(clearEveryPatch.boundaryMarkers).not.toEqual(meadow.boundaryMarkers);
     expect(flowerSweep.grassVisuals).toHaveLength(GRASS_VISUAL_COLUMNS * GRASS_VISUAL_COLUMNS);
@@ -913,6 +917,7 @@ describe("active game state", () => {
     expect(weedRush.grassVisuals).toHaveLength(GRASS_VISUAL_COLUMNS * GRASS_VISUAL_COLUMNS);
     expect(orchardLoop.grassVisuals).toHaveLength(GRASS_VISUAL_COLUMNS * GRASS_VISUAL_COLUMNS);
     expect(brookBend.grassVisuals).toHaveLength(GRASS_VISUAL_COLUMNS * GRASS_VISUAL_COLUMNS);
+    expect(harvestSpiral.grassVisuals).toHaveLength(GRASS_VISUAL_COLUMNS * GRASS_VISUAL_COLUMNS);
     expect(clearEveryPatch.grassVisuals).toHaveLength(GRASS_VISUAL_COLUMNS * GRASS_VISUAL_COLUMNS);
     expect(flowerSweep.grassCells.length).toBeGreaterThan(120);
     expect(woodland.grassCells.length).toBeGreaterThan(160);
@@ -924,6 +929,7 @@ describe("active game state", () => {
     expect(weedRush.grassCells.length).toBeGreaterThan(190);
     expect(orchardLoop.grassCells.length).toBeGreaterThan(230);
     expect(brookBend.grassCells.length).toBeGreaterThan(200);
+    expect(harvestSpiral.grassCells.length).toBeGreaterThan(240);
     expect(clearEveryPatch.grassCells.length).toBeGreaterThan(250);
     expect(flowerSweep.grassCells.length).toBeLessThan(meadow.grassCells.length * 0.72);
     expect(woodland.grassCells.length).toBeLessThan(meadow.grassCells.length * 0.78);
@@ -935,6 +941,7 @@ describe("active game state", () => {
     expect(weedRush.grassCells.length).toBeLessThan(meadow.grassCells.length * 0.55);
     expect(orchardLoop.grassCells.length).toBeLessThan(meadow.grassCells.length * 0.7);
     expect(brookBend.grassCells.length).toBeLessThan(meadow.grassCells.length * 0.58);
+    expect(harvestSpiral.grassCells.length).toBeLessThan(meadow.grassCells.length * 0.7);
     expect(clearEveryPatch.grassCells.length).toBeLessThan(meadow.grassCells.length * 0.7);
     expect(countVisibleGrassVisuals(meadow)).toBeLessThan(
       GRASS_VISUAL_COLUMNS * GRASS_VISUAL_COLUMNS * 0.74,
@@ -1011,6 +1018,10 @@ describe("active game state", () => {
     expect(brookBendState.targets.filter((target) => target.kind === "grass")).toHaveLength(
       brookBend.grassCells.length,
     );
+    const harvestSpiralState = createInitialState(12345, "harvest-spiral");
+    expect(harvestSpiralState.targets.filter((target) => target.kind === "grass")).toHaveLength(
+      harvestSpiral.grassCells.length,
+    );
     expect(clearEveryPatchState.targets.filter((target) => target.kind === "grass")).toHaveLength(
       clearEveryPatch.grassCells.length,
     );
@@ -1032,6 +1043,9 @@ describe("active game state", () => {
     expect(brookBend.grassCells.length).toBeGreaterThanOrEqual(
       brookBendState.objectives.grass.target,
     );
+    expect(harvestSpiral.grassCells.length).toBeGreaterThanOrEqual(
+      harvestSpiralState.objectives.grass.target,
+    );
     expect(clearEveryPatch.grassCells.length).toBe(clearEveryPatchState.objectives.grass.target);
   });
 
@@ -1047,6 +1061,7 @@ describe("active game state", () => {
     const weedRush = createMeadowLayout(12345, "weed-rush");
     const orchardLoop = createMeadowLayout(12345, "orchard-loop");
     const brookBend = createMeadowLayout(12345, "brook-bend");
+    const harvestSpiral = createMeadowLayout(12345, "harvest-spiral");
     const clearEveryPatch = createMeadowLayout(12345, "clear-every-patch");
 
     expect(hasGrassCellNear(meadow, 0, -18)).toBe(true);
@@ -1125,6 +1140,14 @@ describe("active game state", () => {
     expect(hasGrassCellNear(brookBend, -2, -8)).toBe(false);
     expect(hasGrassCellNear(brookBend, 2, 13)).toBe(false);
     expect(hasGrassCellNear(brookBend, 17, 17)).toBe(false);
+
+    expect(hasGrassCellNear(harvestSpiral, -17, -12)).toBe(true);
+    expect(hasGrassCellNear(harvestSpiral, 17, -2)).toBe(true);
+    expect(hasGrassCellNear(harvestSpiral, -2, 16)).toBe(true);
+    expect(hasGrassCellNear(harvestSpiral, 2, 4)).toBe(true);
+    expect(hasGrassCellNear(harvestSpiral, -6, -2)).toBe(false);
+    expect(hasGrassCellNear(harvestSpiral, 7, 7)).toBe(false);
+    expect(hasGrassCellNear(harvestSpiral, 17, 17)).toBe(false);
 
     expect(hasGrassCellNear(clearEveryPatch, -12, -12)).toBe(true);
     expect(hasGrassCellNear(clearEveryPatch, 12, 5)).toBe(true);
@@ -1431,6 +1454,37 @@ describe("active game state", () => {
       expect(first.cutEvents.every((event) => !event.targetId.startsWith("rock-"))).toBe(true);
       expect(new Set(first.cutEvents.map((event) => event.targetId)).size).toBe(69);
     }
+  });
+
+  it("completes Harvest Spiral through its full mixed quota route", () => {
+    const state = createInitialState(12345, "harvest-spiral");
+
+    expect(state.contract).toMatchObject({
+      id: "harvest-spiral",
+      title: "Harvest Spiral",
+      timeLimitSeconds: 80,
+      completionMode: "quota",
+    });
+    expect(state.objectives).toMatchObject({
+      grass: { target: 240 },
+      flowers: { target: 260 },
+      fiber: { target: 24 },
+      wood: { target: 22 },
+    });
+
+    completeContractThroughQuotaCuts(state);
+
+    expect(state.mode).toBe("complete");
+    expect(state.inventory).toEqual({ grass: 240, flowers: 260, fiber: 24, wood: 22 });
+    expect(state.objectives.status).toBe("complete");
+    expect(state.result).toMatchObject({
+      status: "complete",
+      timeLimitSeconds: 80,
+      finalInventory: { grass: 240, flowers: 260, fiber: 24, wood: 22 },
+    });
+    expect(state.cutEvents.filter((event) => event.kind === "shrub")).toHaveLength(6);
+    expect(state.cutEvents.filter((event) => event.kind === "sapling")).toHaveLength(5);
+    expect(state.cutEvents.filter((event) => event.kind === "matureTree")).toHaveLength(2);
   });
 
   it("marks deterministic grass visuals individually inside the swept blade capsule", () => {

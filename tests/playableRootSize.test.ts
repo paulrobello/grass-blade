@@ -154,7 +154,8 @@ describe("contract navigation URLs", () => {
     expect(nextAuthoredContractId("weed-rush")).toBe("clover-circuit");
     expect(nextAuthoredContractId("clover-circuit")).toBe("orchard-loop");
     expect(nextAuthoredContractId("orchard-loop")).toBe("brook-bend");
-    expect(nextAuthoredContractId("brook-bend")).toBe("clear-every-patch");
+    expect(nextAuthoredContractId("brook-bend")).toBe("harvest-spiral");
+    expect(nextAuthoredContractId("harvest-spiral")).toBe("clear-every-patch");
     expect(nextAuthoredContractId("clear-every-patch")).toBe("meadow-delivery");
     expect(nextAuthoredContractId("unknown-contract")).toBe("meadow-delivery");
     expect(nextAuthoredContractTitle("meadow-delivery")).toBe("Flower Sweep");
@@ -168,7 +169,8 @@ describe("contract navigation URLs", () => {
     expect(nextAuthoredContractTitle("weed-rush")).toBe("Clover Circuit");
     expect(nextAuthoredContractTitle("clover-circuit")).toBe("Orchard Loop");
     expect(nextAuthoredContractTitle("orchard-loop")).toBe("Brook Bend");
-    expect(nextAuthoredContractTitle("brook-bend")).toBe("Clear Every Patch");
+    expect(nextAuthoredContractTitle("brook-bend")).toBe("Harvest Spiral");
+    expect(nextAuthoredContractTitle("harvest-spiral")).toBe("Clear Every Patch");
     expect(nextAuthoredContractTitle("clear-every-patch")).toBe("Meadow Delivery");
     expect(nextAuthoredContractTitle("unknown-contract")).toBe("Meadow Delivery");
   });
@@ -257,7 +259,14 @@ describe("contract navigation URLs", () => {
         nextAuthoredContractId("brook-bend"),
         "?seed=4055629313&debug=1&contract=brook-bend",
       ),
-    ).toBe("?seed=2415055461&debug=1&contract=clear-every-patch");
+    ).toBe("?seed=2415055461&debug=1&contract=harvest-spiral");
+    expect(
+      contractNavigationSearch(
+        774553834,
+        nextAuthoredContractId("harvest-spiral"),
+        "?seed=2415055461&debug=1&contract=harvest-spiral",
+      ),
+    ).toBe("?seed=774553834&debug=1&contract=clear-every-patch");
     expect(
       contractNavigationSearch(
         774499206,
