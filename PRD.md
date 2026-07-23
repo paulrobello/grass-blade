@@ -254,6 +254,18 @@ Authored contracts are selected by deterministic contract ID and seed. The defau
 - Deterministic balance requires all five saplings, two mature trees, every dense weed, and four shrubs while preserving a visible execution buffer inside the timer.
 - If the timer reaches zero before every quota is complete, the contract ends with the same `timed-out` result semantics as Timed Harvest.
 
+### Brook Bend
+
+- Contract ID: `brook-bend`
+- Time limit: 60 seconds.
+- Collect 200 Grass.
+- Collect 250 Flowers.
+- Collect 24 Fiber.
+- No Wood quota; this route emphasizes soft sweeping and hedge-level Fiber without forcing sapling level-gating.
+- Uses an S-bend brook-bank route with alternating flower banks, Fiber weed pockets, and no-growth bends so it reads as a winding path instead of a broad square field.
+- Deterministic balance requires all dense weeds and six shrubs while preserving a small execution buffer inside the timer.
+- If the timer reaches zero before every quota is complete, the contract ends with the same `timed-out` result semantics as Timed Harvest.
+
 ### Clear Every Patch
 
 - Contract ID: `clear-every-patch`
