@@ -59,7 +59,7 @@ function registerServiceWorker(): void {
       });
 
       navigator.serviceWorker
-        .register("/service-worker.js")
+        .register("/service-worker.js", { updateViaCache: "none" })
         .then((registration) => registration.update())
         .catch((error: unknown) => {
           console.warn("Grass Blade service worker registration failed", error);

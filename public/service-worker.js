@@ -1,6 +1,6 @@
 /* global caches, self */
 
-const CACHE_NAME = "grass-blade-v3";
+const CACHE_NAME = "grass-blade-v4";
 const CACHE_PREFIX = "grass-blade-";
 
 self.addEventListener("install", (event) => {

@@ -420,6 +420,9 @@ Active milestone: Phase 5 — expansion after first-playable evidence, with the 
 - `make mobile-check` still passes with nine chooser cards at 390 by 664, 375 by 548, 320 by 568, and 320 by 480, plus active-HUD and touch-drag checks.
 - The required web-game Playwright client ran against `?seed=12345&debug=1&contract=rock-garden` and wrote `output/playwright/rock-garden-smoke/shot-0.png` plus state without browser error artifacts. The inspected screenshot shows the Rock Garden countdown HUD, `100/80/8/4` quotas, visible stone obstacles, flower pockets, and the rock-slalom route with `canvasAspectMismatchRatio: 1`.
 - `make checkall` passes after the Rock Garden batch. The full gate covers formatting verification, ESLint, strict TypeScript, 133 deterministic Vitest tests across eight files, and the Vite production build.
+- Fixed a mobile stale/compatibility path behind contract-card overlap reports. The live phone screenshot showed an older Timed Harvest quota and no filter row, so the batch keeps production CSS on legacy `@media (max-width: ...)` syntax, makes timed chooser cards self-contained in the two-column fallback, bumps the PWA runtime cache to `grass-blade-v4`, and registers the service worker with `updateViaCache: "none"` so installed clients bypass cached service-worker scripts on update checks.
+- `make mobile-check` passes after the chooser/update fix. The verifier now also asserts that phone-width chooser cards render as a single-column list, covering the observed squeezed two-column failure mode across 592 by 981, 390 by 664, 375 by 548, 320 by 568, and 320 by 480 intro viewports plus active HUD and touch-drag checks.
+- `make checkall` passes after the chooser/update fix. The full gate covers formatting verification, ESLint, strict TypeScript, 148 deterministic Vitest tests across nine files, and the Vite production build.
 
 ## Remaining TODOs
 

@@ -101,6 +101,10 @@ async function checkIntroChooser(browser, options, viewport) {
     assert(!metrics.cardContentEscapesCard, `${viewport.name} contract card content escapes card`);
     assert(!metrics.contractTextBlocksOverlap, `${viewport.name} contract text blocks overlap`);
     assert(!metrics.timedBadgesOverlapText, `${viewport.name} timed badges overlap card text`);
+    assert(
+      metrics.contractCardsSingleColumn,
+      `${viewport.name} contract cards should use a single-column mobile list`,
+    );
     assert(metrics.filterButtonsVisible, `${viewport.name} contract filters are not visible`);
     assert(metrics.filterButtonsInsideCard, `${viewport.name} contract filters overflow the card`);
     if (viewport.filter === "all") {
@@ -414,6 +418,7 @@ async function measureIntroChooser(page) {
       cardContentEscapesCard: cardContentEscapesCard(),
       contractTextBlocksOverlap: contractTextBlocksOverlap(),
       timedBadgesOverlapText: timedBadgesOverlapText(),
+      contractCardsSingleColumn: contractCardsSingleColumn(),
     };
 
     function hasIntersectingRects(rects) {
@@ -515,6 +520,18 @@ async function measureIntroChooser(page) {
           .filter((rect) => rect !== undefined);
         const contentBottom = Math.max(...contentRects.map((rect) => rect.bottom));
         return badgeRect.top < contentBottom + 1;
+      });
+    }
+
+    function contractCardsSingleColumn() {
+      const visualOrderRects = [...contractRects].sort(
+        (first, second) => first.top - second.top || first.left - second.left,
+      );
+      return visualOrderRects.every((rect, index) => {
+        const nextRect = visualOrderRects[index + 1];
+        const fillsListWidth = rect.width >= listRect.width * 0.88;
+        const nextStartsBelow = nextRect === undefined || nextRect.top >= rect.bottom - 0.5;
+        return fillsListWidth && nextStartsBelow;
       });
     }
   });

@@ -869,10 +869,12 @@ body {
 
 .intro-card__contract {
   display: grid;
-  min-height: 6.1rem;
+  grid-template-rows: auto auto auto auto;
+  min-height: 6.85rem;
   align-content: start;
   gap: 0.22rem;
   padding: 0.62rem;
+  overflow: hidden;
   border: 0.14rem solid #d9b06d;
   border-radius: 0.95rem;
   background: linear-gradient(180deg, #fff6df, #f7e1b9);
@@ -924,7 +926,7 @@ body {
 }
 
 .intro-card__contract-time {
-  align-self: start;
+  align-self: end;
   padding: 0.16rem 0.42rem;
   border-radius: 999px;
   background: #283277;

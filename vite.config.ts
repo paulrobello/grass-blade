@@ -4,6 +4,7 @@ export default defineConfig({
   base: "./",
   build: {
     chunkSizeWarningLimit: 550,
+    cssTarget: "safari15",
   },
   server: {
     host: "127.0.0.1",

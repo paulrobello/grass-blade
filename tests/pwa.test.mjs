@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 
 const publicManifestPath = new URL("../public/manifest.webmanifest", import.meta.url);
 const indexPath = new URL("../index.html", import.meta.url);
+const mainPath = new URL("../src/main.ts", import.meta.url);
 const serviceWorkerPath = new URL("../public/service-worker.js", import.meta.url);
 
 describe("mobile PWA install metadata", () => {
@@ -49,11 +50,13 @@ describe("mobile PWA install metadata", () => {
   });
 
   it("provides an update-safe service worker for installed clients", () => {
+    const mainSource = fs.readFileSync(mainPath, "utf8");
     const serviceWorkerSource = fs.readFileSync(serviceWorkerPath, "utf8");
 
+    expect(mainSource).toContain('updateViaCache: "none"');
     expect(serviceWorkerSource).toContain('self.addEventListener("install"');
     expect(serviceWorkerSource).toContain("self.skipWaiting()");
-    expect(serviceWorkerSource).toContain('const CACHE_NAME = "grass-blade-v3"');
+    expect(serviceWorkerSource).toContain('const CACHE_NAME = "grass-blade-v4"');
     expect(serviceWorkerSource).toContain('const CACHE_PREFIX = "grass-blade-"');
     expect(serviceWorkerSource).toContain("key.startsWith(CACHE_PREFIX)");
     expect(serviceWorkerSource).toContain("caches.delete(key)");
