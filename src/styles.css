@@ -766,6 +766,14 @@ body {
   text-align: center;
 }
 
+.intro-card {
+  display: flex;
+  max-height: calc(100dvh - 2rem);
+  flex-direction: column;
+  overflow: hidden;
+  width: min(42rem, calc(100vw - 2rem));
+}
+
 .intro-card__eyebrow,
 .results-card__eyebrow,
 .pause-card__eyebrow {
@@ -814,6 +822,10 @@ body {
 }
 
 .intro-card__contracts {
+  display: flex;
+  min-height: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
   margin: 0.95rem auto 0.85rem;
 }
 
@@ -860,8 +872,12 @@ body {
 
 .intro-card__contract-list {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  min-height: 0;
+  grid-template-columns: repeat(auto-fit, minmax(min(16rem, 100%), 1fr));
   gap: 0.55rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 .intro-card__contract[hidden] {
@@ -871,7 +887,7 @@ body {
 .intro-card__contract {
   display: grid;
   grid-template-rows: auto auto auto auto;
-  min-height: 6.85rem;
+  min-height: 7.35rem;
   align-content: start;
   gap: 0.22rem;
   padding: 0.62rem;
@@ -928,6 +944,7 @@ body {
 
 .intro-card__contract-time {
   align-self: end;
+  justify-self: stretch;
   padding: 0.16rem 0.42rem;
   border-radius: 999px;
   background: #283277;
@@ -936,6 +953,7 @@ body {
   font-weight: 950;
   letter-spacing: 0.05em;
   line-height: 1;
+  text-align: center;
 }
 
 .results-card__stats {
@@ -1024,7 +1042,7 @@ body {
   outline-offset: 0.14rem;
 }
 
-@media (max-width: 700px) {
+@media (max-width: 760px) {
   .intro-overlay {
     place-items: stretch center;
     overflow: hidden;

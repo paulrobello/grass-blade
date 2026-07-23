@@ -23,6 +23,14 @@ const INTRO_VIEWPORTS = [
     contract: "timed-harvest",
     filter: "all",
   },
+  {
+    name: "narrow-761x981-all-contracts",
+    width: 761,
+    height: 981,
+    contract: "timed-harvest",
+    filter: "all",
+    singleColumn: false,
+  },
   { name: "phone-390x664-hedge-maze", width: 390, height: 664, contract: "hedge-maze" },
   { name: "phone-390x664-clover-circuit", width: 390, height: 664, contract: "clover-circuit" },
   {
@@ -98,13 +106,19 @@ async function checkIntroChooser(browser, options, viewport) {
       `${viewport.name} selected contract card is clipped outside list`,
     );
     assert(!metrics.contractCardsOverlap, `${viewport.name} contract cards overlap`);
+    assert(
+      metrics.contractCardMinWidth >= 240,
+      `${viewport.name} contract cards are too narrow: ${metrics.contractCardMinWidth}px`,
+    );
     assert(!metrics.cardContentEscapesCard, `${viewport.name} contract card content escapes card`);
     assert(!metrics.contractTextBlocksOverlap, `${viewport.name} contract text blocks overlap`);
     assert(!metrics.timedBadgesOverlapText, `${viewport.name} timed badges overlap card text`);
-    assert(
-      metrics.contractCardsSingleColumn,
-      `${viewport.name} contract cards should use a single-column mobile list`,
-    );
+    if (viewport.singleColumn !== false) {
+      assert(
+        metrics.contractCardsSingleColumn,
+        `${viewport.name} contract cards should use a single-column mobile list`,
+      );
+    }
     assert(metrics.filterButtonsVisible, `${viewport.name} contract filters are not visible`);
     assert(metrics.filterButtonsInsideCard, `${viewport.name} contract filters overflow the card`);
     if (viewport.filter === "all") {
@@ -390,6 +404,10 @@ async function measureIntroChooser(page) {
         ({ hidden, rect }) => hidden && rect.width > 0 && rect.height > 0,
       ),
       contractCardsOverlap: hasIntersectingRects(contractRects),
+      contractCardMinWidth:
+        contractRects.length > 0
+          ? Math.round(Math.min(...contractRects.map((rect) => rect.width)) * 1000) / 1000
+          : 0,
       filterButtonsVisible:
         filterRects.length > 0 && filterRects.every((rect) => rect.width > 0 && rect.height > 0),
       filterButtonsInsideCard: filterRects.every(
