@@ -61,6 +61,7 @@ export interface ContractDefinition {
     | "timed-harvest"
     | "field-sprint"
     | "weed-rush"
+    | "reed-run"
     | "clover-circuit"
     | "orchard-loop"
     | "brook-bend"
@@ -152,6 +153,13 @@ export const CONTRACT_DEFINITIONS = [
     summary: "A 55-second switchback route that mixes soft cuts with dense Fiber weeds.",
     timeLimitSeconds: 55,
     objectives: { grass: 150, flowers: 220, fiber: 18, wood: 0 },
+  },
+  {
+    id: "reed-run",
+    title: "Reed Run",
+    summary: "A 60-second golden-reed route that turns every Fiber Reed into the quota path.",
+    timeLimitSeconds: 60,
+    objectives: { grass: 205, flowers: 270, fiber: 10, wood: 0 },
   },
   {
     id: "clover-circuit",

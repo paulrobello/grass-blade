@@ -233,6 +233,18 @@ Authored contracts are selected by deterministic contract ID and seed. The defau
 - Uses a switchback route with dense Fiber weed clusters, flower pockets, and internal soft-growth gaps.
 - If the timer reaches zero before every quota is complete, the contract ends with the same `timed-out` result semantics as Timed Harvest.
 
+### Reed Run
+
+- Contract ID: `reed-run`
+- Time limit: 60 seconds.
+- Collect 205 Grass.
+- Collect 270 Flowers.
+- Collect 10 Fiber.
+- No Wood quota; this route deliberately exercises the pass-through Fiber Reed target family without forcing sapling level-gating.
+- Uses a golden-reed loop that bends through the seeded Fiber Reed anchors, with internal no-growth pockets so it reads as a route instead of a square field.
+- Deterministic balance selects all ten Fiber Reeds before falling back to dense weeds or shrubs, while existing contracts keep their dense-weed/shrub Fiber selection.
+- If the timer reaches zero before every quota is complete, the contract ends with the same `timed-out` result semantics as Timed Harvest.
+
 ### Clover Circuit
 
 - Contract ID: `clover-circuit`

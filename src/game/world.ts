@@ -39,6 +39,7 @@ export type ArenaLayoutId =
   | "timed-harvest"
   | "field-sprint"
   | "weed-rush"
+  | "reed-run"
   | "clover-circuit"
   | "orchard-loop"
   | "brook-bend"
@@ -58,6 +59,7 @@ export type ArenaShape =
   | "timed-loop"
   | "sprint-lanes"
   | "weed-switchbacks"
+  | "reed-run"
   | "figure-eight-circuit"
   | "orchard-loop"
   | "brook-bend"
@@ -550,6 +552,7 @@ function resolveArenaLayoutId(arenaId: string): ArenaLayoutId {
     case "timed-harvest":
     case "field-sprint":
     case "weed-rush":
+    case "reed-run":
     case "clover-circuit":
     case "orchard-loop":
     case "brook-bend":
@@ -583,6 +586,8 @@ function resolveArenaShape(arenaId: ArenaLayoutId): ArenaShape {
       return "sprint-lanes";
     case "weed-rush":
       return "weed-switchbacks";
+    case "reed-run":
+      return "reed-run";
     case "clover-circuit":
       return "figure-eight-circuit";
     case "orchard-loop":
@@ -1231,6 +1236,26 @@ export function isPointInArenaGrowth(arenaId: ArenaLayoutId, x: number, z: numbe
         !isPointInCircle(x, z, -1, -6, 2.05) &&
         !isPointInCircle(x, z, 6, 5, 2.0) &&
         !isPointInCircle(x, z, -8, 5, 1.8)
+      );
+    case "reed-run":
+      return (
+        (isPointInCapsule(x, z, -15, -5, -9, 13, 2.55) ||
+          isPointInCapsule(x, z, -9, 13, 3, 14, 2.5) ||
+          isPointInCapsule(x, z, 3, 14, 14, 5, 2.45) ||
+          isPointInCapsule(x, z, 14, 5, 10, -13, 2.5) ||
+          isPointInCapsule(x, z, 10, -13, -2, -14, 2.45) ||
+          isPointInCapsule(x, z, -2, -14, -15, -5, 2.45) ||
+          isPointInCapsule(x, z, -6, 1, 6, -1, 2.05) ||
+          isPointInCircle(x, z, -15, -5, 3.8) ||
+          isPointInCircle(x, z, -9, 13, 3.7) ||
+          isPointInCircle(x, z, 3, 14, 3.7) ||
+          isPointInCircle(x, z, 14, 5, 3.7) ||
+          isPointInCircle(x, z, 10, -13, 3.65) ||
+          isPointInCircle(x, z, -2, -14, 3.65) ||
+          isPointInCircle(x, z, 0, 0, 3.8)) &&
+        !isPointInCircle(x, z, -11, 3.2, 1.9) &&
+        !isPointInCircle(x, z, 7.4, 6.9, 1.85) &&
+        !isPointInCircle(x, z, 4.1, -8.8, 1.8)
       );
     case "clover-circuit":
       return (

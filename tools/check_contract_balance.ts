@@ -333,8 +333,12 @@ function targetsForFiberQuota(state: GameState, fiberQuota: number): TargetState
 
   const targets: TargetState[] = [];
   let remainingFiber = fiberQuota;
+  const preferredKinds =
+    state.contract.id === "reed-run"
+      ? new Set<TargetKind>(["fiberReed", "denseWeed", "shrub"])
+      : new Set<TargetKind>(["denseWeed", "shrub"]);
   for (const target of state.targets) {
-    if (target.kind !== "denseWeed" && target.kind !== "shrub") {
+    if (!preferredKinds.has(target.kind)) {
       continue;
     }
     if (remainingFiber <= 0) {
