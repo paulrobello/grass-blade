@@ -111,6 +111,8 @@ async function checkIntroChooser(browser, options, viewport) {
       `${viewport.name} contract cards are too narrow: ${metrics.contractCardMinWidth}px`,
     );
     assert(metrics.contractBadgesVisible, `${viewport.name} contract badges are not visible`);
+    assert(metrics.medalSummaryVisible, `${viewport.name} medal summary is not visible`);
+    assert(metrics.medalSummaryInsideCard, `${viewport.name} medal summary overflows the card`);
     assert(!metrics.cardContentEscapesCard, `${viewport.name} contract card content escapes card`);
     assert(!metrics.contractTextBlocksOverlap, `${viewport.name} contract text blocks overlap`);
     assert(!metrics.timedBadgesOverlapText, `${viewport.name} timed badges overlap card text`);
@@ -370,6 +372,7 @@ async function measureIntroChooser(page) {
     const card = requiredElement(".intro-card");
     const list = requiredElement(".intro-card__contract-list");
     const selected = requiredElement(".intro-card__contract--selected");
+    const medalSummary = requiredElement(".intro-card__medal-summary");
     const contractCards = Array.from(document.querySelectorAll(".intro-card__contract"));
     const contractCardRects = contractCards.map((element) => ({
       hidden: element.hidden,
@@ -388,6 +391,7 @@ async function measureIntroChooser(page) {
     const cardRect = toRect(card.getBoundingClientRect());
     const listRect = toRect(list.getBoundingClientRect());
     const selectedRect = toRect(selected.getBoundingClientRect());
+    const medalSummaryRect = toRect(medalSummary.getBoundingClientRect());
 
     return {
       viewportWidth,
@@ -410,6 +414,12 @@ async function measureIntroChooser(page) {
           ? Math.round(Math.min(...contractRects.map((rect) => rect.width)) * 1000) / 1000
           : 0,
       contractBadgesVisible: contractBadgesVisible(),
+      medalSummaryVisible: medalSummaryRect.width > 0 && medalSummaryRect.height > 0,
+      medalSummaryInsideCard:
+        medalSummaryRect.left >= cardRect.left - 0.5 &&
+        medalSummaryRect.right <= cardRect.right + 0.5 &&
+        medalSummaryRect.top >= cardRect.top - 0.5 &&
+        medalSummaryRect.bottom <= cardRect.bottom + 0.5,
       filterButtonsVisible:
         filterRects.length > 0 && filterRects.every((rect) => rect.width > 0 && rect.height > 0),
       filterButtonsInsideCard: filterRects.every(

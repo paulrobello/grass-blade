@@ -12,6 +12,7 @@ import {
   applyPlayableRootSize,
   contractCardBadges,
   contractMedalForTime,
+  contractMedalSummary,
   contractMedalTargets,
   contractMatchesFilter,
   contractNavigationSearch,
@@ -417,6 +418,33 @@ describe("contract best times", () => {
     expect(contractMedalForTime("unknown-contract", 30)).toBeNull();
     expect(contractMedalForTime("field-sprint", null)).toBeNull();
     expect(contractMedalForTime("field-sprint", Number.NaN)).toBeNull();
+  });
+
+  it("summarizes saved medal progress across every authored contract", () => {
+    expect(contractMedalSummary({})).toEqual({
+      totalContracts: CONTRACT_DEFINITIONS.length,
+      recordedContracts: 0,
+      medaledContracts: 0,
+      gold: 0,
+      silver: 0,
+      bronze: 0,
+    });
+
+    expect(
+      contractMedalSummary({
+        "field-sprint": 43,
+        "meadow-delivery": 33,
+        "timed-harvest": 60,
+        "flower-sweep": 99,
+      }),
+    ).toEqual({
+      totalContracts: CONTRACT_DEFINITIONS.length,
+      recordedContracts: 4,
+      medaledContracts: 3,
+      gold: 1,
+      silver: 1,
+      bronze: 1,
+    });
   });
 });
 

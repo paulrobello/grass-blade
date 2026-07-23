@@ -45,6 +45,15 @@ export interface ContractMedalTargets {
   bronzeSeconds: number;
 }
 
+export interface ContractMedalSummary {
+  totalContracts: number;
+  recordedContracts: number;
+  medaledContracts: number;
+  gold: number;
+  silver: number;
+  bronze: number;
+}
+
 interface HudElements {
   root: HTMLElement;
   pauseButton: HTMLButtonElement;
@@ -105,6 +114,7 @@ interface PauseElements {
 interface IntroElements {
   overlay: HTMLDivElement;
   contractEyebrow: HTMLElement;
+  medalSummary: HTMLElement;
   startButton: HTMLButtonElement;
   contractButtons: HTMLButtonElement[];
   filterButtons: HTMLButtonElement[];
@@ -519,6 +529,7 @@ export class Game {
   private updateIntro(): void {
     this.intro.overlay.hidden = this.contractStarted;
     setText(this.intro.contractEyebrow, this.state.contract.title);
+    setText(this.intro.medalSummary, formatContractMedalSummary(this.bestTimes));
     let selectedButton: HTMLButtonElement | null = null;
     let visibleContracts = 0;
     for (const button of this.intro.filterButtons) {
@@ -1318,6 +1329,7 @@ export class Game {
           this.state.contract.id,
           this.bestTimes[this.state.contract.id] ?? null,
         ),
+        medalSummary: contractMedalSummary(this.bestTimes),
         medalTargets: contractMedalTargetsForId(this.state.contract.id),
         resultMedal:
           this.state.result?.status === "complete"
@@ -1583,6 +1595,35 @@ export function contractMedalForTime(
     return "bronze";
   }
   return null;
+}
+
+export function contractMedalSummary(bestTimes: ContractBestTimes): ContractMedalSummary {
+  const summary: ContractMedalSummary = {
+    totalContracts: CONTRACT_DEFINITIONS.length,
+    recordedContracts: 0,
+    medaledContracts: 0,
+    gold: 0,
+    silver: 0,
+    bronze: 0,
+  };
+
+  for (const contract of CONTRACT_DEFINITIONS) {
+    const bestTime = bestTimes[contract.id];
+    if (bestTime === undefined || !Number.isFinite(bestTime)) {
+      continue;
+    }
+
+    summary.recordedContracts += 1;
+    const medal = contractMedalForTime(contract.id, bestTime);
+    if (medal === null) {
+      continue;
+    }
+
+    summary.medaledContracts += 1;
+    summary[medal] += 1;
+  }
+
+  return summary;
 }
 
 export function nextAuthoredContractTitle(currentContractId: string): string {
@@ -2026,6 +2067,7 @@ function createIntroElements(
   const contractPicker = document.createElement("div");
   const contractPickerTitle = document.createElement("p");
   const filterList = document.createElement("div");
+  const medalSummary = document.createElement("p");
   const contractList = document.createElement("div");
   const controls = document.createElement("p");
   const startButton = document.createElement("button");
@@ -2064,6 +2106,9 @@ function createIntroElements(
     filterList.append(button);
     filterButtons.push(button);
   }
+  medalSummary.className = "intro-card__medal-summary";
+  medalSummary.dataset.contractMedalSummary = "true";
+  medalSummary.textContent = "Medal Progress: No best times yet";
   contractList.className = "intro-card__contract-list";
   for (const contract of contracts) {
     const button = document.createElement("button");
@@ -2110,7 +2155,7 @@ function createIntroElements(
     contractList.append(button);
     contractButtons.push(button);
   }
-  contractPicker.append(contractPickerTitle, filterList, contractList);
+  contractPicker.append(contractPickerTitle, filterList, medalSummary, contractList);
   controls.className = "intro-card__controls";
   controls.textContent = "Drag to move after starting. Keyboard: WASD or arrows. Escape pauses.";
   startButton.id = "start-contract";
@@ -2122,7 +2167,14 @@ function createIntroElements(
   overlay.append(card);
   root.append(overlay);
 
-  return { overlay, contractEyebrow: eyebrow, startButton, contractButtons, filterButtons };
+  return {
+    overlay,
+    contractEyebrow: eyebrow,
+    medalSummary,
+    startButton,
+    contractButtons,
+    filterButtons,
+  };
 }
 
 function createResultsElements(root: HTMLElement): ResultsElements {
@@ -2341,6 +2393,15 @@ function formatContractMedalRank(rank: ContractMedalRank | null): string {
   }
 
   return `${rank[0]?.toUpperCase() ?? ""}${rank.slice(1)}`;
+}
+
+function formatContractMedalSummary(bestTimes: ContractBestTimes): string {
+  const summary = contractMedalSummary(bestTimes);
+  if (summary.recordedContracts === 0) {
+    return "Medal Progress: No best times yet";
+  }
+
+  return `Medals: ${summary.medaledContracts}/${summary.totalContracts} contracts · ${summary.gold} Gold · ${summary.silver} Silver · ${summary.bronze} Bronze`;
 }
 
 function clamp(value: number, minimum: number, maximum: number): number {

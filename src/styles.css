@@ -846,6 +846,15 @@ body {
   margin: 0 0 0.55rem;
 }
 
+.intro-card__medal-summary {
+  margin: -0.18rem 0 0.5rem;
+  color: #7a5d20;
+  font-size: 0.62rem;
+  font-weight: 950;
+  letter-spacing: 0.035em;
+  line-height: 1.18;
+}
+
 .intro-card__filter {
   min-width: 3.35rem;
   padding: 0.24rem 0.5rem;
@@ -1147,6 +1156,12 @@ body {
     overscroll-behavior: contain;
     scrollbar-gutter: stable;
     -webkit-overflow-scrolling: touch;
+  }
+
+  .intro-card__medal-summary {
+    margin: -0.22rem 0 0.38rem;
+    font-size: 0.56rem;
+    line-height: 1.12;
   }
 
   .intro-card__contract {
@@ -1765,6 +1780,10 @@ body {
     gap: 0.44rem;
   }
 
+  .intro-card__medal-summary {
+    font-size: 0.48rem;
+  }
+
   .intro-card__contract {
     padding: 0.42rem 0.5rem;
   }
@@ -1858,6 +1877,12 @@ body {
 
   .intro-card__contract-list {
     gap: 0.32rem;
+  }
+
+  .intro-card__medal-summary {
+    margin: -0.16rem 0 0.3rem;
+    font-size: 0.4rem;
+    line-height: 1.08;
   }
 
   .intro-card__contract {
