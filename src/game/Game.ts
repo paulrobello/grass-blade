@@ -96,6 +96,7 @@ interface IntroElements {
   contractEyebrow: HTMLElement;
   startButton: HTMLButtonElement;
   contractButtons: HTMLButtonElement[];
+  filterButtons: HTMLButtonElement[];
 }
 
 export interface AccessibilitySettings {
@@ -109,8 +110,16 @@ export interface MotionSettings {
 }
 
 export type ContractBestTimes = Partial<Record<ContractDefinition["id"], number>>;
+export type ContractFilterId = "all" | "timed" | "wood" | "soft" | "clear";
 
 export const BEST_TIMES_STORAGE_KEY = "grass-blade.best-times.v1";
+export const CONTRACT_FILTERS: ReadonlyArray<{ id: ContractFilterId; label: string }> = [
+  { id: "all", label: "All" },
+  { id: "timed", label: "Timed" },
+  { id: "wood", label: "Wood" },
+  { id: "soft", label: "Grass" },
+  { id: "clear", label: "Clear" },
+];
 
 export class Game {
   private readonly canvas: HTMLCanvasElement;
@@ -171,6 +180,7 @@ export class Game {
   private started = false;
   private contractStarted = false;
   private introSelectionScrolled = false;
+  private activeContractFilter: ContractFilterId = "all";
   private pauseFocusPlaced = false;
   private resultsFocusPlaced = false;
   private recordedBestResultRevision: number | null = null;
@@ -204,6 +214,10 @@ export class Game {
     this.audioControls = createAudioElements(this.appRoot);
     this.accessibilityStatus = requireElement("accessibility-status");
     this.intro = createIntroElements(this.appRoot, CONTRACT_DEFINITIONS);
+    this.activeContractFilter = primaryContractFilterId(
+      CONTRACT_DEFINITIONS.find((contract) => contract.id === this.state.contract.id) ??
+        CONTRACT_DEFINITIONS[0],
+    );
     this.results = createResultsElements(this.appRoot);
     this.pause = createPauseElements(this.appRoot);
     this.meadow = createScene(
@@ -274,6 +288,9 @@ export class Game {
     for (const button of this.intro.contractButtons) {
       button.addEventListener("click", this.onIntroContractChoiceClick);
     }
+    for (const button of this.intro.filterButtons) {
+      button.addEventListener("click", this.onIntroFilterClick);
+    }
     this.pause.resumeButton.addEventListener("click", this.resumeContract);
     this.pause.restartButton.addEventListener("click", this.restartContract);
     this.audioControls.toggle.addEventListener("click", this.toggleMuted);
@@ -314,6 +331,9 @@ export class Game {
     this.intro.startButton.removeEventListener("click", this.beginContract);
     for (const button of this.intro.contractButtons) {
       button.removeEventListener("click", this.onIntroContractChoiceClick);
+    }
+    for (const button of this.intro.filterButtons) {
+      button.removeEventListener("click", this.onIntroFilterClick);
     }
     this.pause.resumeButton.removeEventListener("click", this.resumeContract);
     this.pause.restartButton.removeEventListener("click", this.restartContract);
@@ -489,11 +509,28 @@ export class Game {
     this.intro.overlay.hidden = this.contractStarted;
     setText(this.intro.contractEyebrow, this.state.contract.title);
     let selectedButton: HTMLButtonElement | null = null;
-    for (const button of this.intro.contractButtons) {
+    let visibleContracts = 0;
+    for (const button of this.intro.filterButtons) {
+      const selected = button.dataset.contractFilter === this.activeContractFilter;
+      button.classList.toggle("intro-card__filter--selected", selected);
+      button.setAttribute("aria-pressed", selected ? "true" : "false");
+    }
+    for (const [index, button] of this.intro.contractButtons.entries()) {
       const contractId = button.dataset.contractId;
+      const contract =
+        contractId === undefined
+          ? undefined
+          : CONTRACT_DEFINITIONS.find((definition) => definition.id === contractId);
+      const visible =
+        contract !== undefined && contractMatchesFilter(contract, this.activeContractFilter);
       const selected = contractId === this.state.contract.id;
       if (selected) {
         selectedButton = button;
+      }
+      button.hidden = !visible;
+      button.style.order = selected ? "0" : String(index + 1);
+      if (visible) {
+        visibleContracts += 1;
       }
       const bestTime =
         contractId === undefined ? null : contractBestTimeForId(this.bestTimes, contractId);
@@ -504,8 +541,15 @@ export class Game {
         setText(bestTimeLabel, `Best: ${formatOptionalBestTime(bestTime)}`);
       }
     }
+    this.intro.overlay.dataset.contractFilter = this.activeContractFilter;
+    this.intro.overlay.dataset.visibleContracts = String(visibleContracts);
 
-    if (!this.introSelectionScrolled && selectedButton !== null && !this.contractStarted) {
+    if (
+      !this.introSelectionScrolled &&
+      selectedButton !== null &&
+      !selectedButton.hidden &&
+      !this.contractStarted
+    ) {
       selectedButton.scrollIntoView({ block: "nearest", inline: "nearest" });
       this.introSelectionScrolled = true;
     }
@@ -994,6 +1038,22 @@ export class Game {
     );
   };
 
+  private readonly onIntroFilterClick = (event: Event): void => {
+    const target = event.currentTarget;
+    if (!(target instanceof HTMLButtonElement)) {
+      return;
+    }
+
+    const filterId = parseContractFilterId(target.dataset.contractFilter);
+    if (filterId === null || filterId === this.activeContractFilter) {
+      return;
+    }
+
+    this.activeContractFilter = filterId;
+    this.introSelectionScrolled = false;
+    this.render();
+  };
+
   private readonly resumeContract = (): void => {
     if (this.state.mode !== "paused") {
       return;
@@ -1217,6 +1277,7 @@ export class Game {
         focusedElementId: activeHtmlElement?.id || null,
         pauseButtonHidden: this.hud.pauseButton.hidden,
         pauseButtonLabel: this.hud.pauseButton.getAttribute("aria-label"),
+        contractChooser: this.contractChooserDiagnostics(),
       },
       elapsedSeconds: round(this.state.elapsedSeconds),
       time: {
@@ -1368,6 +1429,23 @@ export class Game {
       isNewBest: update.isNewBest,
     };
   }
+
+  private contractChooserDiagnostics(): {
+    activeFilter: ContractFilterId;
+    visibleContracts: number;
+    totalContracts: number;
+    selectedContractVisible: boolean;
+  } {
+    const selectedButton = this.intro.contractButtons.find(
+      (button) => button.dataset.contractId === this.state.contract.id,
+    );
+    return {
+      activeFilter: this.activeContractFilter,
+      visibleContracts: this.intro.contractButtons.filter((button) => !button.hidden).length,
+      totalContracts: this.intro.contractButtons.length,
+      selectedContractVisible: selectedButton !== undefined && !selectedButton.hidden,
+    };
+  }
 }
 
 function prefersLowCostRendering(): boolean {
@@ -1418,6 +1496,42 @@ export function nextAuthoredContractTitle(currentContractId: string): string {
     CONTRACT_DEFINITIONS.find((contract) => contract.id === nextContractId)?.title ??
     "Next Contract"
   );
+}
+
+export function primaryContractFilterId(contract: ContractDefinition): ContractFilterId {
+  if (contract.completionMode === "clear-patches") {
+    return "clear";
+  }
+  if (contract.objectives.wood > 0) {
+    return "wood";
+  }
+  if (contract.objectives.fiber <= 0) {
+    return "soft";
+  }
+  if (contract.timeLimitSeconds !== undefined) {
+    return "timed";
+  }
+  return "all";
+}
+
+export function contractMatchesFilter(
+  contract: ContractDefinition,
+  filterId: ContractFilterId,
+): boolean {
+  if (filterId === "all") {
+    return true;
+  }
+
+  return primaryContractFilterId(contract) === filterId;
+}
+
+function parseContractFilterId(value: string | undefined): ContractFilterId | null {
+  if (value === undefined) {
+    return null;
+  }
+  return CONTRACT_FILTERS.some((filter) => filter.id === value)
+    ? (value as ContractFilterId)
+    : null;
 }
 
 interface BestTimeStorage {
@@ -1770,10 +1884,12 @@ function createIntroElements(
   const summary = document.createElement("p");
   const contractPicker = document.createElement("div");
   const contractPickerTitle = document.createElement("p");
+  const filterList = document.createElement("div");
   const contractList = document.createElement("div");
   const controls = document.createElement("p");
   const startButton = document.createElement("button");
   const contractButtons: HTMLButtonElement[] = [];
+  const filterButtons: HTMLButtonElement[] = [];
 
   overlay.className = "intro-overlay";
   overlay.setAttribute("role", "dialog");
@@ -1795,6 +1911,18 @@ function createIntroElements(
   contractPickerTitle.id = "intro-contract-picker-title";
   contractPickerTitle.className = "intro-card__contract-title";
   contractPickerTitle.textContent = "Choose Contract";
+  filterList.className = "intro-card__filters";
+  filterList.setAttribute("aria-label", "Filter contracts");
+  for (const filter of CONTRACT_FILTERS) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "intro-card__filter";
+    button.dataset.contractFilter = filter.id;
+    button.setAttribute("aria-pressed", "false");
+    button.textContent = filter.label;
+    filterList.append(button);
+    filterButtons.push(button);
+  }
   contractList.className = "intro-card__contract-list";
   for (const contract of contracts) {
     const button = document.createElement("button");
@@ -1828,7 +1956,7 @@ function createIntroElements(
     contractList.append(button);
     contractButtons.push(button);
   }
-  contractPicker.append(contractPickerTitle, contractList);
+  contractPicker.append(contractPickerTitle, filterList, contractList);
   controls.className = "intro-card__controls";
   controls.textContent = "Drag to move after starting. Keyboard: WASD or arrows. Escape pauses.";
   startButton.id = "start-contract";
@@ -1840,7 +1968,7 @@ function createIntroElements(
   overlay.append(card);
   root.append(overlay);
 
-  return { overlay, contractEyebrow: eyebrow, startButton, contractButtons };
+  return { overlay, contractEyebrow: eyebrow, startButton, contractButtons, filterButtons };
 }
 
 function createResultsElements(root: HTMLElement): ResultsElements {

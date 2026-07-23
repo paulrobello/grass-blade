@@ -9,6 +9,13 @@ const DEFAULT_OUTPUT_DIR = "output/playwright/mobile-check";
 
 const INTRO_VIEWPORTS = [
   { name: "phone-592x981-timed-harvest", width: 592, height: 981, contract: "timed-harvest" },
+  {
+    name: "phone-592x981-timed-harvest-large-text",
+    width: 592,
+    height: 981,
+    contract: "timed-harvest",
+    rootFontSizePx: 20,
+  },
   { name: "phone-390x664-hedge-maze", width: 390, height: 664, contract: "hedge-maze" },
   { name: "phone-390x664-clover-circuit", width: 390, height: 664, contract: "clover-circuit" },
   { name: "phone-375x548-orchard-loop", width: 375, height: 548, contract: "orchard-loop" },
@@ -57,6 +64,11 @@ async function checkIntroChooser(browser, options, viewport) {
 
   try {
     await openGame(page, scenarioUrl(options.url, { contract: contractId }));
+    if (viewport.rootFontSizePx !== undefined) {
+      await page.addStyleTag({
+        content: `:root { font-size: ${viewport.rootFontSizePx}px !important; }`,
+      });
+    }
     const metrics = await measureIntroChooser(page);
     assert(metrics.cardFitsViewport, `${viewport.name} intro card overflows viewport`);
     assert(metrics.startButtonVisible, `${viewport.name} Start button is not fully visible`);
@@ -72,6 +84,16 @@ async function checkIntroChooser(browser, options, viewport) {
     assert(!metrics.cardContentEscapesCard, `${viewport.name} contract card content escapes card`);
     assert(!metrics.contractTextBlocksOverlap, `${viewport.name} contract text blocks overlap`);
     assert(!metrics.timedBadgesOverlapText, `${viewport.name} timed badges overlap card text`);
+    assert(metrics.filterButtonsVisible, `${viewport.name} contract filters are not visible`);
+    assert(metrics.filterButtonsInsideCard, `${viewport.name} contract filters overflow the card`);
+    assert(
+      metrics.visibleContractCards < metrics.totalContractCards,
+      `${viewport.name} contract filters did not reduce the visible chooser cards`,
+    );
+    assert(
+      !metrics.hiddenContractCardsRender,
+      `${viewport.name} hidden contract cards still render`,
+    );
 
     const introPath = path.join(options.outputDir, `${viewport.name}-intro.png`);
     await page.screenshot({ path: introPath, fullPage: false });
@@ -83,6 +105,14 @@ async function checkIntroChooser(browser, options, viewport) {
     );
     const state = await renderState(page);
     assertEqual(state.contract.id, contractId, `${viewport.name} starts selected contract`);
+    assert(
+      state.flow.contractChooser.selectedContractVisible,
+      `${viewport.name} selected contract remains visible after filtering`,
+    );
+    assert(
+      state.flow.contractChooser.visibleContracts < state.flow.contractChooser.totalContracts,
+      `${viewport.name} filtered contract count is reported in text state`,
+    );
     assertEqual(
       state.performance.qualityPreset,
       "low",
@@ -288,7 +318,16 @@ async function measureIntroChooser(page) {
     const card = requiredElement(".intro-card");
     const list = requiredElement(".intro-card__contract-list");
     const selected = requiredElement(".intro-card__contract--selected");
-    const contractRects = Array.from(document.querySelectorAll(".intro-card__contract")).map(
+    const contractCards = Array.from(document.querySelectorAll(".intro-card__contract"));
+    const contractCardRects = contractCards.map((element) => ({
+      hidden: element.hidden,
+      rect: toRect(element.getBoundingClientRect()),
+    }));
+    const visibleContractCards = contractCardRects.filter(
+      ({ hidden, rect }) => !hidden && rect.width > 0 && rect.height > 0,
+    );
+    const contractRects = visibleContractCards.map(({ rect }) => rect);
+    const filterRects = Array.from(document.querySelectorAll(".intro-card__filter")).map(
       (element) => toRect(element.getBoundingClientRect()),
     );
     const viewportHeight = window.visualViewport?.height ?? window.innerHeight;
@@ -308,7 +347,21 @@ async function measureIntroChooser(page) {
       contractListScrollable: list.scrollHeight > list.clientHeight,
       contractListClientHeight: list.clientHeight,
       contractListScrollHeight: list.scrollHeight,
+      visibleContractCards: visibleContractCards.length,
+      totalContractCards: contractCards.length,
+      hiddenContractCardsRender: contractCardRects.some(
+        ({ hidden, rect }) => hidden && rect.width > 0 && rect.height > 0,
+      ),
       contractCardsOverlap: hasIntersectingRects(contractRects),
+      filterButtonsVisible:
+        filterRects.length > 0 && filterRects.every((rect) => rect.width > 0 && rect.height > 0),
+      filterButtonsInsideCard: filterRects.every(
+        (rect) =>
+          rect.left >= cardRect.left - 0.5 &&
+          rect.right <= cardRect.right + 0.5 &&
+          rect.top >= cardRect.top - 0.5 &&
+          rect.bottom <= cardRect.bottom + 0.5,
+      ),
       cardFitsViewport:
         cardRect.left >= -0.5 &&
         cardRect.right <= viewportWidth + 0.5 &&
@@ -353,7 +406,13 @@ async function measureIntroChooser(page) {
 
     function cardContentEscapesCard() {
       return Array.from(document.querySelectorAll(".intro-card__contract")).some((contractCard) => {
+        if (contractCard.hidden) {
+          return false;
+        }
         const cardRect = contractCard.getBoundingClientRect();
+        if (cardRect.width <= 0 || cardRect.height <= 0) {
+          return false;
+        }
         const contentElements = [
           ".intro-card__contract-name",
           ".intro-card__contract-quotas",
@@ -377,6 +436,13 @@ async function measureIntroChooser(page) {
 
     function contractTextBlocksOverlap() {
       return Array.from(document.querySelectorAll(".intro-card__contract")).some((contractCard) => {
+        if (contractCard.hidden) {
+          return false;
+        }
+        const cardRect = contractCard.getBoundingClientRect();
+        if (cardRect.width <= 0 || cardRect.height <= 0) {
+          return false;
+        }
         const contentRects = [
           ".intro-card__contract-name",
           ".intro-card__contract-quotas",
@@ -400,7 +466,13 @@ async function measureIntroChooser(page) {
         if (contractCard === null) {
           return true;
         }
+        if (contractCard.hidden) {
+          return false;
+        }
         const badgeRect = badge.getBoundingClientRect();
+        if (badgeRect.width <= 0 || badgeRect.height <= 0) {
+          return false;
+        }
         const contentRects = [
           ".intro-card__contract-name",
           ".intro-card__contract-quotas",

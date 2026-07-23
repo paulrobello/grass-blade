@@ -10,16 +10,19 @@ import {
 import {
   BEST_TIMES_STORAGE_KEY,
   applyPlayableRootSize,
+  contractMatchesFilter,
   contractNavigationSearch,
   derivePlayableRootSize,
   nextAuthoredContractId,
   nextAuthoredContractTitle,
   parseContractBestTimes,
+  primaryContractFilterId,
   resolveAccessibilitySettings,
   resolveMotionSettings,
   serializeContractBestTimes,
   updateContractBestTime,
 } from "../src/game/Game";
+import { CONTRACT_DEFINITIONS, type ContractDefinition } from "../src/game/state";
 
 describe("playable root sizing", () => {
   it("uses the visible phone browser viewport instead of narrowing the play area", () => {
@@ -313,6 +316,32 @@ describe("contract best times", () => {
   });
 });
 
+describe("contract chooser filters", () => {
+  it("chooses a compact primary filter for each selected contract type", () => {
+    expect(primaryContractFilterId(contractById("meadow-delivery"))).toBe("wood");
+    expect(primaryContractFilterId(contractById("timber-trail"))).toBe("wood");
+    expect(primaryContractFilterId(contractById("orchard-loop"))).toBe("wood");
+    expect(primaryContractFilterId(contractById("timed-harvest"))).toBe("timed");
+    expect(primaryContractFilterId(contractById("field-sprint"))).toBe("soft");
+    expect(primaryContractFilterId(contractById("clear-every-patch"))).toBe("clear");
+  });
+
+  it("matches contracts by broad chooser categories", () => {
+    const timberTrail = contractById("timber-trail");
+    const timedHarvest = contractById("timed-harvest");
+    const fieldSprint = contractById("field-sprint");
+    const clearEveryPatch = contractById("clear-every-patch");
+
+    expect(contractMatchesFilter(timberTrail, "all")).toBe(true);
+    expect(contractMatchesFilter(timberTrail, "timed")).toBe(false);
+    expect(contractMatchesFilter(timberTrail, "wood")).toBe(true);
+    expect(contractMatchesFilter(timedHarvest, "timed")).toBe(true);
+    expect(contractMatchesFilter(timedHarvest, "wood")).toBe(false);
+    expect(contractMatchesFilter(fieldSprint, "soft")).toBe(true);
+    expect(contractMatchesFilter(clearEveryPatch, "clear")).toBe(true);
+  });
+});
+
 function createStyleTarget(): {
   style: Pick<
     CSSStyleDeclaration,
@@ -335,6 +364,14 @@ function createStyleTarget(): {
       },
     },
   };
+}
+
+function contractById(id: ContractDefinition["id"]): ContractDefinition {
+  const contract = CONTRACT_DEFINITIONS.find((definition) => definition.id === id);
+  if (contract === undefined) {
+    throw new Error(`Missing test contract: ${id}`);
+  }
+  return contract;
 }
 
 describe("accessibility settings", () => {
