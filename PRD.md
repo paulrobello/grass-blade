@@ -166,12 +166,12 @@ Authored contracts are selected by deterministic contract ID and seed. The defau
 
 - Contract ID: `timber-trail`
 - Time limit: 90 seconds.
-- Collect 60 Grass.
-- Collect 16 Flowers.
-- Collect 8 Fiber.
-- Collect 16 Wood.
-- Uses a grove-to-grove route that requires all five saplings plus one mature tree in deterministic balance.
-- The quota intentionally verifies progression into mature-tree cutting after enough lower-tier XP is earned.
+- Collect 250 Grass.
+- Collect 260 Flowers.
+- Collect 28 Fiber.
+- Collect 28 Wood.
+- Uses a grove-to-grove route that requires sustained soft-target clearing, all twelve dense weeds, all eight shrubs, all five saplings, and three mature trees in deterministic balance.
+- The quota intentionally verifies late-route progression into repeated mature-tree cutting after enough lower-tier XP is earned.
 - If the timer reaches zero before every quota is complete, the contract ends with the same `timed-out` result semantics as Timed Harvest.
 
 ### Rock Garden

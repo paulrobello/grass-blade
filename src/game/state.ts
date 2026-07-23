@@ -108,7 +108,7 @@ export const CONTRACT_DEFINITIONS = [
     title: "Timber Trail",
     summary: "A 90-second wood route that grows into mature-tree cutting.",
     timeLimitSeconds: 90,
-    objectives: { grass: 60, flowers: 16, fiber: 8, wood: 16 },
+    objectives: { grass: 250, flowers: 260, fiber: 28, wood: 28 },
   },
   {
     id: "rock-garden",

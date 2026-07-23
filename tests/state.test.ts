@@ -375,26 +375,26 @@ describe("active game state", () => {
       timeLimitSeconds: 90,
       completionMode: "quota",
     });
-    expect(state.objectives.grass.target).toBe(60);
-    expect(state.objectives.flowers.target).toBe(16);
-    expect(state.objectives.fiber.target).toBe(8);
-    expect(state.objectives.wood.target).toBe(16);
+    expect(state.objectives.grass.target).toBe(250);
+    expect(state.objectives.flowers.target).toBe(260);
+    expect(state.objectives.fiber.target).toBe(28);
+    expect(state.objectives.wood.target).toBe(28);
 
     completeContractThroughQuotaCuts(state);
 
     expect(state.mode).toBe("complete");
     expect(state.elapsedSeconds).toBeLessThan(90);
-    expect(state.inventory).toEqual({ grass: 60, flowers: 16, fiber: 8, wood: 16 });
+    expect(state.inventory).toEqual({ grass: 250, flowers: 260, fiber: 28, wood: 28 });
     expect(state.result).toMatchObject({
       status: "complete",
       timeLimitSeconds: 90,
-      cutTargets: 90,
-      highestLevel: 6,
-      finalInventory: { grass: 60, flowers: 16, fiber: 8, wood: 16 },
-      completionRevision: 90,
+      cutTargets: 538,
+      highestLevel: 8,
+      finalInventory: { grass: 250, flowers: 260, fiber: 28, wood: 28 },
+      completionRevision: 538,
     });
     expect(state.targets.filter((target) => target.kind === "sapling")).toHaveLength(5);
-    expect(state.targets.filter((target) => target.kind === "matureTree")).toHaveLength(1);
+    expect(state.targets.filter((target) => target.kind === "matureTree")).toHaveLength(3);
   });
 
   it("creates and completes the authored Rock Garden contract before the clock expires", () => {
