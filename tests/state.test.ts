@@ -437,26 +437,26 @@ describe("active game state", () => {
       timeLimitSeconds: 80,
       completionMode: "quota",
     });
-    expect(state.objectives.grass.target).toBe(70);
-    expect(state.objectives.flowers.target).toBe(30);
-    expect(state.objectives.fiber.target).toBe(18);
+    expect(state.objectives.grass.target).toBe(183);
+    expect(state.objectives.flowers.target).toBe(300);
+    expect(state.objectives.fiber.target).toBe(28);
     expect(state.objectives.wood.target).toBe(0);
 
     completeContractThroughQuotaCuts(state);
 
     expect(state.mode).toBe("complete");
     expect(state.elapsedSeconds).toBeLessThan(80);
-    expect(state.inventory).toEqual({ grass: 70, flowers: 30, fiber: 18, wood: 0 });
+    expect(state.inventory).toEqual({ grass: 183, flowers: 300, fiber: 28, wood: 0 });
     expect(state.result).toMatchObject({
       status: "complete",
       timeLimitSeconds: 80,
-      cutTargets: 115,
-      highestLevel: 5,
-      finalInventory: { grass: 70, flowers: 30, fiber: 18, wood: 0 },
-      completionRevision: 115,
+      cutTargets: 503,
+      highestLevel: 8,
+      finalInventory: { grass: 183, flowers: 300, fiber: 28, wood: 0 },
+      completionRevision: 503,
     });
     expect(state.targets.filter((target) => target.kind === "denseWeed")).toHaveLength(12);
-    expect(state.targets.filter((target) => target.kind === "shrub")).toHaveLength(3);
+    expect(state.targets.filter((target) => target.kind === "shrub")).toHaveLength(8);
   });
 
   it("creates and completes the authored Field Sprint contract before the clock expires", () => {
@@ -895,7 +895,9 @@ describe("active game state", () => {
     expect(woodland.grassCells.length).toBeGreaterThan(woodlandState.objectives.grass.target);
     expect(timber.grassCells.length).toBeGreaterThan(timberState.objectives.grass.target);
     expect(rockGarden.grassCells.length).toBeGreaterThan(rockGardenState.objectives.grass.target);
-    expect(hedgeMaze.grassCells.length).toBeGreaterThan(hedgeMazeState.objectives.grass.target);
+    expect(hedgeMaze.grassCells.length).toBeGreaterThanOrEqual(
+      hedgeMazeState.objectives.grass.target,
+    );
     expect(timed.grassCells.length).toBeGreaterThanOrEqual(timedState.objectives.grass.target);
     expect(sprint.grassCells.length).toBeGreaterThan(sprintState.objectives.grass.target);
     expect(weedRush.grassCells.length).toBeGreaterThan(weedRushState.objectives.grass.target);

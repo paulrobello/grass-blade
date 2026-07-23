@@ -11,7 +11,9 @@ Active milestone: Phase 5 — expansion after first-playable evidence, with the 
 - Raised `timed-harvest` from `165 Grass / 200 Flowers / 12 Fiber` to `170 Grass / 300 Flowers / 18 Fiber`. Deterministic balance evidence at seed `12345` now completes in `56.70s` of the 60-second limit with `485` cut targets and level 8, leaving only `3.30s` in the isolated quota-cut model.
 - Added mobile PWA install support for the GitHub Pages site: fullscreen manifest, Apple/fullscreen meta tags, app icons, and a production-only service worker. Dev builds intentionally do not register the service worker to avoid stale local caches during iteration.
 - Fixed the mobile contract-card overlap by anchoring timed badges inside each card footer with reserved padding. The mobile checker now asserts that contract-card rectangles do not intersect and includes a 592 by 981 Timed Harvest intro case matching the reported phone screenshot shape.
-- Focused verification passed: `bun test tests/state.test.ts tests/playableRootSize.test.ts tests/pwa.test.ts`, `bun run balance:timed -- --seed 12345 --out output/balance/timed-harvest-tuned`, `bun run balance:contracts -- --contract timed-harvest`, `bun run balance:contracts -- --contract hedge-maze`, and `make mobile-check`.
+- Focused verification passed: `bun test tests/state.test.ts tests/playableRootSize.test.ts tests/pwa.test.mjs`, `bun run balance:timed -- --seed 12345 --out output/balance/timed-harvest-tuned`, `bun run balance:contracts -- --contract timed-harvest`, `bun run balance:contracts -- --contract hedge-maze`, and `make mobile-check`.
+- Retuned Hedge Maze after first balance evidence showed the 80-second route only needed `24.07s` of isolated cut budget. It now requires `183 Grass / 300 Flowers / 28 Fiber / 0 Wood`, forcing the full shrub/dense-weed Fiber route and most of the maze's soft targets.
+- Focused Hedge Maze balance now reports `61.70s / 80s` across ten validation seeds. The mobile checker includes a `390 by 664` Hedge Maze chooser case so the longer quota copy is covered against card overlap and selected-card clipping.
 
 ## Completed foundation intent
 

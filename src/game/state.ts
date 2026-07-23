@@ -122,7 +122,7 @@ export const CONTRACT_DEFINITIONS = [
     title: "Hedge Maze",
     summary: "An 80-second shrub maze that turns durable hedges into the Fiber objective.",
     timeLimitSeconds: 80,
-    objectives: { grass: 70, flowers: 30, fiber: 18, wood: 0 },
+    objectives: { grass: 183, flowers: 300, fiber: 28, wood: 0 },
   },
   {
     id: "timed-harvest",
