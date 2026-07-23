@@ -62,6 +62,7 @@ export interface ContractDefinition {
     | "field-sprint"
     | "weed-rush"
     | "clover-circuit"
+    | "orchard-loop"
     | "clear-every-patch";
   title: string;
   summary: string;
@@ -152,6 +153,13 @@ export const CONTRACT_DEFINITIONS = [
     summary: "A 75-second figure-eight route around dense flower and Fiber pockets.",
     timeLimitSeconds: 75,
     objectives: { grass: 240, flowers: 320, fiber: 28, wood: 0 },
+  },
+  {
+    id: "orchard-loop",
+    title: "Orchard Loop",
+    summary: "An 85-second wood loop through saplings, trees, and flower pockets.",
+    timeLimitSeconds: 85,
+    objectives: { grass: 240, flowers: 260, fiber: 20, wood: 22 },
   },
   {
     id: "clear-every-patch",

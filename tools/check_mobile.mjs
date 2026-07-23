@@ -11,6 +11,7 @@ const INTRO_VIEWPORTS = [
   { name: "phone-592x981-timed-harvest", width: 592, height: 981, contract: "timed-harvest" },
   { name: "phone-390x664-hedge-maze", width: 390, height: 664, contract: "hedge-maze" },
   { name: "phone-390x664-clover-circuit", width: 390, height: 664, contract: "clover-circuit" },
+  { name: "phone-375x548-orchard-loop", width: 375, height: 548, contract: "orchard-loop" },
   { name: "phone-390x664", width: 390, height: 664 },
   { name: "phone-375x548", width: 375, height: 548 },
   { name: "phone-320x568", width: 320, height: 568 },
