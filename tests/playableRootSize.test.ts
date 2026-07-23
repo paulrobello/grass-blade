@@ -8,13 +8,17 @@ import {
   resolveVolume,
 } from "../src/game/audio";
 import {
+  BEST_TIMES_STORAGE_KEY,
   applyPlayableRootSize,
   contractNavigationSearch,
   derivePlayableRootSize,
   nextAuthoredContractId,
   nextAuthoredContractTitle,
+  parseContractBestTimes,
   resolveAccessibilitySettings,
   resolveMotionSettings,
+  serializeContractBestTimes,
+  updateContractBestTime,
 } from "../src/game/Game";
 
 describe("playable root sizing", () => {
@@ -195,6 +199,63 @@ describe("contract navigation URLs", () => {
         "?seed=3872777624&debug=1&contract=clear-every-patch",
       ),
     ).toBe("?seed=1222246375&debug=1");
+  });
+});
+
+describe("contract best times", () => {
+  it("uses a stable local-storage key", () => {
+    expect(BEST_TIMES_STORAGE_KEY).toBe("grass-blade.best-times.v1");
+  });
+
+  it("parses only finite authored contract records", () => {
+    expect(
+      parseContractBestTimes(
+        JSON.stringify({
+          "meadow-delivery": 42.3456,
+          "field-sprint": 38,
+          "unknown-contract": 9,
+          "flower-sweep": -1,
+          "timed-harvest": "12",
+        }),
+      ),
+    ).toEqual({
+      "meadow-delivery": 42.346,
+      "field-sprint": 38,
+    });
+    expect(parseContractBestTimes("{bad")).toEqual({});
+    expect(parseContractBestTimes(null)).toEqual({});
+  });
+
+  it("updates a contract best time only when the completed run is faster", () => {
+    const first = updateContractBestTime({}, "field-sprint", 44.9);
+    expect(first).toEqual({
+      bestTimes: { "field-sprint": 44.9 },
+      bestSeconds: 44.9,
+      isNewBest: true,
+    });
+
+    const slower = updateContractBestTime(first.bestTimes, "field-sprint", 45.2);
+    expect(slower).toEqual({
+      bestTimes: { "field-sprint": 44.9 },
+      bestSeconds: 44.9,
+      isNewBest: false,
+    });
+
+    const faster = updateContractBestTime(first.bestTimes, "field-sprint", 39.1119);
+    expect(faster).toEqual({
+      bestTimes: { "field-sprint": 39.112 },
+      bestSeconds: 39.112,
+      isNewBest: true,
+    });
+  });
+
+  it("serializes best times in authored contract order", () => {
+    expect(
+      serializeContractBestTimes({
+        "field-sprint": 39.1119,
+        "meadow-delivery": 81,
+      }),
+    ).toBe('{"meadow-delivery":81,"field-sprint":39.112}');
   });
 });
 

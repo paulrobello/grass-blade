@@ -37,7 +37,8 @@ export type ArenaShape =
   | "branching-flower-corridors"
   | "woodland-clearings"
   | "timed-loop"
-  | "sprint-lanes";
+  | "sprint-lanes"
+  | "split-clearings";
 
 const DENSE_WEED_CLUSTER_CENTERS = [
   [-4.8, -3.5],
@@ -504,6 +505,7 @@ function resolveArenaShape(arenaId: ArenaLayoutId): ArenaShape {
     case "field-sprint":
       return "sprint-lanes";
     case "clear-every-patch":
+      return "split-clearings";
     case "meadow-delivery":
       return "starter-meadow-paths";
   }
@@ -613,7 +615,32 @@ function createFlowerClusterCenters(
     );
   }
 
-  if (arenaId === "meadow-delivery" || arenaId === "clear-every-patch") {
+  if (arenaId === "clear-every-patch") {
+    return jitterAnchors(
+      [
+        [-11, -13],
+        [-5, -12],
+        [3, -12],
+        [10, -10],
+        [7, -4],
+        [0, -3],
+        [-8, -1],
+        [-14, 4],
+        [-8, 8],
+        [0, 8],
+        [9, 6],
+        [14, 2],
+        [8, 13],
+        [0, 15],
+        [-7, 14],
+        [-13, 11],
+      ],
+      random,
+      0.62,
+    );
+  }
+
+  if (arenaId === "meadow-delivery") {
     return jitterAnchors(
       [
         [0, -15],
@@ -723,6 +750,24 @@ export function isPointInArenaGrowth(arenaId: ArenaLayoutId, x: number, z: numbe
         !isPointInCircle(x, z, 5, 7, 2.0)
       );
     case "clear-every-patch":
+      return (
+        (isPointInCircle(x, z, -12, -12, 5.4) ||
+          isPointInCircle(x, z, 6, -12, 5.2) ||
+          isPointInCircle(x, z, 0, -2, 6.0) ||
+          isPointInCircle(x, z, -13, 6, 5.3) ||
+          isPointInCircle(x, z, 12, 5, 5.3) ||
+          isPointInCircle(x, z, 0, 14, 5.4) ||
+          isPointInCapsule(x, z, -12, -12, 0, -2, 3.2) ||
+          isPointInCapsule(x, z, 6, -12, 0, -2, 3.0) ||
+          isPointInCapsule(x, z, 0, -2, -13, 6, 3.05) ||
+          isPointInCapsule(x, z, 0, -2, 12, 5, 3.05) ||
+          isPointInCapsule(x, z, -13, 6, 0, 14, 2.75) ||
+          isPointInCapsule(x, z, 12, 5, 0, 14, 2.75) ||
+          isPointInCapsule(x, z, -15, 2, 15, 2, 2.2)) &&
+        !isPointInCircle(x, z, -4, 5, 2.3) &&
+        !isPointInCircle(x, z, 5, 10, 2.15) &&
+        !isPointInCircle(x, z, 6, -3, 1.9)
+      );
     case "meadow-delivery":
       return (
         (isPointInCapsule(x, z, 0, -18, 0, 18, 5.85) ||

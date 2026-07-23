@@ -75,6 +75,7 @@ The game must be fully playable with a keyboard. Touch and pen users drag on the
 5. XP automatically raises the blade level during the run; no upgrade menu interrupts play.
 6. Complete every quota to finish the contract.
 7. Show a calm results card with elapsed time, targets cut, highest level, and Restart/Next Contract actions. Next Contract advances to the next authored contract template and the next deterministic seed.
+8. Track each authored contract's best successful completion time locally and surface it on contract selection and results. Timed-out attempts must not overwrite best records.
 
 Blade level, XP, cut targets, and collected resources reset at the start of each contract. Persistent currency, meta-upgrades, and account progression are not part of the MVP.
 
@@ -186,11 +187,13 @@ Authored contracts are selected by deterministic contract ID and seed. The defau
 
 - Contract ID: `clear-every-patch`
 - No time limit.
-- Clear every generated Grass and Flower target in the starter meadow.
+- Clear every generated Grass and Flower target in a split-clearings meadow.
 - Fiber and Wood are not required and are hidden from the active HUD.
 - This contract uses `clear-patches` completion mode: Grass and Flower counters are generated from the seeded world counts, and completion requires every matching authoritative target to reach `cut`, not merely matching counter totals.
 
 Later contracts may choose quota delivery or authored clear-patch goals from deterministic templates. Over-collection is allowed and still grants XP. Contract completion occurs in the same simulation tick that the final quota is awarded or the final clear-patch target is cut.
+
+Successful completions update the local best time for that specific authored contract only when faster than the previous record. The intro contract chooser and results card show each available record; failed timed-out runs preserve the previous best.
 
 Flower drifts are visual patches made from twenty smaller authoritative flower targets per drift. Cutting one edge pocket must not collect or visually topple the whole patch; fully clearing a patch requires sweeping through all of its flower sub-targets.
 

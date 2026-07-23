@@ -77,6 +77,7 @@ interface ResultsElements {
   title: HTMLElement;
   summary: HTMLElement;
   elapsed: HTMLElement;
+  bestTime: HTMLElement;
   cutTargets: HTMLElement;
   highestLevel: HTMLElement;
   restartButton: HTMLButtonElement;
@@ -106,6 +107,10 @@ export interface MotionSettings {
   motionSource: "standard" | "query" | "prefers-reduced-motion";
 }
 
+export type ContractBestTimes = Partial<Record<ContractDefinition["id"], number>>;
+
+export const BEST_TIMES_STORAGE_KEY = "grass-blade.best-times.v1";
+
 export class Game {
   private readonly canvas: HTMLCanvasElement;
   private readonly appRoot: HTMLElement;
@@ -126,6 +131,7 @@ export class Game {
   private readonly accessibilitySettings: AccessibilitySettings;
   private readonly motionSettings: MotionSettings;
   private readonly graphicsAdapter: GraphicsAdapterDiagnostics;
+  private bestTimes: ContractBestTimes;
   private readonly layoutResizeObserver: ResizeObserver | null =
     typeof ResizeObserver === "undefined" ? null : new ResizeObserver(() => this.resize());
   private readonly input: MovementInput = createMovementInput();
@@ -165,6 +171,8 @@ export class Game {
   private contractStarted = false;
   private pauseFocusPlaced = false;
   private resultsFocusPlaced = false;
+  private recordedBestResultRevision: number | null = null;
+  private bestResultNotice: { revision: number; isNewBest: boolean } | null = null;
 
   public constructor(canvas: HTMLCanvasElement, seed?: number, contractId: string | null = null) {
     this.canvas = canvas;
@@ -185,6 +193,7 @@ export class Game {
     });
     this.appRoot.dataset.motion = this.motionSettings.reducedMotion ? "reduced" : "standard";
     this.appRoot.dataset.motionSource = this.motionSettings.motionSource;
+    this.bestTimes = readContractBestTimes();
     this.hud = getHudElements();
     this.touchStick = requireElement("touch-stick");
     this.audio = new GameAudio(resolveAudioSettings(searchParams));
@@ -473,9 +482,16 @@ export class Game {
     this.intro.overlay.hidden = this.contractStarted;
     setText(this.intro.contractEyebrow, this.state.contract.title);
     for (const button of this.intro.contractButtons) {
-      const selected = button.dataset.contractId === this.state.contract.id;
+      const contractId = button.dataset.contractId;
+      const selected = contractId === this.state.contract.id;
+      const bestTime =
+        contractId === undefined ? null : contractBestTimeForId(this.bestTimes, contractId);
+      const bestTimeLabel = button.querySelector<HTMLElement>("[data-contract-best]");
       button.classList.toggle("intro-card__contract--selected", selected);
       button.setAttribute("aria-pressed", selected ? "true" : "false");
+      if (bestTimeLabel !== null) {
+        setText(bestTimeLabel, `Best: ${formatOptionalBestTime(bestTime)}`);
+      }
     }
   }
 
@@ -502,6 +518,7 @@ export class Game {
     }
 
     const timedOut = result.status === "timed-out";
+    const bestSnapshot = this.updateBestTimeForResult(result);
     this.results.overlay.hidden = false;
     this.results.overlay.setAttribute(
       "aria-label",
@@ -518,6 +535,13 @@ export class Game {
         : this.state.contract.summary,
     );
     setText(this.results.elapsed, formatElapsedTime(result.completedAtSeconds));
+    setText(
+      this.results.bestTime,
+      bestSnapshot.isNewBest
+        ? `New ${formatOptionalBestTime(bestSnapshot.bestSeconds)}`
+        : formatOptionalBestTime(bestSnapshot.bestSeconds),
+    );
+    this.results.bestTime.classList.toggle("results-card__best--new", bestSnapshot.isNewBest);
     setText(this.results.cutTargets, String(result.cutTargets));
     setText(this.results.highestLevel, `LV ${result.highestLevel}`);
     setText(this.results.nextButton, `Next: ${nextAuthoredContractTitle(this.state.contract.id)}`);
@@ -1171,6 +1195,16 @@ export class Game {
             : round(Math.max(0, this.state.contract.timeLimitSeconds - this.state.elapsedSeconds)),
       },
       result: this.state.result,
+      records: {
+        bestTimes: this.bestTimes,
+        currentBestSeconds: this.bestTimes[this.state.contract.id] ?? null,
+        currentBestTime: formatOptionalBestTime(this.bestTimes[this.state.contract.id] ?? null),
+        resultIsNewBest:
+          this.state.result === null
+            ? false
+            : this.bestResultNotice?.revision === this.state.result.completionRevision &&
+              this.bestResultNotice.isNewBest,
+      },
       accessibility: {
         liveRegionText: this.lastAccessibilityAnnouncement,
         highContrast: this.accessibilitySettings.highContrast,
@@ -1261,6 +1295,47 @@ export class Game {
       },
     });
   };
+
+  private updateBestTimeForResult(result: NonNullable<GameState["result"]>): {
+    bestSeconds: number | null;
+    isNewBest: boolean;
+  } {
+    if (result.status !== "complete") {
+      return {
+        bestSeconds: this.bestTimes[this.state.contract.id] ?? null,
+        isNewBest: false,
+      };
+    }
+
+    if (this.recordedBestResultRevision === result.completionRevision) {
+      return {
+        bestSeconds: this.bestTimes[this.state.contract.id] ?? null,
+        isNewBest:
+          this.bestResultNotice?.revision === result.completionRevision &&
+          this.bestResultNotice.isNewBest,
+      };
+    }
+
+    const update = updateContractBestTime(
+      this.bestTimes,
+      this.state.contract.id,
+      result.completedAtSeconds,
+    );
+    this.bestTimes = update.bestTimes;
+    this.recordedBestResultRevision = result.completionRevision;
+    this.bestResultNotice = {
+      revision: result.completionRevision,
+      isNewBest: update.isNewBest,
+    };
+    if (update.isNewBest) {
+      writeContractBestTimes(this.bestTimes);
+    }
+
+    return {
+      bestSeconds: update.bestSeconds,
+      isNewBest: update.isNewBest,
+    };
+  }
 }
 
 function requireAppRoot(canvas: HTMLCanvasElement): HTMLElement {
@@ -1304,6 +1379,129 @@ export function nextAuthoredContractTitle(currentContractId: string): string {
     CONTRACT_DEFINITIONS.find((contract) => contract.id === nextContractId)?.title ??
     "Next Contract"
   );
+}
+
+interface BestTimeStorage {
+  getItem(key: string): string | null;
+  setItem(key: string, value: string): void;
+}
+
+export function parseContractBestTimes(rawValue: string | null): ContractBestTimes {
+  if (rawValue === null) {
+    return {};
+  }
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(rawValue);
+  } catch {
+    return {};
+  }
+
+  if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
+    return {};
+  }
+
+  const candidate = parsed as Record<string, unknown>;
+  const bestTimes: ContractBestTimes = {};
+  for (const contract of CONTRACT_DEFINITIONS) {
+    const value = candidate[contract.id];
+    if (typeof value === "number" && Number.isFinite(value) && value >= 0) {
+      bestTimes[contract.id] = round(value);
+    }
+  }
+
+  return bestTimes;
+}
+
+export function serializeContractBestTimes(bestTimes: ContractBestTimes): string {
+  const serialized: ContractBestTimes = {};
+  for (const contract of CONTRACT_DEFINITIONS) {
+    const value = bestTimes[contract.id];
+    if (typeof value === "number" && Number.isFinite(value) && value >= 0) {
+      serialized[contract.id] = round(value);
+    }
+  }
+  return JSON.stringify(serialized);
+}
+
+export function updateContractBestTime(
+  bestTimes: ContractBestTimes,
+  contractId: string,
+  completedAtSeconds: number,
+): { bestTimes: ContractBestTimes; bestSeconds: number | null; isNewBest: boolean } {
+  const contract = CONTRACT_DEFINITIONS.find((candidate) => candidate.id === contractId);
+  if (contract === undefined || !Number.isFinite(completedAtSeconds) || completedAtSeconds < 0) {
+    return { bestTimes: { ...bestTimes }, bestSeconds: null, isNewBest: false };
+  }
+
+  const completedSeconds = round(completedAtSeconds);
+  const previousBest = bestTimes[contract.id];
+  if (previousBest !== undefined && previousBest <= completedSeconds) {
+    return {
+      bestTimes: { ...bestTimes },
+      bestSeconds: previousBest,
+      isNewBest: false,
+    };
+  }
+
+  return {
+    bestTimes: {
+      ...bestTimes,
+      [contract.id]: completedSeconds,
+    },
+    bestSeconds: completedSeconds,
+    isNewBest: true,
+  };
+}
+
+function readContractBestTimes(
+  storage: BestTimeStorage | null = safeBestTimeStorage(),
+): ContractBestTimes {
+  if (storage === null) {
+    return {};
+  }
+
+  try {
+    return parseContractBestTimes(storage.getItem(BEST_TIMES_STORAGE_KEY));
+  } catch {
+    return {};
+  }
+}
+
+function writeContractBestTimes(
+  bestTimes: ContractBestTimes,
+  storage: BestTimeStorage | null = safeBestTimeStorage(),
+): void {
+  if (storage === null) {
+    return;
+  }
+
+  try {
+    storage.setItem(BEST_TIMES_STORAGE_KEY, serializeContractBestTimes(bestTimes));
+  } catch {
+    // Storage can fail in private browsing or restricted embeds; best times are optional.
+  }
+}
+
+function safeBestTimeStorage(): BestTimeStorage | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  try {
+    return window.localStorage;
+  } catch {
+    return null;
+  }
+}
+
+function contractBestTimeForId(bestTimes: ContractBestTimes, contractId: string): number | null {
+  const contract = CONTRACT_DEFINITIONS.find((candidate) => candidate.id === contractId);
+  if (contract === undefined) {
+    return null;
+  }
+  return bestTimes[contract.id] ?? null;
 }
 
 function levelForDebugXp(xp: number): number {
@@ -1559,6 +1757,7 @@ function createIntroElements(
     const contractSummary = document.createElement("span");
     const quotas = document.createElement("span");
     const timeLimit = document.createElement("span");
+    const bestTime = document.createElement("span");
 
     button.id = `contract-choice-${contract.id}`;
     button.type = "button";
@@ -1571,12 +1770,15 @@ function createIntroElements(
     contractSummary.textContent = contract.summary;
     quotas.className = "intro-card__contract-quotas";
     quotas.textContent = formatContractGoal(contract);
+    bestTime.className = "intro-card__contract-best";
+    bestTime.dataset.contractBest = "true";
+    bestTime.textContent = "Best: —";
     if (contract.timeLimitSeconds !== undefined) {
       timeLimit.className = "intro-card__contract-time";
       timeLimit.textContent = `${contract.timeLimitSeconds} sec`;
-      button.append(name, contractSummary, quotas, timeLimit);
+      button.append(name, contractSummary, quotas, bestTime, timeLimit);
     } else {
-      button.append(name, contractSummary, quotas);
+      button.append(name, contractSummary, quotas, bestTime);
     }
     contractList.append(button);
     contractButtons.push(button);
@@ -1605,6 +1807,8 @@ function createResultsElements(root: HTMLElement): ResultsElements {
   const stats = document.createElement("dl");
   const elapsedLabel = document.createElement("dt");
   const elapsed = document.createElement("dd");
+  const bestTimeLabel = document.createElement("dt");
+  const bestTime = document.createElement("dd");
   const cutTargetsLabel = document.createElement("dt");
   const cutTargets = document.createElement("dd");
   const highestLevelLabel = document.createElement("dt");
@@ -1627,8 +1831,10 @@ function createResultsElements(root: HTMLElement): ResultsElements {
   summary.textContent = "Every quota is packed. Take another pass through the meadow when ready.";
   stats.className = "results-card__stats";
   elapsedLabel.textContent = "Time";
+  bestTimeLabel.textContent = "Best";
   cutTargetsLabel.textContent = "Targets cut";
   highestLevelLabel.textContent = "Highest level";
+  bestTime.textContent = "—";
   actions.className = "results-card__actions";
   restartButton.type = "button";
   restartButton.id = "results-restart";
@@ -1639,7 +1845,16 @@ function createResultsElements(root: HTMLElement): ResultsElements {
   nextButton.className = "results-card__button results-card__button--primary";
   nextButton.textContent = "Next Contract";
 
-  stats.append(elapsedLabel, elapsed, cutTargetsLabel, cutTargets, highestLevelLabel, highestLevel);
+  stats.append(
+    elapsedLabel,
+    elapsed,
+    bestTimeLabel,
+    bestTime,
+    cutTargetsLabel,
+    cutTargets,
+    highestLevelLabel,
+    highestLevel,
+  );
   actions.append(restartButton, nextButton);
   card.append(eyebrow, title, summary, stats, actions);
   overlay.append(card);
@@ -1651,6 +1866,7 @@ function createResultsElements(root: HTMLElement): ResultsElements {
     title,
     summary,
     elapsed,
+    bestTime,
     cutTargets,
     highestLevel,
     restartButton,
@@ -1763,6 +1979,10 @@ function formatElapsedTime(seconds: number): string {
   const wholeSeconds = Math.max(0, Math.floor(seconds));
   const minutes = Math.floor(wholeSeconds / 60);
   return `${minutes}:${String(wholeSeconds % 60).padStart(2, "0")}`;
+}
+
+function formatOptionalBestTime(seconds: number | null): string {
+  return seconds === null ? "—" : formatElapsedTime(seconds);
 }
 
 function clamp(value: number, minimum: number, maximum: number): number {
