@@ -66,6 +66,7 @@ export interface ContractDefinition {
     | "brook-bend"
     | "harvest-spiral"
     | "crescent-grove"
+    | "forked-thicket"
     | "clear-every-patch";
   title: string;
   summary: string;
@@ -184,6 +185,13 @@ export const CONTRACT_DEFINITIONS = [
     summary: "A 75-second crescent route that bends through flower banks and timber pockets.",
     timeLimitSeconds: 75,
     objectives: { grass: 220, flowers: 240, fiber: 20, wood: 16 },
+  },
+  {
+    id: "forked-thicket",
+    title: "Forked Thicket",
+    summary: "An 85-second three-way branch route through tangled flowers, shrubs, and timber.",
+    timeLimitSeconds: 85,
+    objectives: { grass: 260, flowers: 280, fiber: 24, wood: 22 },
   },
   {
     id: "clear-every-patch",

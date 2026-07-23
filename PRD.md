@@ -290,6 +290,18 @@ Authored contracts are selected by deterministic contract ID and seed. The defau
 - Deterministic balance requires all dense weeds, four shrubs, all five saplings, and one mature tree while preserving a small execution buffer inside the timer.
 - If the timer reaches zero before every quota is complete, the contract ends with the same `timed-out` result semantics as Timed Harvest.
 
+### Forked Thicket
+
+- Contract ID: `forked-thicket`
+- Time limit: 85 seconds.
+- Collect 260 Grass.
+- Collect 280 Flowers.
+- Collect 24 Fiber.
+- Collect 22 Wood.
+- Uses a three-way branching thicket route with a central trunk, left/right timber forks, a north branch, and carved no-growth pockets between the forks.
+- Deterministic balance requires all dense weeds, six shrubs, all five saplings, and two mature trees while preserving a small execution buffer inside the timer.
+- If the timer reaches zero before every quota is complete, the contract ends with the same `timed-out` result semantics as Timed Harvest.
+
 ### Clear Every Patch
 
 - Contract ID: `clear-every-patch`
