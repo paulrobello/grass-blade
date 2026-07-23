@@ -1396,7 +1396,7 @@ body {
   .game-hud {
     top: max(0.45rem, env(safe-area-inset-top));
     left: max(0.45rem, env(safe-area-inset-left));
-    right: max(0.45rem, env(safe-area-inset-right));
+    right: max(4.85rem, calc(env(safe-area-inset-right) + 4.85rem));
     align-items: center;
   }
 
@@ -1441,7 +1441,7 @@ body {
   .objective-tray {
     display: grid;
     grid-template-columns: repeat(var(--objective-count, 4), minmax(2.5rem, 1fr));
-    width: min(calc(var(--objective-count, 4) * 3.95rem + 1rem), calc(100vw - 6rem));
+    width: min(calc(var(--objective-count, 4) * 3.95rem + 1rem), calc(100vw - 9.6rem));
     margin-top: 0.18rem;
     margin-left: -0.42rem;
     padding: 0.34rem 0.36rem 0.36rem 0.72rem;
@@ -1546,6 +1546,13 @@ body {
 
   .results-card__actions {
     flex-direction: column;
+  }
+}
+
+@media (max-width: 360px) {
+  .objective-tray {
+    grid-template-columns: repeat(2, minmax(2.35rem, 1fr));
+    width: min(8.8rem, calc(100vw - 9.6rem));
   }
 }
 

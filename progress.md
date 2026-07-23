@@ -345,6 +345,10 @@ Active milestone: Phase 5 — expansion after first-playable evidence, with the 
 - The current all-contract balance capture passes: Meadow Delivery `25.87s`, Flower Sweep `51.25s`, Woodland Cleanup `33.07s`, Timed Harvest `6.50s / 60s`, Field Sprint `29.08s / 45s`, and Clear Every Patch `57.15s`. This gives Field Sprint concrete regression evidence after the quota increase from the earlier too-short version.
 - The required web-game Playwright client ran against `?seed=12345&debug=1&contract=field-sprint` after the balance-capture tooling slice and wrote `output/playwright/contract-balance-client-smoke/shot-0.png` plus `state-0.json` without browser error artifacts. The inspected screenshot shows active Field Sprint gameplay, dense flower lanes, the compact countdown HUD, and the mobile-visible pause button.
 - `make checkall` passes after the balance-capture tooling slice. The full gate covers formatting verification, ESLint, strict TypeScript, 130 deterministic Vitest tests across eight files, and the Vite production build.
+- Fixed the mobile HUD overlap introduced by the visible pause control. Phone-width layouts now reserve a right-side pause-button lane, and very narrow play areas switch the objective tray to two columns so quota chips do not sit under the pause button.
+- Focused mobile browser metrics at 390 by 844 and 320 by 640 verified positive gaps between the objective tray and pause button (`13.61px` and `25.95px`) with no browser errors. The inspected artifacts are `output/playwright/mobile-hud-overlap-fix/390x844.png`, `320x640.png`, and `summary.json`.
+- The required web-game Playwright client reran against `?seed=12345&debug=1&contract=meadow-delivery` after the HUD-overlap fix and wrote `output/playwright/mobile-hud-overlap-client-smoke/shot-0.png` plus `state-0.json` without browser error artifacts.
+- `make checkall` passes after the mobile HUD-overlap fix. The full gate covers formatting verification, ESLint, strict TypeScript, 130 deterministic Vitest tests across eight files, and the Vite production build.
 
 ## Remaining TODOs
 
