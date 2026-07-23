@@ -162,6 +162,18 @@ Authored contracts are selected by deterministic contract ID and seed. The defau
 - Collect 8 Wood.
 - Emphasizes weeds and saplings with heavier Fiber and Wood quotas while keeping the soft-target requirements shorter than Meadow Delivery.
 
+### Timber Trail
+
+- Contract ID: `timber-trail`
+- Time limit: 90 seconds.
+- Collect 60 Grass.
+- Collect 16 Flowers.
+- Collect 8 Fiber.
+- Collect 16 Wood.
+- Uses a grove-to-grove route that requires all five saplings plus one mature tree in deterministic balance.
+- The quota intentionally verifies progression into mature-tree cutting after enough lower-tier XP is earned.
+- If the timer reaches zero before every quota is complete, the contract ends with the same `timed-out` result semantics as Timed Harvest.
+
 ### Timed Harvest
 
 - Contract ID: `timed-harvest`

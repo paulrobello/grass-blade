@@ -142,7 +142,8 @@ describe("contract navigation URLs", () => {
   it("cycles through authored contracts for the results next action", () => {
     expect(nextAuthoredContractId("meadow-delivery")).toBe("flower-sweep");
     expect(nextAuthoredContractId("flower-sweep")).toBe("woodland-cleanup");
-    expect(nextAuthoredContractId("woodland-cleanup")).toBe("timed-harvest");
+    expect(nextAuthoredContractId("woodland-cleanup")).toBe("timber-trail");
+    expect(nextAuthoredContractId("timber-trail")).toBe("timed-harvest");
     expect(nextAuthoredContractId("timed-harvest")).toBe("field-sprint");
     expect(nextAuthoredContractId("field-sprint")).toBe("weed-rush");
     expect(nextAuthoredContractId("weed-rush")).toBe("clear-every-patch");
@@ -150,7 +151,8 @@ describe("contract navigation URLs", () => {
     expect(nextAuthoredContractId("unknown-contract")).toBe("meadow-delivery");
     expect(nextAuthoredContractTitle("meadow-delivery")).toBe("Flower Sweep");
     expect(nextAuthoredContractTitle("flower-sweep")).toBe("Woodland Cleanup");
-    expect(nextAuthoredContractTitle("woodland-cleanup")).toBe("Timed Harvest");
+    expect(nextAuthoredContractTitle("woodland-cleanup")).toBe("Timber Trail");
+    expect(nextAuthoredContractTitle("timber-trail")).toBe("Timed Harvest");
     expect(nextAuthoredContractTitle("timed-harvest")).toBe("Field Sprint");
     expect(nextAuthoredContractTitle("field-sprint")).toBe("Weed Rush");
     expect(nextAuthoredContractTitle("weed-rush")).toBe("Clear Every Patch");
@@ -179,35 +181,42 @@ describe("contract navigation URLs", () => {
         nextAuthoredContractId("woodland-cleanup"),
         "?seed=1013916587&debug=1&contract=woodland-cleanup",
       ),
-    ).toBe("?seed=3668364708&debug=1&contract=timed-harvest");
+    ).toBe("?seed=3668364708&debug=1&contract=timber-trail");
     expect(
       contractNavigationSearch(
         2027808453,
-        nextAuthoredContractId("timed-harvest"),
-        "?seed=3668364708&debug=1&contract=timed-harvest",
+        nextAuthoredContractId("timber-trail"),
+        "?seed=3668364708&debug=1&contract=timber-trail",
       ),
-    ).toBe("?seed=2027808453&debug=1&contract=field-sprint");
+    ).toBe("?seed=2027808453&debug=1&contract=timed-harvest");
     expect(
       contractNavigationSearch(
         3872777624,
-        nextAuthoredContractId("field-sprint"),
-        "?seed=2027808453&debug=1&contract=field-sprint",
+        nextAuthoredContractId("timed-harvest"),
+        "?seed=2027808453&debug=1&contract=timed-harvest",
       ),
-    ).toBe("?seed=3872777624&debug=1&contract=weed-rush");
+    ).toBe("?seed=3872777624&debug=1&contract=field-sprint");
     expect(
       contractNavigationSearch(
         1222246375,
-        nextAuthoredContractId("weed-rush"),
-        "?seed=3872777624&debug=1&contract=weed-rush",
+        nextAuthoredContractId("field-sprint"),
+        "?seed=3872777624&debug=1&contract=field-sprint",
       ),
-    ).toBe("?seed=1222246375&debug=1&contract=clear-every-patch");
+    ).toBe("?seed=1222246375&debug=1&contract=weed-rush");
     expect(
       contractNavigationSearch(
         3041725071,
-        nextAuthoredContractId("clear-every-patch"),
-        "?seed=1222246375&debug=1&contract=clear-every-patch",
+        nextAuthoredContractId("weed-rush"),
+        "?seed=1222246375&debug=1&contract=weed-rush",
       ),
-    ).toBe("?seed=3041725071&debug=1");
+    ).toBe("?seed=3041725071&debug=1&contract=clear-every-patch");
+    expect(
+      contractNavigationSearch(
+        1401193544,
+        nextAuthoredContractId("clear-every-patch"),
+        "?seed=3041725071&debug=1&contract=clear-every-patch",
+      ),
+    ).toBe("?seed=1401193544&debug=1");
   });
 });
 

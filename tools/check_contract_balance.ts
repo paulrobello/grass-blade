@@ -322,8 +322,36 @@ function selectContractTargets(state: GameState): TargetState[] {
     ...targetsForKind(state, "grass", state.objectives.grass.target),
     ...targetsForKind(state, "flower", state.objectives.flowers.target),
     ...targetsForKind(state, "denseWeed", state.objectives.fiber.target),
-    ...targetsForKind(state, "sapling", Math.ceil(state.objectives.wood.target / 2)),
+    ...targetsForWoodQuota(state, state.objectives.wood.target),
   ];
+}
+
+function targetsForWoodQuota(state: GameState, woodQuota: number): TargetState[] {
+  if (woodQuota <= 0) {
+    return [];
+  }
+
+  const targets: TargetState[] = [];
+  let remainingWood = woodQuota;
+  for (const target of state.targets) {
+    if (target.kind !== "sapling" && target.kind !== "matureTree") {
+      continue;
+    }
+    if (remainingWood <= 0) {
+      break;
+    }
+
+    targets.push(target);
+    remainingWood -= target.yield;
+  }
+
+  if (remainingWood > 0) {
+    throw new Error(
+      `${state.contract.id} needs ${woodQuota} Wood but only found ${woodQuota - remainingWood}`,
+    );
+  }
+
+  return targets;
 }
 
 function targetsForKind(state: GameState, kind: TargetKind, count: number): TargetState[] {

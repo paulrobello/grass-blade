@@ -55,6 +55,7 @@ export interface ContractDefinition {
     | "meadow-delivery"
     | "flower-sweep"
     | "woodland-cleanup"
+    | "timber-trail"
     | "timed-harvest"
     | "field-sprint"
     | "weed-rush"
@@ -99,6 +100,13 @@ export const CONTRACT_DEFINITIONS = [
     title: "Woodland Cleanup",
     summary: "Focus on weeds and saplings for a heavier Fiber and Wood delivery.",
     objectives: { grass: 30, flowers: 6, fiber: 8, wood: 8 },
+  },
+  {
+    id: "timber-trail",
+    title: "Timber Trail",
+    summary: "A 90-second wood route that grows into mature-tree cutting.",
+    timeLimitSeconds: 90,
+    objectives: { grass: 60, flowers: 16, fiber: 8, wood: 16 },
   },
   {
     id: "timed-harvest",
