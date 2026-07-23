@@ -18,6 +18,13 @@ const INTRO_VIEWPORTS = [
   },
   { name: "phone-390x664-hedge-maze", width: 390, height: 664, contract: "hedge-maze" },
   { name: "phone-390x664-clover-circuit", width: 390, height: 664, contract: "clover-circuit" },
+  {
+    name: "phone-390x664-all-contracts",
+    width: 390,
+    height: 664,
+    contract: "timed-harvest",
+    filter: "all",
+  },
   { name: "phone-375x548-orchard-loop", width: 375, height: 548, contract: "orchard-loop" },
   { name: "phone-390x664", width: 390, height: 664 },
   { name: "phone-375x548", width: 375, height: 548 },
@@ -69,6 +76,9 @@ async function checkIntroChooser(browser, options, viewport) {
         content: `:root { font-size: ${viewport.rootFontSizePx}px !important; }`,
       });
     }
+    if (viewport.filter !== undefined) {
+      await page.click(`[data-contract-filter="${viewport.filter}"]`);
+    }
     const metrics = await measureIntroChooser(page);
     assert(metrics.cardFitsViewport, `${viewport.name} intro card overflows viewport`);
     assert(metrics.startButtonVisible, `${viewport.name} Start button is not fully visible`);
@@ -86,10 +96,18 @@ async function checkIntroChooser(browser, options, viewport) {
     assert(!metrics.timedBadgesOverlapText, `${viewport.name} timed badges overlap card text`);
     assert(metrics.filterButtonsVisible, `${viewport.name} contract filters are not visible`);
     assert(metrics.filterButtonsInsideCard, `${viewport.name} contract filters overflow the card`);
-    assert(
-      metrics.visibleContractCards < metrics.totalContractCards,
-      `${viewport.name} contract filters did not reduce the visible chooser cards`,
-    );
+    if (viewport.filter === "all") {
+      assertEqual(
+        metrics.visibleContractCards,
+        metrics.totalContractCards,
+        `${viewport.name} all filter should show every chooser card`,
+      );
+    } else {
+      assert(
+        metrics.visibleContractCards < metrics.totalContractCards,
+        `${viewport.name} contract filters did not reduce the visible chooser cards`,
+      );
+    }
     assert(
       !metrics.hiddenContractCardsRender,
       `${viewport.name} hidden contract cards still render`,
@@ -109,10 +127,18 @@ async function checkIntroChooser(browser, options, viewport) {
       state.flow.contractChooser.selectedContractVisible,
       `${viewport.name} selected contract remains visible after filtering`,
     );
-    assert(
-      state.flow.contractChooser.visibleContracts < state.flow.contractChooser.totalContracts,
-      `${viewport.name} filtered contract count is reported in text state`,
-    );
+    if (viewport.filter === "all") {
+      assertEqual(
+        state.flow.contractChooser.visibleContracts,
+        state.flow.contractChooser.totalContracts,
+        `${viewport.name} all filter count is reported in text state`,
+      );
+    } else {
+      assert(
+        state.flow.contractChooser.visibleContracts < state.flow.contractChooser.totalContracts,
+        `${viewport.name} filtered contract count is reported in text state`,
+      );
+    }
     assertEqual(
       state.performance.qualityPreset,
       "low",
