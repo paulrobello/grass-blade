@@ -413,6 +413,18 @@ Authored contracts are selected by deterministic contract ID and seed. The defau
 - Deterministic balance requires all dense weeds, six shrubs, all five saplings, and two mature trees while preserving a very small execution buffer inside the timer.
 - If the timer reaches zero before every quota is complete, the contract ends with the same `timed-out` result semantics as Timed Harvest.
 
+### Petal Gate
+
+- Contract ID: `petal-gate`
+- Time limit: 72 seconds.
+- Collect 250 Grass.
+- Collect 320 Flowers.
+- Collect 28 Fiber.
+- No Wood quota; this route emphasizes flower-pocket coverage plus full dense-weed and shrub Fiber commitment without forcing timber cuts.
+- Uses a flower-gate lattice of cross-lanes, compact clearings, and small internal no-growth pockets so the route reads as deliberate gates instead of a square field.
+- Deterministic balance requires every flower target, all dense weeds, and all shrubs while preserving a small execution buffer inside the timer.
+- If the timer reaches zero before every quota is complete, the contract ends with the same `timed-out` result semantics as Timed Harvest.
+
 ### Clear Every Patch
 
 - Contract ID: `clear-every-patch`
