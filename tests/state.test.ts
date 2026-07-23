@@ -1109,6 +1109,40 @@ describe("active game state", () => {
     expect(state.targets.filter((target) => target.kind === "matureTree")).toHaveLength(2);
   });
 
+  it("creates and completes the authored Lagoon Braid contract before the clock expires", () => {
+    const state = createInitialState(12345, "lagoon-braid");
+
+    expect(state.contract).toEqual({
+      id: "lagoon-braid",
+      title: "Lagoon Braid",
+      summary: "A 70-second braided lagoon route through flower banks and Fiber hedges.",
+      timeLimitSeconds: 70,
+      completionMode: "quota",
+    });
+    expect(state.objectives.grass.target).toBe(240);
+    expect(state.objectives.flowers.target).toBe(300);
+    expect(state.objectives.fiber.target).toBe(24);
+    expect(state.objectives.wood.target).toBe(0);
+
+    completeContractThroughQuotaCuts(state);
+
+    expect(state.mode).toBe("complete");
+    expect(state.elapsedSeconds).toBeLessThan(70);
+    expect(state.inventory).toEqual({ grass: 240, flowers: 300, fiber: 24, wood: 0 });
+    expect(state.result).toMatchObject({
+      status: "complete",
+      timeLimitSeconds: 70,
+      cutTargets: 558,
+      highestLevel: 8,
+      finalInventory: { grass: 240, flowers: 300, fiber: 24, wood: 0 },
+      completionRevision: 558,
+    });
+    expect(state.targets.filter((target) => target.kind === "denseWeed")).toHaveLength(12);
+    expect(state.targets.filter((target) => target.kind === "shrub")).toHaveLength(6);
+    expect(state.targets.filter((target) => target.kind === "sapling")).toHaveLength(0);
+    expect(state.targets.filter((target) => target.kind === "matureTree")).toHaveLength(0);
+  });
+
   it("creates and completes the authored Clear Every Patch contract only after all soft patches are cut", () => {
     const state = createInitialState(12345, "clear-every-patch");
     const expectedGrassTargets = state.targets.filter((target) => target.kind === "grass").length;
@@ -1389,6 +1423,7 @@ describe("active game state", () => {
     const petalGate = createMeadowLayout(12345, "petal-gate");
     const sunsetSwitchback = createMeadowLayout(12345, "sunset-switchback");
     const cedarCrossroads = createMeadowLayout(12345, "cedar-crossroads");
+    const lagoonBraid = createMeadowLayout(12345, "lagoon-braid");
     const clearEveryPatch = createMeadowLayout(12345, "clear-every-patch");
     const unknown = createMeadowLayout(12345, "unknown-contract");
 
@@ -1420,6 +1455,7 @@ describe("active game state", () => {
     expect(petalGate.arenaShape).toBe("petal-gate");
     expect(sunsetSwitchback.arenaShape).toBe("sunset-switchback");
     expect(cedarCrossroads.arenaShape).toBe("cedar-crossroads");
+    expect(lagoonBraid.arenaShape).toBe("lagoon-braid");
     expect(clearEveryPatch.arenaShape).toBe("split-clearings");
     expect(flowerSweep.flowerTargets).toHaveLength(FLOWER_TARGET_COUNT);
     expect(woodland.flowerTargets).toHaveLength(FLOWER_TARGET_COUNT);
@@ -1446,6 +1482,7 @@ describe("active game state", () => {
     expect(petalGate.flowerTargets).toHaveLength(FLOWER_TARGET_COUNT);
     expect(sunsetSwitchback.flowerTargets).toHaveLength(FLOWER_TARGET_COUNT);
     expect(cedarCrossroads.flowerTargets).toHaveLength(FLOWER_TARGET_COUNT);
+    expect(lagoonBraid.flowerTargets).toHaveLength(FLOWER_TARGET_COUNT);
     expect(clearEveryPatch.flowerTargets).toHaveLength(FLOWER_TARGET_COUNT);
     expect(meadow.boundaryMarkers.length).toBeGreaterThan(100);
     expect(flowerSweep.boundaryMarkers.length).toBeGreaterThan(80);
@@ -1472,6 +1509,7 @@ describe("active game state", () => {
     expect(petalGate.boundaryMarkers.length).toBeGreaterThan(130);
     expect(sunsetSwitchback.boundaryMarkers.length).toBeGreaterThan(130);
     expect(cedarCrossroads.boundaryMarkers.length).toBeGreaterThan(140);
+    expect(lagoonBraid.boundaryMarkers.length).toBeGreaterThan(150);
     expect(clearEveryPatch.boundaryMarkers.length).toBeGreaterThan(90);
     expect(clearEveryPatch.boundaryMarkers).not.toEqual(meadow.boundaryMarkers);
     expect(flowerSweep.grassVisuals).toHaveLength(GRASS_VISUAL_COLUMNS * GRASS_VISUAL_COLUMNS);
@@ -1500,6 +1538,7 @@ describe("active game state", () => {
     expect(petalGate.grassVisuals).toHaveLength(GRASS_VISUAL_COLUMNS * GRASS_VISUAL_COLUMNS);
     expect(sunsetSwitchback.grassVisuals).toHaveLength(GRASS_VISUAL_COLUMNS * GRASS_VISUAL_COLUMNS);
     expect(cedarCrossroads.grassVisuals).toHaveLength(GRASS_VISUAL_COLUMNS * GRASS_VISUAL_COLUMNS);
+    expect(lagoonBraid.grassVisuals).toHaveLength(GRASS_VISUAL_COLUMNS * GRASS_VISUAL_COLUMNS);
     expect(clearEveryPatch.grassVisuals).toHaveLength(GRASS_VISUAL_COLUMNS * GRASS_VISUAL_COLUMNS);
     expect(flowerSweep.grassCells.length).toBeGreaterThan(120);
     expect(woodland.grassCells.length).toBeGreaterThan(160);
@@ -1525,6 +1564,7 @@ describe("active game state", () => {
     expect(petalGate.grassCells.length).toBeGreaterThan(250);
     expect(sunsetSwitchback.grassCells.length).toBeGreaterThan(260);
     expect(cedarCrossroads.grassCells.length).toBeGreaterThan(260);
+    expect(lagoonBraid.grassCells.length).toBeGreaterThan(240);
     expect(clearEveryPatch.grassCells.length).toBeGreaterThan(250);
     expect(flowerSweep.grassCells.length).toBeLessThan(meadow.grassCells.length * 0.72);
     expect(woodland.grassCells.length).toBeLessThan(meadow.grassCells.length * 0.78);
@@ -1550,6 +1590,7 @@ describe("active game state", () => {
     expect(petalGate.grassCells.length).toBeLessThan(meadow.grassCells.length * 0.75);
     expect(sunsetSwitchback.grassCells.length).toBeLessThan(meadow.grassCells.length * 0.7);
     expect(cedarCrossroads.grassCells.length).toBeLessThan(meadow.grassCells.length * 0.78);
+    expect(lagoonBraid.grassCells.length).toBeLessThan(meadow.grassCells.length * 0.78);
     expect(clearEveryPatch.grassCells.length).toBeLessThan(meadow.grassCells.length * 0.7);
     expect(countVisibleGrassVisuals(meadow)).toBeLessThan(
       GRASS_VISUAL_COLUMNS * GRASS_VISUAL_COLUMNS * 0.74,
@@ -1606,6 +1647,9 @@ describe("active game state", () => {
       GRASS_VISUAL_COLUMNS * GRASS_VISUAL_COLUMNS * 0.7,
     );
     expect(countVisibleGrassVisuals(cedarCrossroads)).toBeLessThan(
+      GRASS_VISUAL_COLUMNS * GRASS_VISUAL_COLUMNS * 0.78,
+    );
+    expect(countVisibleGrassVisuals(lagoonBraid)).toBeLessThan(
       GRASS_VISUAL_COLUMNS * GRASS_VISUAL_COLUMNS * 0.78,
     );
     expect(countCoolGrassVisuals(frostRibbons)).toBeGreaterThan(400);
@@ -1715,6 +1759,10 @@ describe("active game state", () => {
     expect(cedarCrossroadsState.targets.filter((target) => target.kind === "grass")).toHaveLength(
       cedarCrossroads.grassCells.length,
     );
+    const lagoonBraidState = createInitialState(12345, "lagoon-braid");
+    expect(lagoonBraidState.targets.filter((target) => target.kind === "grass")).toHaveLength(
+      lagoonBraid.grassCells.length,
+    );
     expect(clearEveryPatchState.targets.filter((target) => target.kind === "grass")).toHaveLength(
       clearEveryPatch.grassCells.length,
     );
@@ -1779,6 +1827,9 @@ describe("active game state", () => {
     expect(cedarCrossroads.grassCells.length).toBeGreaterThanOrEqual(
       cedarCrossroadsState.objectives.grass.target,
     );
+    expect(lagoonBraid.grassCells.length).toBeGreaterThanOrEqual(
+      lagoonBraidState.objectives.grass.target,
+    );
     expect(clearEveryPatch.grassCells.length).toBe(clearEveryPatchState.objectives.grass.target);
   });
 
@@ -1809,6 +1860,7 @@ describe("active game state", () => {
     const petalGate = createMeadowLayout(12345, "petal-gate");
     const sunsetSwitchback = createMeadowLayout(12345, "sunset-switchback");
     const cedarCrossroads = createMeadowLayout(12345, "cedar-crossroads");
+    const lagoonBraid = createMeadowLayout(12345, "lagoon-braid");
     const clearEveryPatch = createMeadowLayout(12345, "clear-every-patch");
 
     expect(hasGrassCellNear(meadow, 0, -18)).toBe(true);
@@ -2026,6 +2078,25 @@ describe("active game state", () => {
     expect(hasGrassCellNear(cedarCrossroads, 0, -11)).toBe(false);
     expect(hasGrassCellNear(cedarCrossroads, 0, 11)).toBe(false);
     expect(hasGrassCellNear(cedarCrossroads, 17, 17)).toBe(false);
+
+    expect(hasGrassCellNear(lagoonBraid, -17, -16)).toBe(true);
+    expect(hasGrassCellNear(lagoonBraid, -6, -10)).toBe(true);
+    expect(hasGrassCellNear(lagoonBraid, 8, -13)).toBe(true);
+    expect(hasGrassCellNear(lagoonBraid, 17, -6)).toBe(true);
+    expect(hasGrassCellNear(lagoonBraid, -17, 6)).toBe(true);
+    expect(hasGrassCellNear(lagoonBraid, -6, 14)).toBe(true);
+    expect(hasGrassCellNear(lagoonBraid, 17, 16)).toBe(true);
+    expect(hasGrassCellNear(lagoonBraid, 17, -16)).toBe(true);
+    expect(hasGrassCellNear(lagoonBraid, -8, -12)).toBe(true);
+    expect(hasGrassCellNear(lagoonBraid, -3, 1)).toBe(true);
+    expect(hasGrassCellNear(lagoonBraid, 17, 7)).toBe(true);
+    expect(hasGrassCellNear(lagoonBraid, -17, 16)).toBe(true);
+    expect(hasGrassCellNear(lagoonBraid, 0, -6)).toBe(false);
+    expect(hasGrassCellNear(lagoonBraid, 0, 8)).toBe(false);
+    expect(hasGrassCellNear(lagoonBraid, 10, -1)).toBe(false);
+    expect(hasGrassCellNear(lagoonBraid, -10, 2)).toBe(false);
+    expect(hasGrassCellNear(lagoonBraid, 10, 12)).toBe(false);
+    expect(hasGrassCellNear(lagoonBraid, 0, 18)).toBe(false);
 
     expect(hasGrassCellNear(clearEveryPatch, -12, -12)).toBe(true);
     expect(hasGrassCellNear(clearEveryPatch, 12, 5)).toBe(true);

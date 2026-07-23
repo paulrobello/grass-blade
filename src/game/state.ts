@@ -79,6 +79,7 @@ export interface ContractDefinition {
     | "petal-gate"
     | "sunset-switchback"
     | "cedar-crossroads"
+    | "lagoon-braid"
     | "clear-every-patch";
   title: string;
   summary: string;
@@ -316,6 +317,14 @@ export const CONTRACT_DEFINITIONS = [
     benchmarkSeconds: 75.117,
     timeLimitSeconds: 86,
     objectives: { grass: 260, flowers: 260, fiber: 24, wood: 22 },
+  },
+  {
+    id: "lagoon-braid",
+    title: "Lagoon Braid",
+    summary: "A 70-second braided lagoon route through flower banks and Fiber hedges.",
+    benchmarkSeconds: 62.633,
+    timeLimitSeconds: 70,
+    objectives: { grass: 240, flowers: 300, fiber: 24, wood: 0 },
   },
   {
     id: "clear-every-patch",

@@ -1764,6 +1764,8 @@ function contractRouteBadge(contract: ContractDefinition): string {
       return "Sunset switch";
     case "cedar-crossroads":
       return "Crossroads";
+    case "lagoon-braid":
+      return "Lagoon braid";
     case "clear-every-patch":
       return "Split clearings";
   }
