@@ -72,6 +72,7 @@ export interface ContractDefinition {
     | "braided-meadow"
     | "ring-grove"
     | "twin-glade"
+    | "frost-ribbons"
     | "clear-every-patch";
   title: string;
   summary: string;
@@ -253,6 +254,14 @@ export const CONTRACT_DEFINITIONS = [
     benchmarkSeconds: 65.233,
     timeLimitSeconds: 70,
     objectives: { grass: 230, flowers: 260, fiber: 20, wood: 10 },
+  },
+  {
+    id: "frost-ribbons",
+    title: "Frost Ribbons",
+    summary: "A 65-second ribbon route through cool-white grass bands and flower lanes.",
+    benchmarkSeconds: 56.95,
+    timeLimitSeconds: 65,
+    objectives: { grass: 220, flowers: 280, fiber: 18, wood: 0 },
   },
   {
     id: "clear-every-patch",

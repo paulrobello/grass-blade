@@ -661,7 +661,7 @@ function addGrass(
   const chunks = createGrassChunks(scene, nearGeometry, farGeometry, material, chunkInstanceCount);
   const visualChunkIndices = new Uint8Array(count);
   const visualLocalIndices = new Uint16Array(count);
-  const palette = [0x227a38, 0x2f9640, 0x43ad48, 0x62c94f] as const;
+  const palette = [0x227a38, 0x2f9640, 0x43ad48, 0x62c94f, 0xd8edf4, 0xf2fbff] as const;
   const fallStartTimes = new Float32Array(count);
   const fallDirections = new Float32Array(count);
   const dirtyChunkFlags = new Uint8Array(chunks.length);

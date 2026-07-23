@@ -18,6 +18,8 @@ Ring Grove is available with `?contract=ring-grove`: it is a 75-second looped gr
 
 Twin Glade is available with `?contract=twin-glade`: it is a 70-second twin-clearing route with `230 Grass / 260 Flowers / 20 Fiber / 10 Wood` quotas, mirrored flower glades, narrow connecting lanes, and deterministic balance that requires all dense weeds, four shrubs, and all five saplings.
 
+Frost Ribbons is available with `?contract=frost-ribbons`: it is a 65-second ribbon route with `220 Grass / 280 Flowers / 18 Fiber` quotas, cool-white grass bands mixed into the lush green field, and deterministic balance that requires all dense weeds and three shrubs without a Wood gate.
+
 ## Play online
 
 The public GitHub Pages deployment is configured to publish the production Vite build from `main`:
@@ -103,7 +105,7 @@ Grass Blade starts with a keyboard-focusable `Start Cutting` button before gamep
 The browser-facing automation contract lets the game be observed and driven without synthetic mouse gestures:
 
 - `?seed=<uint32>` selects a deterministic world seed.
-- `?contract=meadow-delivery`, `?contract=flower-sweep`, `?contract=woodland-cleanup`, `?contract=timber-trail`, `?contract=rock-garden`, `?contract=hedge-maze`, `?contract=timed-harvest`, `?contract=field-sprint`, `?contract=weed-rush`, `?contract=clover-circuit`, `?contract=orchard-loop`, `?contract=brook-bend`, `?contract=harvest-spiral`, `?contract=crescent-grove`, `?contract=forked-thicket`, `?contract=switchback-orchard`, `?contract=braided-meadow`, `?contract=ring-grove`, `?contract=twin-glade`, or `?contract=clear-every-patch` selects the authored contract template; unknown IDs fall back to `meadow-delivery`.
+- `?contract=meadow-delivery`, `?contract=flower-sweep`, `?contract=woodland-cleanup`, `?contract=timber-trail`, `?contract=rock-garden`, `?contract=hedge-maze`, `?contract=timed-harvest`, `?contract=field-sprint`, `?contract=weed-rush`, `?contract=clover-circuit`, `?contract=orchard-loop`, `?contract=brook-bend`, `?contract=harvest-spiral`, `?contract=crescent-grove`, `?contract=forked-thicket`, `?contract=switchback-orchard`, `?contract=braided-meadow`, `?contract=ring-grove`, `?contract=twin-glade`, `?contract=frost-ribbons`, or `?contract=clear-every-patch` selects the authored contract template; unknown IDs fall back to `meadow-delivery`.
 - `window.__grassBladeReady` becomes `true` when the scene is controllable.
 - `window.render_game_to_text()` returns a concise JSON snapshot of visible game state.
 - `window.advanceTime(milliseconds)` switches automation to manual time, advances exact 60 Hz ticks, and renders.

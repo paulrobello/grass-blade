@@ -1,5 +1,7 @@
 const TAU = Math.PI * 2;
 const GRASS_COLOR_COUNT = 4;
+const FROST_GRASS_COLOR_START = 4;
+const FROST_GRASS_COLOR_COUNT = 2;
 const FLOWER_COLOR_COUNT = 5;
 const FLOWER_CLUSTER_COLUMNS = 4;
 const FLOWER_TARGETS_PER_CLUSTER = 20;
@@ -50,6 +52,7 @@ export type ArenaLayoutId =
   | "braided-meadow"
   | "ring-grove"
   | "twin-glade"
+  | "frost-ribbons"
   | "clear-every-patch";
 export type ArenaShape =
   | "starter-meadow-paths"
@@ -72,6 +75,7 @@ export type ArenaShape =
   | "braided-meadow"
   | "ring-grove"
   | "twin-glade"
+  | "frost-ribbons"
   | "split-clearings";
 
 const DENSE_WEED_CLUSTER_CENTERS = [
@@ -440,12 +444,33 @@ function createGrassVisuals(
         scaleX: visible ? 0.82 + random() * 0.62 : 0,
         scaleZ: visible ? 0.82 + random() * 0.62 : 0,
         cellIndex: cellIndex ?? -1,
-        colorIndex: Math.floor(random() * GRASS_COLOR_COUNT),
+        colorIndex: selectGrassColorIndex(arenaId, x, z, random),
       });
     }
   }
 
   return visuals;
+}
+
+function selectGrassColorIndex(
+  arenaId: ArenaLayoutId,
+  x: number,
+  z: number,
+  random: () => number,
+): number {
+  if (arenaId === "frost-ribbons" && isPointInFrostGrassRibbon(x, z)) {
+    return FROST_GRASS_COLOR_START + Math.floor(random() * FROST_GRASS_COLOR_COUNT);
+  }
+
+  return Math.floor(random() * GRASS_COLOR_COUNT);
+}
+
+function isPointInFrostGrassRibbon(x: number, z: number): boolean {
+  return (
+    Math.abs(z + 12 + Math.sin(x * 0.36) * 1.25) < 1.45 ||
+    Math.abs(z + 1 + Math.sin((x + 5) * 0.32) * 1.1) < 1.35 ||
+    Math.abs(z - 11 + Math.sin((x - 2) * 0.28) * 1.2) < 1.4
+  );
 }
 
 function createFlowerTargets(random: () => number, arenaId: ArenaLayoutId): TargetSeed[] {
@@ -567,6 +592,7 @@ function resolveArenaLayoutId(arenaId: string): ArenaLayoutId {
     case "braided-meadow":
     case "ring-grove":
     case "twin-glade":
+    case "frost-ribbons":
     case "clear-every-patch":
       return arenaId;
     default:
@@ -614,6 +640,8 @@ function resolveArenaShape(arenaId: ArenaLayoutId): ArenaShape {
       return "ring-grove";
     case "twin-glade":
       return "twin-glade";
+    case "frost-ribbons":
+      return "frost-ribbons";
     case "clear-every-patch":
       return "split-clearings";
     case "meadow-delivery":
@@ -1081,6 +1109,35 @@ function createFlowerClusterCenters(
         [0, 5],
         [-4, 13],
         [4, 13],
+      ],
+      random,
+      0.58,
+    );
+  }
+
+  if (arenaId === "frost-ribbons") {
+    return jitterAnchors(
+      [
+        [-16, -14],
+        [-9, -13],
+        [-2, -12],
+        [6, -11],
+        [14, -10],
+        [17, -4],
+        [10, -3],
+        [2, -2],
+        [-7, -2],
+        [-16, -1],
+        [-13, 5],
+        [-5, 5],
+        [4, 5],
+        [14, 6],
+        [16, 12],
+        [8, 13],
+        [0, 13],
+        [-9, 14],
+        [-16, 15],
+        [2, 0],
       ],
       random,
       0.58,
@@ -1576,6 +1633,26 @@ export function isPointInArenaGrowth(arenaId: ArenaLayoutId, x: number, z: numbe
         !isPointInCircle(x, z, 0, -6, 2.1) &&
         !isPointInCircle(x, z, 0, 8, 2.0) &&
         !isPointInCircle(x, z, -17, 17, 1.8) &&
+        !isPointInCircle(x, z, 17, 17, 1.8)
+      );
+    case "frost-ribbons":
+      return (
+        (isPointInCapsule(x, z, -18, -14, 17, -10, 2.9) ||
+          isPointInCapsule(x, z, 17, -10, -16, -1, 2.9) ||
+          isPointInCapsule(x, z, -16, -1, 15, 6, 2.85) ||
+          isPointInCapsule(x, z, 15, 6, -15, 15, 2.85) ||
+          isPointInCapsule(x, z, -2, -17, -2, 16, 1.85) ||
+          isPointInCapsule(x, z, 8, -12, 8, 14, 1.75) ||
+          isPointInCircle(x, z, -18, -14, 3.55) ||
+          isPointInCircle(x, z, 17, -10, 3.55) ||
+          isPointInCircle(x, z, -16, -1, 3.55) ||
+          isPointInCircle(x, z, 15, 6, 3.45) ||
+          isPointInCircle(x, z, -15, 15, 3.45) ||
+          isPointInCircle(x, z, 0, 0, 3.2)) &&
+        !isPointInCircle(x, z, -8, -7, 1.9) &&
+        !isPointInCircle(x, z, 5, -5, 1.85) &&
+        !isPointInCircle(x, z, -8, 8, 1.85) &&
+        !isPointInCircle(x, z, 8, 10, 1.75) &&
         !isPointInCircle(x, z, 17, 17, 1.8)
       );
     case "clear-every-patch":

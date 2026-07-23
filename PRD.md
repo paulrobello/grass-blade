@@ -365,6 +365,18 @@ Authored contracts are selected by deterministic contract ID and seed. The defau
 - Deterministic balance requires all dense weeds, four shrubs, and all five saplings while preserving a small execution buffer inside the timer.
 - If the timer reaches zero before every quota is complete, the contract ends with the same `timed-out` result semantics as Timed Harvest.
 
+### Frost Ribbons
+
+- Contract ID: `frost-ribbons`
+- Time limit: 65 seconds.
+- Collect 220 Grass.
+- Collect 280 Flowers.
+- Collect 18 Fiber.
+- No Wood quota; this route emphasizes visual variety, soft-target sweeping, and moderate Fiber pressure without forcing sapling level-gating.
+- Uses cool-white grass bands embedded in a green ribbon route, with switchback lanes and carved pockets so the field reads closer to the approved reference screenshots while remaining an original implementation.
+- Deterministic balance requires all dense weeds and three shrubs while preserving a small execution buffer inside the timer.
+- If the timer reaches zero before every quota is complete, the contract ends with the same `timed-out` result semantics as Timed Harvest.
+
 ### Clear Every Patch
 
 - Contract ID: `clear-every-patch`

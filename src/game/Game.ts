@@ -1750,6 +1750,8 @@ function contractRouteBadge(contract: ContractDefinition): string {
       return "Ring";
     case "twin-glade":
       return "Twin glades";
+    case "frost-ribbons":
+      return "Frost bands";
     case "clear-every-patch":
       return "Split clearings";
   }
