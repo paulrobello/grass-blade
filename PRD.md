@@ -389,6 +389,18 @@ Authored contracts are selected by deterministic contract ID and seed. The defau
 - Deterministic balance requires every flower target, all dense weeds, and six shrubs while preserving a small execution buffer inside the timer.
 - If the timer reaches zero before every quota is complete, the contract ends with the same `timed-out` result semantics as Timed Harvest.
 
+### Stone Bloom
+
+- Contract ID: `stone-bloom`
+- Time limit: 68 seconds.
+- Collect 240 Grass.
+- Collect 300 Flowers.
+- Collect 24 Fiber.
+- No Wood quota; this route emphasizes visible rock chicanes, flower-pocket sweeping, and shrub-level Fiber pressure without forcing timber cuts.
+- Uses the existing visible rock placements as obstacle-defined cuts through a winding bloom route, so carved gaps correspond to visible stone blockers rather than invisible walls.
+- Deterministic balance requires most flower targets, all dense weeds, and six shrubs while preserving a small execution buffer inside the timer.
+- If the timer reaches zero before every quota is complete, the contract ends with the same `timed-out` result semantics as Timed Harvest.
+
 ### Clear Every Patch
 
 - Contract ID: `clear-every-patch`
