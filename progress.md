@@ -7,6 +7,7 @@ Active milestone: Phase 5 — expansion after first-playable evidence, with the 
 
 ## 2026-07-23 continuation notes
 
+- Added route-shape contract chooser badges so each visible card now exposes four compact scan chips: pace, focus, difficulty, and arena route form. The mobile verifier now requires four non-empty badge chips on every visible card so future chooser changes cannot silently drop the route hint.
 - Added the `hedge-maze` authored contract to the in-progress Phase 5 batch: 80 seconds, `70 Grass / 30 Flowers / 18 Fiber / 0 Wood`, shrub-maze arena shape, and deterministic Fiber quota selection that consumes all twelve dense weeds plus three shrubs.
 - Raised `timed-harvest` from `165 Grass / 200 Flowers / 12 Fiber` to `170 Grass / 300 Flowers / 18 Fiber`. Deterministic balance evidence at seed `12345` now completes in `56.70s` of the 60-second limit with `485` cut targets and level 8, leaving only `3.30s` in the isolated quota-cut model.
 - Added mobile PWA install support for the GitHub Pages site: fullscreen manifest, Apple/fullscreen meta tags, app icons, and a production-only service worker. Dev builds intentionally do not register the service worker to avoid stale local caches during iteration.

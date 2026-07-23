@@ -1538,6 +1538,7 @@ export function contractCardBadges(contract: ContractDefinition): string[] {
     contractPaceBadge(contract),
     contractFocusBadge(contract),
     contractDifficultyBadge(contract),
+    contractRouteBadge(contract),
   ];
 }
 
@@ -1705,6 +1706,49 @@ function contractDifficultyBadge(contract: ContractDefinition): ContractDifficul
     return "Hard";
   }
   return "Expert";
+}
+
+function contractRouteBadge(contract: ContractDefinition): string {
+  switch (contract.id) {
+    case "meadow-delivery":
+      return "Starter paths";
+    case "flower-sweep":
+      return "Branching";
+    case "woodland-cleanup":
+      return "Clearings";
+    case "timber-trail":
+      return "Groves";
+    case "rock-garden":
+      return "Rock slalom";
+    case "hedge-maze":
+      return "Maze";
+    case "timed-harvest":
+      return "Loop";
+    case "field-sprint":
+      return "Lanes";
+    case "weed-rush":
+      return "Switchbacks";
+    case "reed-run":
+      return "Reed loop";
+    case "clover-circuit":
+      return "Figure eight";
+    case "orchard-loop":
+      return "Orchard loop";
+    case "brook-bend":
+      return "S-bend";
+    case "harvest-spiral":
+      return "Spiral";
+    case "crescent-grove":
+      return "Crescent";
+    case "forked-thicket":
+      return "Forked";
+    case "switchback-orchard":
+      return "Zig-zag";
+    case "braided-meadow":
+      return "Braided";
+    case "clear-every-patch":
+      return "Split clearings";
+  }
 }
 
 function parseContractFilterId(value: string | undefined): ContractFilterId | null {

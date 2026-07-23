@@ -449,24 +449,41 @@ describe("contract best times", () => {
 });
 
 describe("contract chooser filters", () => {
-  it("derives compact card badges from contract pacing and quotas", () => {
+  it("derives compact card badges from contract pacing, quotas, and route shape", () => {
     expect(contractCardBadges(contractById("meadow-delivery"))).toEqual([
       "No timer",
       "Wood",
       "Easy",
+      "Starter paths",
     ]);
     expect(contractCardBadges(contractById("field-sprint"))).toEqual([
       "45s",
       "Soft cuts",
       "Medium",
+      "Lanes",
     ]);
-    expect(contractCardBadges(contractById("timed-harvest"))).toEqual(["60s", "Fiber", "Hard"]);
-    expect(contractCardBadges(contractById("timber-trail"))).toEqual(["90s", "Wood", "Expert"]);
+    expect(contractCardBadges(contractById("timed-harvest"))).toEqual([
+      "60s",
+      "Fiber",
+      "Hard",
+      "Loop",
+    ]);
+    expect(contractCardBadges(contractById("timber-trail"))).toEqual([
+      "90s",
+      "Wood",
+      "Expert",
+      "Groves",
+    ]);
     expect(contractCardBadges(contractById("clear-every-patch"))).toEqual([
       "Full clear",
       "Patch clear",
       "Expert",
+      "Split clearings",
     ]);
+
+    for (const contract of CONTRACT_DEFINITIONS as readonly ContractDefinition[]) {
+      expect(contractCardBadges(contract)).toHaveLength(4);
+    }
   });
 
   it("chooses a compact primary filter for each selected contract type", () => {

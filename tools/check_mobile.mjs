@@ -546,7 +546,7 @@ async function measureIntroChooser(page) {
             (badge) => badge.getBoundingClientRect(),
           );
           return (
-            badgeRects.length >= 3 && badgeRects.every((rect) => rect.width > 0 && rect.height > 0)
+            badgeRects.length >= 4 && badgeRects.every((rect) => rect.width > 0 && rect.height > 0)
           );
         },
       );
