@@ -407,24 +407,26 @@ describe("active game state", () => {
       timeLimitSeconds: 70,
       completionMode: "quota",
     });
-    expect(state.objectives.grass.target).toBe(100);
-    expect(state.objectives.flowers.target).toBe(80);
-    expect(state.objectives.fiber.target).toBe(8);
-    expect(state.objectives.wood.target).toBe(4);
+    expect(state.objectives.grass.target).toBe(190);
+    expect(state.objectives.flowers.target).toBe(220);
+    expect(state.objectives.fiber.target).toBe(16);
+    expect(state.objectives.wood.target).toBe(10);
 
     completeContractThroughQuotaCuts(state);
 
     expect(state.mode).toBe("complete");
     expect(state.elapsedSeconds).toBeLessThan(70);
-    expect(state.inventory).toEqual({ grass: 100, flowers: 80, fiber: 8, wood: 4 });
+    expect(state.inventory).toEqual({ grass: 190, flowers: 220, fiber: 16, wood: 10 });
     expect(state.result).toMatchObject({
       status: "complete",
       timeLimitSeconds: 70,
-      cutTargets: 190,
-      highestLevel: 6,
-      finalInventory: { grass: 100, flowers: 80, fiber: 8, wood: 4 },
-      completionRevision: 190,
+      cutTargets: 429,
+      highestLevel: 8,
+      finalInventory: { grass: 190, flowers: 220, fiber: 16, wood: 10 },
+      completionRevision: 429,
     });
+    expect(state.targets.filter((target) => target.kind === "denseWeed")).toHaveLength(12);
+    expect(state.targets.filter((target) => target.kind === "sapling")).toHaveLength(5);
   });
 
   it("creates and completes the authored Hedge Maze contract before the clock expires", () => {

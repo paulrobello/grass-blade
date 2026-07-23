@@ -115,7 +115,7 @@ export const CONTRACT_DEFINITIONS = [
     title: "Rock Garden",
     summary: "A 70-second obstacle slalom around visible stones and mixed harvest pockets.",
     timeLimitSeconds: 70,
-    objectives: { grass: 100, flowers: 80, fiber: 8, wood: 4 },
+    objectives: { grass: 190, flowers: 220, fiber: 16, wood: 10 },
   },
   {
     id: "hedge-maze",

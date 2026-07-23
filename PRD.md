@@ -178,10 +178,10 @@ Authored contracts are selected by deterministic contract ID and seed. The defau
 
 - Contract ID: `rock-garden`
 - Time limit: 70 seconds.
-- Collect 100 Grass.
-- Collect 80 Flowers.
-- Collect 8 Fiber.
-- Collect 4 Wood.
+- Collect 190 Grass.
+- Collect 220 Flowers.
+- Collect 16 Fiber.
+- Collect 10 Wood.
 - Uses an obstacle-defined slalom route with visible non-cuttable rocks carving gaps in the growth silhouette.
 - Rocks remain blockers only; they never award resources or XP, and route gaps must correspond to visible rock obstacles rather than invisible collision.
 - If the timer reaches zero before every quota is complete, the contract ends with the same `timed-out` result semantics as Timed Harvest.
