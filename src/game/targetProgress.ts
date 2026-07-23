@@ -5,7 +5,13 @@ import type { TargetKind } from "./world";
 
 export const MAX_TARGET_PROGRESS_BARS = 16;
 
-const DURABLE_TARGET_KINDS = new Set<TargetKind>(["denseWeed", "shrub", "sapling", "matureTree"]);
+const DURABLE_TARGET_KINDS = new Set<TargetKind>([
+  "denseWeed",
+  "fiberReed",
+  "shrub",
+  "sapling",
+  "matureTree",
+]);
 
 export interface TargetProgressDiagnostics {
   activeBars: number;
@@ -54,6 +60,8 @@ export function targetProgressHeight(kind: TargetKind): number {
   switch (kind) {
     case "denseWeed":
       return 2.45;
+    case "fiberReed":
+      return 2.75;
     case "shrub":
       return 2.95;
     case "sapling":

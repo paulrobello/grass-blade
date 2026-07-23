@@ -35,6 +35,9 @@ import {
   DENSE_WEED_VISUALS_PER_TARGET,
   FLOWER_TARGET_COUNT,
   FLOWER_VISUAL_COUNT,
+  FIBER_REED_COUNT,
+  FIBER_REED_VISUAL_COUNT,
+  FIBER_REED_VISUALS_PER_TARGET,
   GRASS_BLADES_PER_VISUAL,
   GRASS_FIELD_SIZE,
   GRASS_LOGICAL_COLUMNS,
@@ -167,6 +170,7 @@ describe("active game state", () => {
       layout.grassCells.length +
         FLOWER_TARGET_COUNT +
         DENSE_WEED_COUNT +
+        FIBER_REED_COUNT +
         SHRUB_COUNT +
         SAPLING_COUNT +
         MATURE_TREE_COUNT +
@@ -175,7 +179,8 @@ describe("active game state", () => {
     const grassEnd = layout.grassCells.length;
     const flowersEnd = grassEnd + FLOWER_TARGET_COUNT;
     const denseWeedsEnd = flowersEnd + DENSE_WEED_COUNT;
-    const shrubsEnd = denseWeedsEnd + SHRUB_COUNT;
+    const fiberReedsEnd = denseWeedsEnd + FIBER_REED_COUNT;
+    const shrubsEnd = fiberReedsEnd + SHRUB_COUNT;
     const saplingsEnd = shrubsEnd + SAPLING_COUNT;
     const matureTreesEnd = saplingsEnd + MATURE_TREE_COUNT;
     expect(first.targets.slice(0, grassEnd).every((target) => target.kind === "grass")).toBe(true);
@@ -186,7 +191,12 @@ describe("active game state", () => {
       first.targets.slice(flowersEnd, denseWeedsEnd).every((target) => target.kind === "denseWeed"),
     ).toBe(true);
     expect(
-      first.targets.slice(denseWeedsEnd, shrubsEnd).every((target) => target.kind === "shrub"),
+      first.targets
+        .slice(denseWeedsEnd, fiberReedsEnd)
+        .every((target) => target.kind === "fiberReed"),
+    ).toBe(true);
+    expect(
+      first.targets.slice(fiberReedsEnd, shrubsEnd).every((target) => target.kind === "shrub"),
     ).toBe(true);
     expect(
       first.targets.slice(shrubsEnd, saplingsEnd).every((target) => target.kind === "sapling"),
@@ -213,6 +223,7 @@ describe("active game state", () => {
     const grass = requireTarget(state, "grass");
     const flower = requireTarget(state, "flower");
     const weed = requireTarget(state, "denseWeed");
+    const reed = requireTarget(state, "fiberReed");
     const shrub = requireTarget(state, "shrub");
     const sapling = requireTarget(state, "sapling");
     const matureTree = requireTarget(state, "matureTree");
@@ -221,6 +232,7 @@ describe("active game state", () => {
     expect(shouldShowTargetProgress(grass)).toBe(false);
     expect(shouldShowTargetProgress(flower)).toBe(false);
     expect(shouldShowTargetProgress(weed)).toBe(false);
+    expect(shouldShowTargetProgress(reed)).toBe(false);
     expect(shouldShowTargetProgress(shrub)).toBe(false);
     expect(shouldShowTargetProgress(sapling)).toBe(false);
     expect(shouldShowTargetProgress(matureTree)).toBe(false);
@@ -232,6 +244,8 @@ describe("active game state", () => {
     flower.accumulatedWork = 2;
     weed.status = "cutting";
     weed.accumulatedWork = 3;
+    reed.status = "cutting";
+    reed.accumulatedWork = 9;
     shrub.status = "cutting";
     shrub.accumulatedWork = 15;
     sapling.status = "cutting";
@@ -243,16 +257,19 @@ describe("active game state", () => {
 
     expect(entries.map((entry) => entry.id)).toEqual([
       weed.id,
+      reed.id,
       shrub.id,
       sapling.id,
       matureTree.id,
     ]);
     expect(entries.map((entry) => entry.kind)).toEqual([
       "denseWeed",
+      "fiberReed",
       "shrub",
       "sapling",
       "matureTree",
     ]);
+    expect(targetProgressFraction(reed)).toBe(0.5);
     expect(targetProgressFraction(shrub)).toBe(0.5);
     expect(targetProgressFraction(sapling)).toBe(0.75);
     expect(targetProgressFraction(matureTree)).toBe(0.5);
@@ -865,6 +882,8 @@ describe("active game state", () => {
     expect(first.boundaryMarkers.every((marker) => Number.isFinite(marker.z))).toBe(true);
     expect(first.denseWeedTargets).toHaveLength(DENSE_WEED_COUNT);
     expect(first.denseWeedVisuals).toHaveLength(DENSE_WEED_VISUAL_COUNT);
+    expect(first.fiberReedTargets).toHaveLength(FIBER_REED_COUNT);
+    expect(first.fiberReedVisuals).toHaveLength(FIBER_REED_VISUAL_COUNT);
     expect(first.shrubTargets).toHaveLength(SHRUB_COUNT);
     expect(first.shrubVisuals).toHaveLength(SHRUB_VISUAL_COUNT);
     expect(first.saplingTargets).toHaveLength(SAPLING_COUNT);
@@ -880,6 +899,10 @@ describe("active game state", () => {
       interleaved.denseWeedTargets.map((target) => target.id),
     );
     expect(first.denseWeedTargets).not.toEqual(interleaved.denseWeedTargets);
+    expect(first.fiberReedTargets.map((target) => target.id)).toEqual(
+      interleaved.fiberReedTargets.map((target) => target.id),
+    );
+    expect(first.fiberReedTargets).not.toEqual(interleaved.fiberReedTargets);
     expect(first.saplingTargets.map((target) => target.id)).toEqual(
       interleaved.saplingTargets.map((target) => target.id),
     );
@@ -936,10 +959,25 @@ describe("active game state", () => {
       true,
     );
 
+    const fiberReedVisualCounts = Array<number>(first.fiberReedTargets.length).fill(0);
+    for (const visual of first.fiberReedVisuals) {
+      fiberReedVisualCounts[visual.targetIndex] =
+        (fiberReedVisualCounts[visual.targetIndex] ?? 0) + 1;
+      const target = first.fiberReedTargets[visual.targetIndex];
+      expect(target).toBeDefined();
+      expect(Math.hypot(visual.x - (target?.x ?? 0), visual.z - (target?.z ?? 0))).toBeLessThan(
+        target?.radius ?? 0,
+      );
+    }
+    expect(fiberReedVisualCounts.every((count) => count === FIBER_REED_VISUALS_PER_TARGET)).toBe(
+      true,
+    );
+
     expect(first.grassCells.every(hasGrassTierValues)).toBe(true);
     expect(first.flowerTargets.every(hasFlowerTierValues)).toBe(true);
     expect(first.denseWeedTargets.every(hasDenseWeedTierValues)).toBe(true);
     expect(first.denseWeedTargets.some((target) => Math.hypot(target.x, target.z) < 6)).toBe(true);
+    expect(first.fiberReedTargets.every(hasFiberReedTierValues)).toBe(true);
     expect(first.shrubTargets.every(hasShrubTierValues)).toBe(true);
     for (const visual of first.shrubVisuals) {
       const target = first.shrubTargets[visual.targetIndex];
@@ -1480,6 +1518,9 @@ describe("active game state", () => {
       const visibleAtCenter = scene.presentation.grassVisibleChunks;
       expect(scene.density.boundaryInstances).toBeGreaterThan(100);
       expect(scene.presentation.arenaBoundaryMarkers).toBe(scene.density.boundaryInstances);
+      expect(scene.density.weedInstances).toBe(DENSE_WEED_VISUAL_COUNT);
+      expect(scene.density.reedInstances).toBe(FIBER_REED_VISUAL_COUNT);
+      expect(scene.presentation.fallingReedInstances).toBe(0);
       expect(scene.presentation.grassTotalChunks).toBe(64);
       expect(scene.presentation.grassNearBladesPerVisual).toBe(14);
       expect(scene.presentation.grassFarBladesPerVisual).toBe(8);
@@ -1517,6 +1558,45 @@ describe("active game state", () => {
         scene.presentation.grassNearChunks * 169 * scene.presentation.grassNearBladesPerVisual +
           scene.presentation.grassFarChunks * 169 * scene.presentation.grassFarBladesPerVisual,
       );
+    } finally {
+      scene.dispose();
+      Object.defineProperty(globalThis, "window", {
+        configurable: true,
+        value: originalWindow,
+      });
+    }
+  });
+
+  it("syncs reed and shrub fall presentation from their own target slices", () => {
+    const originalWindow = globalThis.window;
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      value: {
+        matchMedia: () => ({ matches: false }),
+      },
+    });
+    const scene = createScene(12345, resolveQualitySettings(null));
+    try {
+      const state = createInitialState(12345);
+      const reed = requireTarget(state, "fiberReed");
+      reed.status = "cut";
+      reed.accumulatedWork = reed.requiredWork;
+      state.player.x = reed.x;
+      state.player.z = reed.z;
+      scene.sync(state, 1);
+
+      expect(scene.presentation.fallingReedInstances).toBe(FIBER_REED_VISUALS_PER_TARGET);
+      expect(scene.presentation.fallingShrubInstances).toBe(0);
+
+      const shrub = requireTarget(state, "shrub");
+      shrub.status = "cut";
+      shrub.accumulatedWork = shrub.requiredWork;
+      state.player.x = shrub.x;
+      state.player.z = shrub.z;
+      scene.sync(state, 1.2);
+
+      expect(scene.presentation.fallingReedInstances).toBe(FIBER_REED_VISUALS_PER_TARGET);
+      expect(scene.presentation.fallingShrubInstances).toBe(1);
     } finally {
       scene.dispose();
       Object.defineProperty(globalThis, "window", {
@@ -1772,6 +1852,7 @@ describe("active game state", () => {
       { kind: "grass", yield: 1, xp: 1, levelAfter: 1 },
       { kind: "flower", yield: 1, xp: 3, levelAfter: 1 },
       { kind: "denseWeed", yield: 1, xp: 6, levelAfter: 1 },
+      { kind: "fiberReed", yield: 1, xp: 8, levelAfter: 1 },
       { kind: "shrub", yield: 2, xp: 14, levelAfter: 1 },
       { kind: "sapling", yield: 2, xp: 30, levelAfter: 2 },
       { kind: "matureTree", yield: 6, xp: 75, levelAfter: 3 },
@@ -2114,6 +2195,29 @@ describe("active game state", () => {
 
     expect(cutSeconds).toBeGreaterThanOrEqual(0.7);
     expect(cutSeconds).toBeLessThanOrEqual(1.1);
+  });
+
+  it("cuts an isolated fiber reed as a pass-through Tier-2 Fiber target", () => {
+    const state = createInitialState(213);
+    const target = isolateTarget(state, "fiberReed");
+    prepareLevelTwoBlade(state);
+    const xpBefore = state.xp;
+
+    const cutTicks = cutCurrentTarget(state, target);
+    const cutSeconds = cutTicks * FIXED_TIME_STEP_SECONDS;
+
+    expect(target.solidRadius).toBe(0);
+    expect(cutSeconds).toBeGreaterThanOrEqual(1.05);
+    expect(cutSeconds).toBeLessThanOrEqual(1.65);
+    expect(state.inventory.fiber).toBe(1);
+    expect(state.objectives.fiber.collected).toBe(1);
+    expect(state.xp - xpBefore).toBe(8);
+    expect(state.cutEvents.at(-1)).toMatchObject({
+      targetId: target.id,
+      kind: "fiberReed",
+      yield: 1,
+      xp: 8,
+    });
   });
 
   it("persists partial dense-weed work after the blade leaves contact", () => {
@@ -2782,6 +2886,7 @@ function totalAvailableResources(state: GameState): {
         totals.flowers += target.yield;
         break;
       case "denseWeed":
+      case "fiberReed":
       case "shrub":
         totals.fiber += target.yield;
         break;
@@ -3032,6 +3137,26 @@ function hasDenseWeedTierValues(target: {
     target.resistance === 0.25 &&
     target.yield === 1 &&
     target.xp === 6
+  );
+}
+
+function hasFiberReedTierValues(target: {
+  kind: TargetKind;
+  solidRadius: number;
+  recommendedLevel: number;
+  requiredWork: number;
+  resistance: number;
+  yield: number;
+  xp: number;
+}): boolean {
+  return (
+    target.kind === "fiberReed" &&
+    target.solidRadius === 0 &&
+    target.recommendedLevel === 2 &&
+    target.requiredWork === 18 &&
+    target.resistance === 0.32 &&
+    target.yield === 1 &&
+    target.xp === 8
   );
 }
 

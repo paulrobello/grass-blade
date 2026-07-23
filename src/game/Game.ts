@@ -643,6 +643,7 @@ export class Game {
           flowerAwarded = true;
           break;
         case "denseWeed":
+        case "fiberReed":
         case "shrub":
           fiberAwarded = true;
           break;

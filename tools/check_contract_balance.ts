@@ -448,6 +448,7 @@ function resourceForTargetKind(kind: TargetKind): Resource | null {
     case "flower":
       return "flowers";
     case "denseWeed":
+    case "fiberReed":
     case "shrub":
       return "fiber";
     case "sapling":
@@ -463,6 +464,7 @@ function countTargetsByKind(targets: readonly TargetState[]): Record<TargetKind,
     grass: 0,
     flower: 0,
     denseWeed: 0,
+    fiberReed: 0,
     shrub: 0,
     sapling: 0,
     matureTree: 0,
@@ -487,6 +489,7 @@ function totalAvailableResources(state: GameState): InventoryState {
         totals.flowers += target.yield;
         break;
       case "denseWeed":
+      case "fiberReed":
       case "shrub":
         totals.fiber += target.yield;
         break;

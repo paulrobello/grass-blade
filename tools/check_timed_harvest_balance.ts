@@ -257,6 +257,7 @@ function resourceForTargetKind(kind: TargetKind): Resource | null {
     case "flower":
       return "flowers";
     case "denseWeed":
+    case "fiberReed":
     case "shrub":
       return "fiber";
     case "sapling":

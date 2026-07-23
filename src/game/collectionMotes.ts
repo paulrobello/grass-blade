@@ -76,6 +76,7 @@ export function collectionResourceForKind(kind: CutCompletionEvent["kind"]): Col
     case "flower":
       return "flowers";
     case "denseWeed":
+    case "fiberReed":
     case "shrub":
       return "fiber";
     case "sapling":
@@ -404,6 +405,8 @@ function collectionMoteOriginHeight(kind: CutCompletionEvent["kind"]): number {
       return 0.72;
     case "denseWeed":
       return 0.8;
+    case "fiberReed":
+      return 0.92;
     case "shrub":
       return 1.05;
     case "sapling":

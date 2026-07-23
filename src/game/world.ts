@@ -6,6 +6,7 @@ const FLOWER_TARGETS_PER_CLUSTER = 20;
 const FLOWER_CONTACT_RADIUS = 0.24;
 const FLOWER_VISUAL_SPREAD_RADIUS = 0.58;
 const DENSE_WEED_COLOR_COUNT = 3;
+const FIBER_REED_COLOR_COUNT = 3;
 const SHRUB_COLOR_COUNT = 3;
 const SAPLING_COLOR_COUNT = 3;
 
@@ -19,6 +20,9 @@ export const FLOWER_VISUAL_COUNT = 880;
 export const DENSE_WEED_COUNT = 12;
 export const DENSE_WEED_VISUALS_PER_TARGET = 9;
 export const DENSE_WEED_VISUAL_COUNT = DENSE_WEED_COUNT * DENSE_WEED_VISUALS_PER_TARGET;
+export const FIBER_REED_COUNT = 10;
+export const FIBER_REED_VISUALS_PER_TARGET = 7;
+export const FIBER_REED_VISUAL_COUNT = FIBER_REED_COUNT * FIBER_REED_VISUALS_PER_TARGET;
 export const SHRUB_COUNT = 8;
 export const SHRUB_VISUAL_COUNT = SHRUB_COUNT;
 export const SAPLING_COUNT = 5;
@@ -90,6 +94,19 @@ const SHRUB_PLACEMENT_ANCHORS = [
   [-2.8, -11.2],
 ] as const;
 
+const FIBER_REED_PLACEMENT_ANCHORS = [
+  [-13.2, -4.4],
+  [-9.3, 13],
+  [-2.4, -14],
+  [3.4, 13.8],
+  [9.6, -12.8],
+  [13.4, 4.8],
+  [-15, 8.2],
+  [15.3, -4.6],
+  [-5.6, 1.2],
+  [5.7, -0.8],
+] as const;
+
 const MATURE_TREE_PLACEMENTS = [
   [-16, -15, 1.05],
   [-8, -18, 0.85],
@@ -141,6 +158,15 @@ export interface DenseWeedVisual {
   colorIndex: number;
 }
 
+export interface FiberReedVisual {
+  x: number;
+  z: number;
+  scale: number;
+  rotation: number;
+  targetIndex: number;
+  colorIndex: number;
+}
+
 export interface ShrubVisual {
   x: number;
   z: number;
@@ -183,7 +209,7 @@ export interface ArenaBoundaryMarker {
 }
 
 export type TargetKind =
-  "grass" | "flower" | "denseWeed" | "shrub" | "sapling" | "matureTree" | "rock";
+  "grass" | "flower" | "denseWeed" | "fiberReed" | "shrub" | "sapling" | "matureTree" | "rock";
 
 export interface TargetSeed {
   id: string;
@@ -208,6 +234,8 @@ export interface MeadowLayout {
   flowerVisuals: FlowerVisual[];
   denseWeedTargets: TargetSeed[];
   denseWeedVisuals: DenseWeedVisual[];
+  fiberReedTargets: TargetSeed[];
+  fiberReedVisuals: FiberReedVisual[];
   shrubTargets: TargetSeed[];
   shrubVisuals: ShrubVisual[];
   saplingTargets: TargetSeed[];
@@ -255,6 +283,11 @@ export function createMeadowLayout(
     denseWeedTargets,
     createSeededRandom(seed ^ 0x03707344),
   );
+  const fiberReedTargets = createFiberReedTargets(createSeededRandom(seed ^ 0x85a308d3));
+  const fiberReedVisuals = createFiberReedVisuals(
+    fiberReedTargets,
+    createSeededRandom(seed ^ 0x131a2e03),
+  );
   const shrubTargets = createShrubTargets(createSeededRandom(seed ^ 0x452821e6));
   const shrubVisuals = createShrubVisuals(shrubTargets, createSeededRandom(seed ^ 0x38d01377));
   const saplingTargets = createSaplingTargets(createSeededRandom(seed ^ 0xa4093822));
@@ -276,6 +309,8 @@ export function createMeadowLayout(
     flowerVisuals,
     denseWeedTargets,
     denseWeedVisuals,
+    fiberReedTargets,
+    fiberReedVisuals,
     shrubTargets,
     shrubVisuals,
     saplingTargets,
@@ -1553,6 +1588,48 @@ function createDenseWeedVisuals(targets: TargetSeed[], random: () => number): De
         rotation: random() * TAU,
         targetIndex,
         colorIndex: Math.floor(random() * DENSE_WEED_COLOR_COUNT),
+      });
+    }
+  }
+
+  return visuals;
+}
+
+function createFiberReedTargets(random: () => number): TargetSeed[] {
+  return FIBER_REED_PLACEMENT_ANCHORS.map(([anchorX, anchorZ], index) => ({
+    id: `fiber-reed-${index}`,
+    kind: "fiberReed",
+    x: anchorX + randomRange(random, -0.5, 0.5),
+    z: anchorZ + randomRange(random, -0.5, 0.5),
+    radius: 0.74 + random() * 0.14,
+    solidRadius: 0,
+    recommendedLevel: 2,
+    requiredWork: 18,
+    resistance: 0.32,
+    yield: 1,
+    xp: 8,
+  }));
+}
+
+function createFiberReedVisuals(targets: TargetSeed[], random: () => number): FiberReedVisual[] {
+  const visuals: FiberReedVisual[] = [];
+
+  for (let targetIndex = 0; targetIndex < targets.length; targetIndex += 1) {
+    const target = targets[targetIndex];
+    if (target === undefined) {
+      continue;
+    }
+
+    for (let memberIndex = 0; memberIndex < FIBER_REED_VISUALS_PER_TARGET; memberIndex += 1) {
+      const angle = random() * TAU;
+      const distance = Math.sqrt(random()) * target.radius * 0.64;
+      visuals.push({
+        x: target.x + Math.cos(angle) * distance,
+        z: target.z + Math.sin(angle) * distance,
+        scale: 0.86 + random() * 0.5,
+        rotation: random() * TAU,
+        targetIndex,
+        colorIndex: Math.floor(random() * FIBER_REED_COLOR_COUNT),
       });
     }
   }

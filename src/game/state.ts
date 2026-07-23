@@ -324,6 +324,7 @@ export function createInitialState(
     ...layout.grassCells,
     ...layout.flowerTargets,
     ...layout.denseWeedTargets,
+    ...layout.fiberReedTargets,
     ...layout.shrubTargets,
     ...layout.saplingTargets,
     ...layout.matureTreeTargets,
@@ -865,6 +866,7 @@ function awardTarget(state: GameState, target: TargetState): void {
       state.objectives.flowers.collected += target.yield;
       break;
     case "denseWeed":
+    case "fiberReed":
     case "shrub":
       state.inventory.fiber += target.yield;
       state.objectives.fiber.collected += target.yield;

@@ -326,6 +326,7 @@ function cutFrequency(kind: CutCompletionEvent["kind"]): number {
     case "flower":
       return 660;
     case "denseWeed":
+    case "fiberReed":
     case "shrub":
       return 390;
     case "sapling":
