@@ -74,6 +74,7 @@ export interface ContractDefinition {
     | "twin-glade"
     | "frost-ribbons"
     | "prism-prairie"
+    | "stone-bloom"
     | "clear-every-patch";
   title: string;
   summary: string;
@@ -271,6 +272,14 @@ export const CONTRACT_DEFINITIONS = [
     benchmarkSeconds: 64.4,
     timeLimitSeconds: 70,
     objectives: { grass: 235, flowers: 320, fiber: 24, wood: 0 },
+  },
+  {
+    id: "stone-bloom",
+    title: "Stone Bloom",
+    summary: "A 68-second rock-garden bloom route through visible stone chicanes.",
+    benchmarkSeconds: 62.633,
+    timeLimitSeconds: 68,
+    objectives: { grass: 240, flowers: 300, fiber: 24, wood: 0 },
   },
   {
     id: "clear-every-patch",

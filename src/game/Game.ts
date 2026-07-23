@@ -1754,6 +1754,8 @@ function contractRouteBadge(contract: ContractDefinition): string {
       return "Frost bands";
     case "prism-prairie":
       return "Prism lanes";
+    case "stone-bloom":
+      return "Stone chicane";
     case "clear-every-patch":
       return "Split clearings";
   }
