@@ -670,7 +670,7 @@ describe("contract chooser filters", () => {
       "Petal gate",
     ]);
     expect(contractCardBadges(contractById("sunset-switchback"))).toEqual([
-      "120s",
+      "140s",
       "Fiber",
       "Hard",
       "Sunset switch",
