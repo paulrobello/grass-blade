@@ -419,7 +419,7 @@ Authored contracts are selected by deterministic contract ID and seed. The defau
 ### Petal Gate
 
 - Contract ID: `petal-gate`
-- Time limit: 72 seconds.
+- Time limit: 88 seconds.
 - Collect 250 Grass.
 - Collect 320 Flowers.
 - Collect 28 Fiber.
@@ -474,6 +474,18 @@ Authored contracts are selected by deterministic contract ID and seed. The defau
 - No Wood quota; this route emphasizes precise soft-target sweeps through tight flower corridors and Fiber hedges.
 - Uses narrow linked bloom corridors with diagonal connectors, compact internal gaps, and one grid-aligned decorative clearing so the route reads as constrained paths instead of a square lawn.
 - Deterministic balance requires all dense weeds and six shrubs while preserving a very small execution buffer inside the timer.
+- If the timer reaches zero before every quota is complete, the contract ends with the same `timed-out` result semantics as Timed Harvest.
+
+### Berry Bloom
+
+- Contract ID: `berry-bloom`
+- Time limit: 88 seconds.
+- Collect 240 Grass.
+- Collect 340 Flowers.
+- Collect 28 Fiber.
+- No Wood quota; this route makes the newer soft-crop flower targets required by pushing the Flower quota beyond the classic flower target count.
+- Uses a connected berry-bloom route aligned to the soft-crop anchor chain with compact internal no-growth pockets so the route reads as a deliberate zig-zag through plant clusters instead of a square field.
+- Deterministic balance requires every classic flower target, ten soft-crop clusters, all dense weeds, and all shrubs while preserving a human-play buffer inside the timer.
 - If the timer reaches zero before every quota is complete, the contract ends with the same `timed-out` result semantics as Timed Harvest.
 
 ### Clear Every Patch

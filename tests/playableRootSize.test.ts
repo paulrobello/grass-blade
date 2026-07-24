@@ -175,7 +175,8 @@ describe("contract navigation URLs", () => {
     expect(nextAuthoredContractId("sunset-switchback")).toBe("cedar-crossroads");
     expect(nextAuthoredContractId("cedar-crossroads")).toBe("lagoon-braid");
     expect(nextAuthoredContractId("lagoon-braid")).toBe("wildflower-narrows");
-    expect(nextAuthoredContractId("wildflower-narrows")).toBe("clear-every-patch");
+    expect(nextAuthoredContractId("wildflower-narrows")).toBe("berry-bloom");
+    expect(nextAuthoredContractId("berry-bloom")).toBe("clear-every-patch");
     expect(nextAuthoredContractId("clear-every-patch")).toBe("meadow-delivery");
     expect(nextAuthoredContractId("unknown-contract")).toBe("meadow-delivery");
     expect(nextAuthoredContractTitle("meadow-delivery")).toBe("Flower Sweep");
@@ -206,7 +207,8 @@ describe("contract navigation URLs", () => {
     expect(nextAuthoredContractTitle("sunset-switchback")).toBe("Cedar Crossroads");
     expect(nextAuthoredContractTitle("cedar-crossroads")).toBe("Lagoon Braid");
     expect(nextAuthoredContractTitle("lagoon-braid")).toBe("Wildflower Narrows");
-    expect(nextAuthoredContractTitle("wildflower-narrows")).toBe("Clear Every Patch");
+    expect(nextAuthoredContractTitle("wildflower-narrows")).toBe("Berry Bloom");
+    expect(nextAuthoredContractTitle("berry-bloom")).toBe("Clear Every Patch");
     expect(nextAuthoredContractTitle("clear-every-patch")).toBe("Meadow Delivery");
     expect(nextAuthoredContractTitle("unknown-contract")).toBe("Meadow Delivery");
   });
@@ -414,14 +416,21 @@ describe("contract navigation URLs", () => {
         nextAuthoredContractId("wildflower-narrows"),
         "?seed=604525066&debug=1&contract=wildflower-narrows",
       ),
-    ).toBe("?seed=3258960835&debug=1&contract=clear-every-patch");
+    ).toBe("?seed=3258960835&debug=1&contract=berry-bloom");
     expect(
       contractNavigationSearch(
         1632666204,
-        nextAuthoredContractId("clear-every-patch"),
-        "?seed=3258960835&debug=1&contract=clear-every-patch",
+        nextAuthoredContractId("berry-bloom"),
+        "?seed=3258960835&debug=1&contract=berry-bloom",
       ),
-    ).toBe("?seed=1632666204&debug=1");
+    ).toBe("?seed=1632666204&debug=1&contract=clear-every-patch");
+    expect(
+      contractNavigationSearch(
+        2597112807,
+        nextAuthoredContractId("clear-every-patch"),
+        "?seed=1632666204&debug=1&contract=clear-every-patch",
+      ),
+    ).toBe("?seed=2597112807&debug=1");
   });
 });
 
@@ -645,6 +654,12 @@ describe("contract chooser filters", () => {
       "Hard",
       "Flower narrows",
     ]);
+    expect(contractCardBadges(contractById("berry-bloom"))).toEqual([
+      "88s",
+      "Fiber",
+      "Hard",
+      "Berry bloom",
+    ]);
 
     for (const contract of CONTRACT_DEFINITIONS as readonly ContractDefinition[]) {
       expect(contractCardBadges(contract)).toHaveLength(4);
@@ -673,6 +688,7 @@ describe("contract chooser filters", () => {
     expect(primaryContractFilterId(contractById("cedar-crossroads"))).toBe("wood");
     expect(primaryContractFilterId(contractById("lagoon-braid"))).toBe("timed");
     expect(primaryContractFilterId(contractById("wildflower-narrows"))).toBe("timed");
+    expect(primaryContractFilterId(contractById("berry-bloom"))).toBe("timed");
     expect(primaryContractFilterId(contractById("field-sprint"))).toBe("soft");
     expect(primaryContractFilterId(contractById("clear-every-patch"))).toBe("clear");
   });
@@ -696,6 +712,7 @@ describe("contract chooser filters", () => {
     const cedarCrossroads = contractById("cedar-crossroads");
     const lagoonBraid = contractById("lagoon-braid");
     const wildflowerNarrows = contractById("wildflower-narrows");
+    const berryBloom = contractById("berry-bloom");
     const reedRun = contractById("reed-run");
     const clearEveryPatch = contractById("clear-every-patch");
 
@@ -733,6 +750,8 @@ describe("contract chooser filters", () => {
     expect(contractMatchesFilter(lagoonBraid, "wood")).toBe(false);
     expect(contractMatchesFilter(wildflowerNarrows, "timed")).toBe(true);
     expect(contractMatchesFilter(wildflowerNarrows, "wood")).toBe(false);
+    expect(contractMatchesFilter(berryBloom, "timed")).toBe(true);
+    expect(contractMatchesFilter(berryBloom, "wood")).toBe(false);
     expect(contractMatchesFilter(braidedMeadow, "timed")).toBe(true);
     expect(contractMatchesFilter(braidedMeadow, "soft")).toBe(false);
     expect(contractMatchesFilter(reedRun, "timed")).toBe(true);

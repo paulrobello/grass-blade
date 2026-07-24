@@ -81,6 +81,7 @@ export interface ContractDefinition {
     | "cedar-crossroads"
     | "lagoon-braid"
     | "wildflower-narrows"
+    | "berry-bloom"
     | "clear-every-patch";
   title: string;
   summary: string;
@@ -334,6 +335,14 @@ export const CONTRACT_DEFINITIONS = [
     benchmarkSeconds: 64.15,
     timeLimitSeconds: 66,
     objectives: { grass: 230, flowers: FLOWER_TARGET_COUNT, fiber: 24, wood: 0 },
+  },
+  {
+    id: "berry-bloom",
+    title: "Berry Bloom",
+    summary: "An 88-second berry-bloom route that pushes past classic flower patches.",
+    benchmarkSeconds: 67.933,
+    timeLimitSeconds: 88,
+    objectives: { grass: 240, flowers: 340, fiber: 28, wood: 0 },
   },
   {
     id: "clear-every-patch",
