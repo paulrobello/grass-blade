@@ -488,6 +488,18 @@ Authored contracts are selected by deterministic contract ID and seed. The defau
 - Deterministic balance requires every classic flower target, ten soft-crop clusters, all dense weeds, and all shrubs while preserving a human-play buffer inside the timer.
 - If the timer reaches zero before every quota is complete, the contract ends with the same `timed-out` result semantics as Timed Harvest.
 
+### Daisy Drift
+
+- Contract ID: `daisy-drift`
+- Time limit: 76 seconds.
+- Collect 245 Grass.
+- Collect 320 Flowers.
+- Collect 24 Fiber.
+- No Wood quota; this route emphasizes a drifting bloom sweep through open daisy lanes and Fiber bends without forcing timber cuts.
+- Uses an S/loop-shaped drifting bloom arena with flower anchors, diagonal connectors, and compact internal no-growth pockets so the route reads as a path network instead of a square lawn.
+- Deterministic balance requires every classic flower target, all dense weeds, and six shrubs while preserving a human-play buffer inside the timer.
+- If the timer reaches zero before every quota is complete, the contract ends with the same `timed-out` result semantics as Timed Harvest.
+
 ### Clear Every Patch
 
 - Contract ID: `clear-every-patch`

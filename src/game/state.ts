@@ -82,6 +82,7 @@ export interface ContractDefinition {
     | "lagoon-braid"
     | "wildflower-narrows"
     | "berry-bloom"
+    | "daisy-drift"
     | "clear-every-patch";
   title: string;
   summary: string;
@@ -343,6 +344,14 @@ export const CONTRACT_DEFINITIONS = [
     benchmarkSeconds: 67.933,
     timeLimitSeconds: 88,
     objectives: { grass: 240, flowers: 340, fiber: 28, wood: 0 },
+  },
+  {
+    id: "daisy-drift",
+    title: "Daisy Drift",
+    summary: "A 76-second drifting bloom route through open daisy lanes and Fiber bends.",
+    benchmarkSeconds: 64.9,
+    timeLimitSeconds: 76,
+    objectives: { grass: 245, flowers: FLOWER_TARGET_COUNT, fiber: 24, wood: 0 },
   },
   {
     id: "clear-every-patch",
