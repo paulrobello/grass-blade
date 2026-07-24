@@ -41,6 +41,17 @@ const INTRO_VIEWPORTS = [
     hasTouch: false,
     deviceScaleFactor: 1,
   },
+  {
+    name: "desktop-1280x720-timber-trail",
+    width: 1280,
+    height: 720,
+    contract: "timber-trail",
+    isMobile: false,
+    hasTouch: false,
+    deviceScaleFactor: 1,
+    singleColumn: false,
+    expectedQualityPreset: "default",
+  },
   { name: "phone-390x664-hedge-maze", width: 390, height: 664, contract: "hedge-maze" },
   { name: "phone-390x664-clover-circuit", width: 390, height: 664, contract: "clover-circuit" },
   {
@@ -183,8 +194,8 @@ async function checkIntroChooser(browser, options, viewport) {
     }
     assertEqual(
       state.performance.qualityPreset,
-      "low",
-      `${viewport.name} uses low-cost quality by default`,
+      viewport.expectedQualityPreset ?? "low",
+      `${viewport.name} uses expected quality by default`,
     );
     assertNoBrowserErrors(errors, viewport.name);
 

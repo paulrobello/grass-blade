@@ -882,6 +882,8 @@ body {
 .intro-card__contract-list {
   display: grid;
   min-height: 0;
+  align-items: start;
+  grid-auto-rows: max-content;
   grid-template-columns: repeat(auto-fit, minmax(min(16rem, 100%), 1fr));
   gap: 0.55rem;
   overflow-y: auto;
@@ -895,12 +897,12 @@ body {
 
 .intro-card__contract {
   display: grid;
-  grid-template-rows: auto auto auto auto;
+  grid-template-rows: repeat(7, auto);
   min-height: 7.35rem;
   align-content: start;
   gap: 0.22rem;
-  padding: 0.62rem;
-  overflow: hidden;
+  padding: 0.62rem 0.62rem 0.76rem;
+  overflow: visible;
   border: 0.14rem solid #d9b06d;
   border-radius: 0.95rem;
   background: linear-gradient(180deg, #fff6df, #f7e1b9);
@@ -981,9 +983,10 @@ body {
   display: flex;
   min-height: 1.18rem;
   align-items: center;
-  align-self: end;
+  align-self: stretch;
   justify-content: center;
   justify-self: stretch;
+  margin-top: 0.12rem;
   padding: 0.18rem 0.42rem;
   border-radius: 999px;
   background: #283277;
@@ -1153,6 +1156,7 @@ body {
     flex: 1 1 auto;
     width: 100%;
     min-height: 0;
+    align-items: stretch;
     flex-direction: column;
     padding: 0.1rem 0.15rem 0.35rem;
     gap: 0.42rem;
@@ -1171,11 +1175,11 @@ body {
   .intro-card__contract {
     display: grid;
     flex: 0 0 auto;
-    grid-template-rows: auto auto auto auto;
+    grid-template-rows: repeat(7, auto);
     min-height: 0;
     gap: 0.14rem;
-    overflow: hidden;
-    padding: 0.48rem;
+    overflow: visible;
+    padding: 0.48rem 0.48rem 0.64rem;
   }
 
   .intro-card__contract-name {
@@ -1790,7 +1794,7 @@ body {
   }
 
   .intro-card__contract {
-    padding: 0.42rem 0.5rem;
+    padding: 0.42rem 0.5rem 0.58rem;
   }
 
   .intro-card__contract-name {
@@ -1891,7 +1895,7 @@ body {
   }
 
   .intro-card__contract {
-    padding: 0.32rem 0.36rem;
+    padding: 0.32rem 0.36rem 0.46rem;
   }
 
   .intro-card__contract-title {
