@@ -637,9 +637,7 @@ export class Game {
     setText(this.results.elapsed, formatElapsedTime(result.completedAtSeconds));
     setText(
       this.results.bestTime,
-      bestSnapshot.isNewBest
-        ? `New ${formatOptionalBestTime(bestSnapshot.bestSeconds)}`
-        : formatOptionalBestTime(bestSnapshot.bestSeconds),
+      formatResultsBestTime(bestSnapshot.bestSeconds, bestSnapshot.isNewBest),
     );
     this.results.bestTime.classList.toggle("results-card__best--new", bestSnapshot.isNewBest);
     setText(this.results.medal, formatContractMedalRank(resultMedal));
@@ -2444,6 +2442,14 @@ function formatElapsedTime(seconds: number): string {
 
 function formatOptionalBestTime(seconds: number | null): string {
   return seconds === null ? "—" : formatElapsedTime(seconds);
+}
+
+export function formatResultsBestTime(seconds: number | null, isNewBest: boolean): string {
+  if (seconds === null) {
+    return "—";
+  }
+  const formattedTime = formatElapsedTime(seconds);
+  return isNewBest ? `New Best: ${formattedTime}` : `Best: ${formattedTime}`;
 }
 
 function formatContractBestLine(contract: ContractDefinition, bestSeconds: number | null): string {

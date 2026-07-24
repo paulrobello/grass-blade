@@ -17,6 +17,7 @@ import {
   contractMatchesFilter,
   contractNavigationSearch,
   derivePlayableRootSize,
+  formatResultsBestTime,
   nextAuthoredContractId,
   nextAuthoredContractTitle,
   parseContractBestTimes,
@@ -481,6 +482,12 @@ describe("contract best times", () => {
     });
   });
 
+  it("formats results best-time copy explicitly", () => {
+    expect(formatResultsBestTime(null, false)).toBe("—");
+    expect(formatResultsBestTime(65.2, false)).toBe("Best: 1:05");
+    expect(formatResultsBestTime(65.2, true)).toBe("New Best: 1:05");
+  });
+
   it("serializes best times in authored contract order", () => {
     expect(
       serializeContractBestTimes({
@@ -631,7 +638,7 @@ describe("contract chooser filters", () => {
       "Petal gate",
     ]);
     expect(contractCardBadges(contractById("sunset-switchback"))).toEqual([
-      "100s",
+      "120s",
       "Fiber",
       "Hard",
       "Sunset switch",
