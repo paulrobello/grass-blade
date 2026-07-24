@@ -834,6 +834,9 @@ export class Game {
     }
 
     if (!this.contractStarted) {
+      if (this.handleIntroKeyboardNavigation(event)) {
+        return;
+      }
       return;
     }
 
@@ -880,6 +883,47 @@ export class Game {
       this.togglePause();
     }
   };
+
+  private handleIntroKeyboardNavigation(event: KeyboardEvent): boolean {
+    let direction: -1 | 1;
+    switch (event.code) {
+      case "ArrowLeft":
+      case "KeyA":
+        direction = -1;
+        break;
+      case "ArrowRight":
+      case "KeyD":
+        direction = 1;
+        break;
+      case "Enter":
+      case "Space":
+        if (!event.repeat) {
+          event.preventDefault();
+          this.beginContract();
+          return true;
+        }
+        return false;
+      default:
+        return false;
+    }
+
+    event.preventDefault();
+    if (event.repeat) {
+      return true;
+    }
+
+    const nextContractId = adjacentFilteredContractId(
+      this.state.contract.id,
+      this.activeContractFilter,
+      direction,
+    );
+    if (nextContractId !== this.state.contract.id) {
+      window.location.assign(
+        contractNavigationSearch(this.state.seed, nextContractId, window.location.search),
+      );
+    }
+    return true;
+  }
 
   private readonly onKeyUp = (event: KeyboardEvent): void => {
     if (!this.contractStarted) {
@@ -1539,6 +1583,24 @@ export function nextAuthoredContractId(currentContractId: string): ContractDefin
 
   const nextIndex = (currentIndex + 1) % CONTRACT_DEFINITIONS.length;
   return CONTRACT_DEFINITIONS[nextIndex]?.id ?? DEFAULT_CONTRACT_ID;
+}
+
+export function adjacentFilteredContractId(
+  currentContractId: string,
+  filterId: ContractFilterId,
+  direction: -1 | 1,
+): ContractDefinition["id"] {
+  const contracts = CONTRACT_DEFINITIONS.filter((contract) =>
+    contractMatchesFilter(contract, filterId),
+  );
+  if (contracts.length === 0) {
+    return DEFAULT_CONTRACT_ID;
+  }
+
+  const currentIndex = contracts.findIndex((contract) => contract.id === currentContractId);
+  const baseIndex = currentIndex >= 0 ? currentIndex : direction > 0 ? -1 : contracts.length;
+  const nextIndex = (baseIndex + direction + contracts.length) % contracts.length;
+  return contracts[nextIndex]?.id ?? DEFAULT_CONTRACT_ID;
 }
 
 export function contractCardBadges(contract: ContractDefinition): string[] {
@@ -2233,7 +2295,8 @@ function createIntroElements(
   }
   contractPicker.append(contractPickerTitle, filterList, medalSummary, contractList);
   controls.className = "intro-card__controls";
-  controls.textContent = "Drag to move after starting. Keyboard: WASD or arrows. Escape pauses.";
+  controls.textContent =
+    "Before starting: arrows or A/D choose, Enter starts. After starting: drag, WASD, or arrows move. Escape pauses.";
   startButton.id = "start-contract";
   startButton.type = "button";
   startButton.className = "intro-card__button intro-card__button--primary";

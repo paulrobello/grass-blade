@@ -8,6 +8,7 @@ import {
   resolveVolume,
 } from "../src/game/audio";
 import {
+  adjacentFilteredContractId,
   BEST_TIMES_STORAGE_KEY,
   applyPlayableRootSize,
   contractCardBadges,
@@ -213,6 +214,15 @@ describe("contract navigation URLs", () => {
     expect(nextAuthoredContractTitle("berry-bloom")).toBe("Clear Every Patch");
     expect(nextAuthoredContractTitle("clear-every-patch")).toBe("Meadow Delivery");
     expect(nextAuthoredContractTitle("unknown-contract")).toBe("Meadow Delivery");
+  });
+
+  it("cycles start-screen keyboard selection within the active filter", () => {
+    expect(adjacentFilteredContractId("meadow-delivery", "all", 1)).toBe("flower-sweep");
+    expect(adjacentFilteredContractId("meadow-delivery", "all", -1)).toBe("clear-every-patch");
+    expect(adjacentFilteredContractId("timed-harvest", "timed", -1)).toBe("hedge-maze");
+    expect(adjacentFilteredContractId("timed-harvest", "timed", 1)).toBe("weed-rush");
+    expect(adjacentFilteredContractId("unknown-contract", "wood", 1)).toBe("meadow-delivery");
+    expect(adjacentFilteredContractId("unknown-contract", "wood", -1)).toBe("cedar-crossroads");
   });
 
   it("opens the next authored contract while preserving diagnostics", () => {
