@@ -610,19 +610,19 @@ describe("contract chooser filters", () => {
       "Stone chicane",
     ]);
     expect(contractCardBadges(contractById("willow-weave"))).toEqual([
-      "80s",
+      "105s",
       "Wood",
       "Expert",
       "Willow weave",
     ]);
     expect(contractCardBadges(contractById("petal-gate"))).toEqual([
-      "72s",
+      "88s",
       "Fiber",
       "Hard",
       "Petal gate",
     ]);
     expect(contractCardBadges(contractById("sunset-switchback"))).toEqual([
-      "74s",
+      "86s",
       "Fiber",
       "Hard",
       "Sunset switch",
