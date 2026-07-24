@@ -431,7 +431,7 @@ Authored contracts are selected by deterministic contract ID and seed. The defau
 ### Sunset Switchback
 
 - Contract ID: `sunset-switchback`
-- Time limit: 74 seconds.
+- Time limit: 100 seconds.
 - Collect 260 Grass.
 - Collect 300 Flowers.
 - Collect 28 Fiber.
