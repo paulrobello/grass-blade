@@ -22,6 +22,7 @@ import {
   type GameState,
   type MovementInput,
   type ObjectiveCounter,
+  type ObjectivesState,
 } from "./state";
 import { createTargetProgressOverlay, type TargetProgressOverlay } from "./targetProgress";
 
@@ -631,7 +632,9 @@ export class Game {
     setText(
       this.results.summary,
       timedOut
-        ? "The timer ended before every quota was packed. Restart this contract or try the next route."
+        ? `The timer ended before every quota was packed. ${formatMissingQuotaSummary(
+            this.state.objectives,
+          )} Restart this contract or try the next route.`
         : this.state.contract.summary,
     );
     setText(this.results.elapsed, formatElapsedTime(result.completedAtSeconds));
@@ -793,6 +796,7 @@ export class Game {
         if (result.status === "timed-out") {
           announcements.push(
             `Time up at ${formatElapsedTime(result.completedAtSeconds)}. ` +
+              `${formatMissingQuotaSummary(this.state.objectives)} ` +
               `${result.cutTargets} targets cut. Highest blade level ${result.highestLevel}.`,
           );
         } else {
@@ -2450,6 +2454,16 @@ export function formatResultsBestTime(seconds: number | null, isNewBest: boolean
   }
   const formattedTime = formatElapsedTime(seconds);
   return isNewBest ? `New Best: ${formattedTime}` : `Best: ${formattedTime}`;
+}
+
+export function formatMissingQuotaSummary(objectives: ObjectivesState): string {
+  const missing = OBJECTIVE_RESOURCES.flatMap((resource) => {
+    const objective = objectives[resource];
+    const remaining = Math.max(0, objective.target - objective.collected);
+    return remaining > 0 ? [`${remaining} ${OBJECTIVE_LABELS[resource]}`] : [];
+  });
+
+  return missing.length > 0 ? `Missing: ${missing.join(", ")}.` : "No quotas left missing.";
 }
 
 function formatContractBestLine(contract: ContractDefinition, bestSeconds: number | null): string {

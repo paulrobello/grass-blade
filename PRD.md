@@ -407,7 +407,7 @@ Authored contracts are selected by deterministic contract ID and seed. The defau
 ### Willow Weave
 
 - Contract ID: `willow-weave`
-- Time limit: 80 seconds.
+- Time limit: 105 seconds.
 - Collect 250 Grass.
 - Collect 300 Flowers.
 - Collect 24 Fiber.

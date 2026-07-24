@@ -17,6 +17,7 @@ import {
   contractMatchesFilter,
   contractNavigationSearch,
   derivePlayableRootSize,
+  formatMissingQuotaSummary,
   formatResultsBestTime,
   nextAuthoredContractId,
   nextAuthoredContractTitle,
@@ -486,6 +487,27 @@ describe("contract best times", () => {
     expect(formatResultsBestTime(null, false)).toBe("—");
     expect(formatResultsBestTime(65.2, false)).toBe("Best: 1:05");
     expect(formatResultsBestTime(65.2, true)).toBe("New Best: 1:05");
+  });
+
+  it("formats timed-out missing quota copy from active objectives", () => {
+    expect(
+      formatMissingQuotaSummary({
+        status: "active",
+        grass: { status: "active", collected: 150, target: 170 },
+        flowers: { status: "active", collected: 300, target: 300 },
+        fiber: { status: "active", collected: 12, target: 18 },
+        wood: { status: "active", collected: 0, target: 0 },
+      }),
+    ).toBe("Missing: 20 Grass, 6 Fiber.");
+    expect(
+      formatMissingQuotaSummary({
+        status: "complete",
+        grass: { status: "complete", collected: 170, target: 170 },
+        flowers: { status: "complete", collected: 300, target: 300 },
+        fiber: { status: "complete", collected: 18, target: 18 },
+        wood: { status: "planned", collected: 0, target: 0 },
+      }),
+    ).toBe("No quotas left missing.");
   });
 
   it("serializes best times in authored contract order", () => {
