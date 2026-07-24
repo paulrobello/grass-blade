@@ -159,7 +159,7 @@ export class GameAudio {
       frequency,
       durationSeconds: event.kind === "sapling" || event.kind === "matureTree" ? 0.14 : 0.07,
       gain: event.kind === "sapling" || event.kind === "matureTree" ? 0.12 : 0.075,
-      type: event.kind === "flower" ? "triangle" : "square",
+      type: event.kind === "flower" || event.kind === "softCrop" ? "triangle" : "square",
     });
   }
 
@@ -325,6 +325,8 @@ function cutFrequency(kind: CutCompletionEvent["kind"]): number {
       return 520;
     case "flower":
       return 660;
+    case "softCrop":
+      return 705;
     case "denseWeed":
     case "fiberReed":
     case "shrub":

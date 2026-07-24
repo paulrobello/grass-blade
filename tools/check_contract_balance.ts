@@ -314,7 +314,8 @@ function selectContractTargets(state: GameState): TargetState[] {
   if (state.contract.completionMode === "clear-patches") {
     return [
       ...targetsForKind(state, "grass", state.objectives.grass.target),
-      ...targetsForKind(state, "flower", state.objectives.flowers.target),
+      ...allTargetsForKind(state, "flower"),
+      ...allTargetsForKind(state, "softCrop"),
     ];
   }
 
@@ -400,6 +401,10 @@ function targetsForKind(state: GameState, kind: TargetKind, count: number): Targ
   return targets;
 }
 
+function allTargetsForKind(state: GameState, kind: TargetKind): TargetState[] {
+  return state.targets.filter((target) => target.kind === kind);
+}
+
 function parkTargetsOutOfReach(targets: TargetState[]): void {
   for (let index = 0; index < targets.length; index += 1) {
     const target = targets[index];
@@ -450,6 +455,7 @@ function resourceForTargetKind(kind: TargetKind): Resource | null {
     case "grass":
       return "grass";
     case "flower":
+    case "softCrop":
       return "flowers";
     case "denseWeed":
     case "fiberReed":
@@ -467,6 +473,7 @@ function countTargetsByKind(targets: readonly TargetState[]): Record<TargetKind,
   const counts: Record<TargetKind, number> = {
     grass: 0,
     flower: 0,
+    softCrop: 0,
     denseWeed: 0,
     fiberReed: 0,
     shrub: 0,
@@ -490,6 +497,7 @@ function totalAvailableResources(state: GameState): InventoryState {
         totals.grass += target.yield;
         break;
       case "flower":
+      case "softCrop":
         totals.flowers += target.yield;
         break;
       case "denseWeed":

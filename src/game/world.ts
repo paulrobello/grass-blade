@@ -7,6 +7,8 @@ const FLOWER_CLUSTER_COLUMNS = 4;
 const FLOWER_TARGETS_PER_CLUSTER = 20;
 const FLOWER_CONTACT_RADIUS = 0.24;
 const FLOWER_VISUAL_SPREAD_RADIUS = 0.58;
+const SOFT_CROP_VISUALS_PER_TARGET = 5;
+const SOFT_CROP_VISUAL_SPREAD_RADIUS = 0.46;
 const DENSE_WEED_COLOR_COUNT = 3;
 const FIBER_REED_COLOR_COUNT = 3;
 const SHRUB_COLOR_COUNT = 3;
@@ -19,6 +21,8 @@ export const GRASS_BLADES_PER_VISUAL = 14;
 export const FLOWER_CLUSTER_COUNT = 16;
 export const FLOWER_TARGET_COUNT = FLOWER_CLUSTER_COUNT * FLOWER_TARGETS_PER_CLUSTER;
 export const FLOWER_VISUAL_COUNT = 880;
+export const SOFT_CROP_COUNT = 18;
+export const SOFT_CROP_VISUAL_COUNT = SOFT_CROP_COUNT * SOFT_CROP_VISUALS_PER_TARGET;
 export const DENSE_WEED_COUNT = 12;
 export const DENSE_WEED_VISUALS_PER_TARGET = 9;
 export const DENSE_WEED_VISUAL_COUNT = DENSE_WEED_COUNT * DENSE_WEED_VISUALS_PER_TARGET;
@@ -133,6 +137,27 @@ const FIBER_REED_PLACEMENT_ANCHORS = [
   [5.7, -0.8],
 ] as const;
 
+const SOFT_CROP_PLACEMENT_ANCHORS = [
+  [-13.5, -11.8],
+  [-8.2, -14.1],
+  [-2.4, -11.4],
+  [3.5, -14],
+  [9.4, -11.2],
+  [14.4, -5.8],
+  [10.8, -1.2],
+  [4.5, -4.6],
+  [-2.2, -2.8],
+  [-8.8, -0.8],
+  [-14.4, 3.8],
+  [-9.8, 8.2],
+  [-3.1, 11.6],
+  [3.5, 8.7],
+  [9.9, 11.8],
+  [14.2, 5.2],
+  [5.6, 15.1],
+  [-13.6, 13.2],
+] as const;
+
 const MATURE_TREE_PLACEMENTS = [
   [-16, -15, 1.05],
   [-8, -18, 0.85],
@@ -167,6 +192,15 @@ export interface GrassVisual {
 }
 
 export interface FlowerVisual {
+  x: number;
+  z: number;
+  scale: number;
+  rotation: number;
+  targetIndex: number;
+  colorIndex: number;
+}
+
+export interface SoftCropVisual {
   x: number;
   z: number;
   scale: number;
@@ -235,7 +269,15 @@ export interface ArenaBoundaryMarker {
 }
 
 export type TargetKind =
-  "grass" | "flower" | "denseWeed" | "fiberReed" | "shrub" | "sapling" | "matureTree" | "rock";
+  | "grass"
+  | "flower"
+  | "softCrop"
+  | "denseWeed"
+  | "fiberReed"
+  | "shrub"
+  | "sapling"
+  | "matureTree"
+  | "rock";
 
 export interface TargetSeed {
   id: string;
@@ -258,6 +300,8 @@ export interface MeadowLayout {
   grassVisuals: GrassVisual[];
   flowerTargets: TargetSeed[];
   flowerVisuals: FlowerVisual[];
+  softCropTargets: TargetSeed[];
+  softCropVisuals: SoftCropVisual[];
   denseWeedTargets: TargetSeed[];
   denseWeedVisuals: DenseWeedVisual[];
   fiberReedTargets: TargetSeed[];
@@ -304,6 +348,11 @@ export function createMeadowLayout(
   );
   const flowerTargets = createFlowerTargets(createSeededRandom(seed ^ 0x243f6a88), resolvedArenaId);
   const flowerVisuals = createFlowerVisuals(flowerTargets, createSeededRandom(seed ^ 0xb7e15162));
+  const softCropTargets = createSoftCropTargets(createSeededRandom(seed ^ 0x8aed2a6b));
+  const softCropVisuals = createSoftCropVisuals(
+    softCropTargets,
+    createSeededRandom(seed ^ 0xf2b9d4e5),
+  );
   const denseWeedTargets = createDenseWeedTargets(createSeededRandom(seed ^ 0x13198a2e));
   const denseWeedVisuals = createDenseWeedVisuals(
     denseWeedTargets,
@@ -333,6 +382,8 @@ export function createMeadowLayout(
     grassVisuals,
     flowerTargets,
     flowerVisuals,
+    softCropTargets,
+    softCropVisuals,
     denseWeedTargets,
     denseWeedVisuals,
     fiberReedTargets,
@@ -518,6 +569,35 @@ function createFlowerTargets(random: () => number, arenaId: ArenaLayoutId): Targ
         xp: 3,
       });
     }
+  }
+
+  return targets;
+}
+
+function createSoftCropTargets(random: () => number): TargetSeed[] {
+  const targets: TargetSeed[] = [];
+
+  for (let index = 0; index < SOFT_CROP_COUNT; index += 1) {
+    const anchor = SOFT_CROP_PLACEMENT_ANCHORS[index];
+    if (anchor === undefined) {
+      continue;
+    }
+    const [anchorX, anchorZ] = anchor;
+    const angle = random() * TAU;
+    const distance = Math.sqrt(random()) * 0.64;
+    targets.push({
+      id: `soft-crop-${index}`,
+      kind: "softCrop",
+      x: anchorX + Math.cos(angle) * distance,
+      z: anchorZ + Math.sin(angle) * distance,
+      radius: 0.34 + random() * 0.06,
+      solidRadius: 0,
+      recommendedLevel: 1,
+      requiredWork: 5.5,
+      resistance: 0.1,
+      yield: 2,
+      xp: 5,
+    });
   }
 
   return targets;
@@ -2241,6 +2321,31 @@ function createFlowerVisuals(targets: TargetSeed[], random: () => number): Flowe
       rotation: random() * TAU,
       targetIndex,
       colorIndex: Math.floor(random() * FLOWER_COLOR_COUNT),
+    });
+  }
+
+  return visuals;
+}
+
+function createSoftCropVisuals(targets: TargetSeed[], random: () => number): SoftCropVisual[] {
+  const visuals: SoftCropVisual[] = [];
+
+  for (let index = 0; index < SOFT_CROP_VISUAL_COUNT; index += 1) {
+    const targetIndex = Math.floor(index / SOFT_CROP_VISUALS_PER_TARGET);
+    const target = targets[targetIndex];
+    if (target === undefined) {
+      continue;
+    }
+
+    const angle = random() * TAU;
+    const distance = Math.sqrt(random()) * SOFT_CROP_VISUAL_SPREAD_RADIUS;
+    visuals.push({
+      x: target.x + Math.cos(angle) * distance,
+      z: target.z + Math.sin(angle) * distance,
+      scale: 0.82 + random() * 0.42,
+      rotation: random() * TAU,
+      targetIndex,
+      colorIndex: Math.floor(random() * 3),
     });
   }
 

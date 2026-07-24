@@ -295,6 +295,10 @@ export function createCutEffects(
         count = reducedMotion ? 4 : 14;
         primaryStyle = PETAL_FRAGMENT;
         break;
+      case "softCrop":
+        count = reducedMotion ? 4 : 16;
+        primaryStyle = PETAL_FRAGMENT;
+        break;
       case "denseWeed":
       case "fiberReed":
         count = reducedMotion ? 4 : 13;
@@ -581,6 +585,8 @@ function fragmentOriginHeight(kind: CutCompletionEvent["kind"], style: number): 
   switch (kind) {
     case "flower":
       return 0.72;
+    case "softCrop":
+      return 0.68;
     case "denseWeed":
       return 0.8;
     case "fiberReed":

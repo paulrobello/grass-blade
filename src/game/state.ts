@@ -450,6 +450,7 @@ export function createInitialState(
   const targetSeeds = [
     ...layout.grassCells,
     ...layout.flowerTargets,
+    ...layout.softCropTargets,
     ...layout.denseWeedTargets,
     ...layout.fiberReedTargets,
     ...layout.shrubTargets,
@@ -521,7 +522,9 @@ function createContractObjectives(
 
   return {
     grass: layout.grassCells.length,
-    flowers: layout.flowerTargets.length,
+    flowers:
+      layout.flowerTargets.reduce((sum, target) => sum + target.yield, 0) +
+      layout.softCropTargets.reduce((sum, target) => sum + target.yield, 0),
     fiber: 0,
     wood: 0,
   };
@@ -989,6 +992,7 @@ function awardTarget(state: GameState, target: TargetState): void {
       state.objectives.grass.collected += target.yield;
       break;
     case "flower":
+    case "softCrop":
       state.inventory.flowers += target.yield;
       state.objectives.flowers.collected += target.yield;
       break;
@@ -1072,7 +1076,9 @@ function isContractComplete(state: GameState): boolean {
   }
 
   return state.targets.every(
-    (target) => (target.kind !== "grass" && target.kind !== "flower") || target.status === "cut",
+    (target) =>
+      (target.kind !== "grass" && target.kind !== "flower" && target.kind !== "softCrop") ||
+      target.status === "cut",
   );
 }
 

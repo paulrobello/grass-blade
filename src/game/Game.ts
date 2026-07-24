@@ -672,6 +672,7 @@ export class Game {
           grassAwarded = true;
           break;
         case "flower":
+        case "softCrop":
           flowerAwarded = true;
           break;
         case "denseWeed":
@@ -1171,7 +1172,9 @@ export class Game {
       if (target.status === "cut") {
         return false;
       }
-      return clearPatchMode ? target.kind === "flower" : target.kind === "grass";
+      return clearPatchMode
+        ? target.kind === "flower" || target.kind === "softCrop"
+        : target.kind === "grass";
     });
     if (finalTarget === undefined) {
       return;
@@ -1180,7 +1183,10 @@ export class Game {
     if (clearPatchMode) {
       let preclearedXp = 0;
       for (const target of this.state.targets) {
-        if (target !== finalTarget && (target.kind === "grass" || target.kind === "flower")) {
+        if (
+          target !== finalTarget &&
+          (target.kind === "grass" || target.kind === "flower" || target.kind === "softCrop")
+        ) {
           target.status = "cut";
           target.accumulatedWork = target.requiredWork;
           preclearedXp += target.xp;

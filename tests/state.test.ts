@@ -47,6 +47,8 @@ import {
   SAPLING_COUNT,
   SHRUB_COUNT,
   SHRUB_VISUAL_COUNT,
+  SOFT_CROP_COUNT,
+  SOFT_CROP_VISUAL_COUNT,
   createMeadowDensityReport,
   createMeadowLayout,
   isPointInArenaGrowth,
@@ -169,6 +171,7 @@ describe("active game state", () => {
     expect(first.targets).toHaveLength(
       layout.grassCells.length +
         FLOWER_TARGET_COUNT +
+        SOFT_CROP_COUNT +
         DENSE_WEED_COUNT +
         FIBER_REED_COUNT +
         SHRUB_COUNT +
@@ -178,7 +181,8 @@ describe("active game state", () => {
     );
     const grassEnd = layout.grassCells.length;
     const flowersEnd = grassEnd + FLOWER_TARGET_COUNT;
-    const denseWeedsEnd = flowersEnd + DENSE_WEED_COUNT;
+    const softCropsEnd = flowersEnd + SOFT_CROP_COUNT;
+    const denseWeedsEnd = softCropsEnd + DENSE_WEED_COUNT;
     const fiberReedsEnd = denseWeedsEnd + FIBER_REED_COUNT;
     const shrubsEnd = fiberReedsEnd + SHRUB_COUNT;
     const saplingsEnd = shrubsEnd + SAPLING_COUNT;
@@ -188,7 +192,12 @@ describe("active game state", () => {
       first.targets.slice(grassEnd, flowersEnd).every((target) => target.kind === "flower"),
     ).toBe(true);
     expect(
-      first.targets.slice(flowersEnd, denseWeedsEnd).every((target) => target.kind === "denseWeed"),
+      first.targets.slice(flowersEnd, softCropsEnd).every((target) => target.kind === "softCrop"),
+    ).toBe(true);
+    expect(
+      first.targets
+        .slice(softCropsEnd, denseWeedsEnd)
+        .every((target) => target.kind === "denseWeed"),
     ).toBe(true);
     expect(
       first.targets
@@ -1190,7 +1199,17 @@ describe("active game state", () => {
   it("creates and completes the authored Clear Every Patch contract only after all soft patches are cut", () => {
     const state = createInitialState(12345, "clear-every-patch");
     const expectedGrassTargets = state.targets.filter((target) => target.kind === "grass").length;
-    const expectedFlowerTargets = state.targets.filter((target) => target.kind === "flower").length;
+    const expectedFlowerCutTargets = state.targets.filter(
+      (target) => target.kind === "flower",
+    ).length;
+    const expectedSoftCropTargets = state.targets.filter(
+      (target) => target.kind === "softCrop",
+    ).length;
+    const expectedFlowerTargets = state.targets
+      .filter((target) => target.kind === "flower" || target.kind === "softCrop")
+      .reduce((sum, target) => sum + target.yield, 0);
+    const expectedCutTargets =
+      expectedGrassTargets + expectedFlowerCutTargets + expectedSoftCropTargets;
 
     expect(state.contract).toEqual({
       id: "clear-every-patch",
@@ -1202,7 +1221,7 @@ describe("active game state", () => {
     expect(state.objectives.grass.target).toBe(expectedGrassTargets);
     expect(state.objectives.flowers.target).toBe(expectedFlowerTargets);
     expect(state.objectives.grass.target).toBe(277);
-    expect(state.objectives.flowers.target).toBe(FLOWER_TARGET_COUNT);
+    expect(state.objectives.flowers.target).toBe(FLOWER_TARGET_COUNT + SOFT_CROP_COUNT * 2);
     expect(state.objectives.fiber.target).toBe(0);
     expect(state.objectives.wood.target).toBe(0);
 
@@ -1231,7 +1250,7 @@ describe("active game state", () => {
     expect(state.result).toMatchObject({
       status: "complete",
       timeLimitSeconds: null,
-      cutTargets: expectedGrassTargets + expectedFlowerTargets,
+      cutTargets: expectedCutTargets,
       highestLevel: 8,
       finalInventory: {
         grass: expectedGrassTargets,
@@ -1239,7 +1258,7 @@ describe("active game state", () => {
         fiber: 0,
         wood: 0,
       },
-      completionRevision: expectedGrassTargets + expectedFlowerTargets,
+      completionRevision: expectedCutTargets,
     });
   });
 
@@ -1294,6 +1313,8 @@ describe("active game state", () => {
     expect(first.grassVisuals).toHaveLength(GRASS_VISUAL_COLUMNS * GRASS_VISUAL_COLUMNS);
     expect(first.flowerTargets).toHaveLength(FLOWER_TARGET_COUNT);
     expect(first.flowerVisuals).toHaveLength(FLOWER_VISUAL_COUNT);
+    expect(first.softCropTargets).toHaveLength(SOFT_CROP_COUNT);
+    expect(first.softCropVisuals).toHaveLength(SOFT_CROP_VISUAL_COUNT);
     expect(first.boundaryMarkers.length).toBeGreaterThan(100);
     expect(first.boundaryMarkers.every((marker) => Number.isFinite(marker.x))).toBe(true);
     expect(first.boundaryMarkers.every((marker) => Number.isFinite(marker.z))).toBe(true);
@@ -1361,6 +1382,18 @@ describe("active game state", () => {
     expect(first.flowerTargets.filter((target) => target.id.startsWith("flower-0-"))).toHaveLength(
       20,
     );
+
+    const softCropVisualCounts = Array<number>(first.softCropTargets.length).fill(0);
+    for (const visual of first.softCropVisuals) {
+      softCropVisualCounts[visual.targetIndex] =
+        (softCropVisualCounts[visual.targetIndex] ?? 0) + 1;
+      const target = first.softCropTargets[visual.targetIndex];
+      expect(target).toBeDefined();
+      expect(Math.hypot(visual.x - (target?.x ?? 0), visual.z - (target?.z ?? 0))).toBeLessThan(
+        (target?.radius ?? 0) + 0.2,
+      );
+    }
+    expect(softCropVisualCounts.every((count) => count === 5)).toBe(true);
 
     const denseWeedVisualCounts = Array<number>(first.denseWeedTargets.length).fill(0);
     for (const visual of first.denseWeedVisuals) {
@@ -3632,6 +3665,7 @@ function totalAvailableResources(state: GameState): {
         totals.grass += target.yield;
         break;
       case "flower":
+      case "softCrop":
         totals.flowers += target.yield;
         break;
       case "denseWeed":
@@ -3700,7 +3734,8 @@ function completeContractThroughQuotaCuts(state: GameState): void {
     state.contract.completionMode === "clear-patches"
       ? [
           ...targetsForKind(state, "grass", state.objectives.grass.target),
-          ...targetsForKind(state, "flower", state.objectives.flowers.target),
+          ...targetsForKind(state, "flower", FLOWER_TARGET_COUNT),
+          ...targetsForKind(state, "softCrop", SOFT_CROP_COUNT),
         ]
       : [
           ...targetsForKind(state, "grass", state.objectives.grass.target),

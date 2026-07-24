@@ -72,6 +72,7 @@ export function targetProgressHeight(kind: TargetKind): number {
       return 1.35;
     case "grass":
     case "flower":
+    case "softCrop":
       return 1.8;
   }
 }

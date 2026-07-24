@@ -119,19 +119,22 @@ target.accumulatedWork += workRate * dt
 
 Expected times assume one isolated target, full contact, and the listed recommended level. They are acceptance ranges rather than additional simulation constants.
 
-| Tier | Target      | Recommended level | Work | Resistance | Yield    |  XP | Expected cut time |
-| ---- | ----------- | ----------------: | ---: | ---------: | -------- | --: | ----------------- |
-| 1    | Grass clump |                 1 |  1.5 |       0.04 | 1 Grass  |   1 | 0.10-0.20 s       |
-| 1    | Wildflower  |                 1 |    4 |       0.08 | 1 Flower |   3 | 0.25-0.45 s       |
-| 2    | Dense weed  |                 2 |   12 |       0.25 | 1 Fiber  |   6 | 0.70-1.10 s       |
-| 2    | Fiber Reed  |                 2 |   18 |       0.32 | 1 Fiber  |   8 | 1.05-1.65 s       |
-| 3    | Shrub       |                 3 |   30 |       0.55 | 2 Fiber  |  14 | 1.8-3.0 s         |
-| 4    | Sapling     |                 4 |   50 |       0.90 | 2 Wood   |  30 | 4.0-6.0 s         |
-| 5    | Mature tree |                 6 |   60 |       1.60 | 6 Wood   |  75 | 5.5-8.0 s         |
+| Tier | Target      | Recommended level | Work | Resistance | Yield     |  XP | Expected cut time |
+| ---- | ----------- | ----------------: | ---: | ---------: | --------- | --: | ----------------- |
+| 1    | Grass clump |                 1 |  1.5 |       0.04 | 1 Grass   |   1 | 0.10-0.20 s       |
+| 1    | Wildflower  |                 1 |    4 |       0.08 | 1 Flower  |   3 | 0.25-0.45 s       |
+| 1    | Soft crop   |                 1 |  5.5 |       0.10 | 2 Flowers |   5 | 0.35-0.60 s       |
+| 2    | Dense weed  |                 2 |   12 |       0.25 | 1 Fiber   |   6 | 0.70-1.10 s       |
+| 2    | Fiber Reed  |                 2 |   18 |       0.32 | 1 Fiber   |   8 | 1.05-1.65 s       |
+| 3    | Shrub       |                 3 |   30 |       0.55 | 2 Fiber   |  14 | 1.8-3.0 s         |
+| 4    | Sapling     |                 4 |   50 |       0.90 | 2 Wood    |  30 | 4.0-6.0 s         |
+| 5    | Mature tree |                 6 |   60 |       1.60 | 6 Wood    |  75 | 5.5-8.0 s         |
 
 Rocks, fences, structures, water, and terrain are non-cuttable obstacles in the MVP. They must create a distinct metal/stone deflection response and never award XP.
 
 Fiber Reeds are a pass-through Tier-2 Fiber family used to add richer plant variety without making existing contracts easier. Their visual clumps bend on contact, display the same draining progress affordance as other durable plants after first damage, fall from their roots on completion, and award Fiber motes. Existing Fiber quota-selection paths continue to require dense weeds and shrubs unless a future reed-focused contract opts into reeds explicitly.
+
+Soft crops are a pass-through Tier-1 Flower-resource family used to add taller, fruiting/blooming clusters inside lush fields without making flower-patch grazing complete entire drifts. Each soft crop is its own target, awards two Flowers, and falls as a small plant cluster before disappearing. Normal quota contracts still tune against classic flower targets; Clear Every Patch requires every grass, flower, and soft-crop target.
 
 ## Contracts and quotas
 
