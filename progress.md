@@ -7,6 +7,7 @@ Active milestone: Phase 5 — expansion after first-playable evidence, with the 
 
 ## 2026-07-23 continuation notes
 
+- Added a visual-only minimum blade angle advance for nonzero rotation so deeply loaded level-one contact still reads as a spinning two-arm blade instead of stalling. Gameplay RPM/load/cutting balance is unchanged; focused browser/perf captures reproduced the level-one `NEED LV 3` slowdown at roughly `63 RPM` on phone while keeping active gameplay and nonzero visual rotation diagnostics.
 - Fixed the performance capture verifier so it starts a contract before sampling frame diagnostics, records the final game mode in each summary, and fails if a scenario captures zero active frames or browser console errors. Fresh captures now show active Meadow Delivery gameplay on desktop/default, desktop/low, and phone/default with nonzero sampled frames.
 - Added timer urgency feedback for authored timed contracts: the HUD time dial switches to a low-time state with 10 seconds remaining and a critical state with 5 seconds remaining, and `render_game_to_text().time.urgency` exposes the same state for automated balance/debug checks.
 - Increased the too-tight timed-contract limits that had less than five seconds of deterministic benchmark buffer: Timed Harvest `65s`, Field Sprint `50s`, Brook Bend `65s`, Braided Meadow `70s`, Ring Grove `80s`, Twin Glade `75s`, and Wildflower Narrows `70s`. Added a reducer regression guard so future timed contracts keep at least a five-second benchmark buffer.

@@ -117,6 +117,15 @@ describe("active game state", () => {
     expect(visualFrameAdvance).toBeLessThan(0.11);
   });
 
+  it("keeps deeply loaded level-one blade motion visible without changing stopped frames", () => {
+    const nearlyStalledRawFrameAdvance = (60 / 60) * Math.PI * 2 * FIXED_TIME_STEP_SECONDS;
+    const visualFrameAdvance = deriveReadableBladeAngle(nearlyStalledRawFrameAdvance);
+
+    expect(visualFrameAdvance).toBeGreaterThan(0.05);
+    expect(visualFrameAdvance).toBeLessThan(0.06);
+    expect(deriveReadableBladeAngle(0)).toBe(0);
+  });
+
   it("keeps readable blade rotation continuous across raw angle wraparound", () => {
     const previousRawAngle = Math.PI * 2 - 0.05;
     const currentRawAngle = 0.1;
