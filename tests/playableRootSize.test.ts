@@ -12,6 +12,8 @@ import {
   BEST_TIMES_STORAGE_KEY,
   applyPlayableRootSize,
   contractCardBadges,
+  contractFilterButtonLabel,
+  contractFilterCount,
   contractMedalForTime,
   contractMedalSummary,
   contractMedalTargets,
@@ -605,6 +607,20 @@ describe("contract best times", () => {
 });
 
 describe("contract chooser filters", () => {
+  it("shows compact counts on contract filter labels", () => {
+    expect(contractFilterCount("all")).toBe(32);
+    expect(contractFilterCount("timed")).toBe(16);
+    expect(contractFilterCount("wood")).toBe(14);
+    expect(contractFilterCount("soft")).toBe(1);
+    expect(contractFilterCount("clear")).toBe(1);
+
+    expect(contractFilterButtonLabel({ id: "all", label: "All" })).toBe("All 32");
+    expect(contractFilterButtonLabel({ id: "timed", label: "Timed" })).toBe("Timed 16");
+    expect(contractFilterButtonLabel({ id: "wood", label: "Wood" })).toBe("Wood 14");
+    expect(contractFilterButtonLabel({ id: "soft", label: "Grass" })).toBe("Grass 1");
+    expect(contractFilterButtonLabel({ id: "clear", label: "Clear" })).toBe("Clear 1");
+  });
+
   it("derives compact card badges from contract pacing, quotas, and route shape", () => {
     expect(contractCardBadges(contractById("meadow-delivery"))).toEqual([
       "No timer",

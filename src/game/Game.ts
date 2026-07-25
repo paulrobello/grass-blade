@@ -1732,6 +1732,20 @@ export function contractMatchesFilter(
   return primaryContractFilterId(contract) === filterId;
 }
 
+export function contractFilterCount(
+  filterId: ContractFilterId,
+  contracts: readonly ContractDefinition[] = CONTRACT_DEFINITIONS,
+): number {
+  return contracts.filter((contract) => contractMatchesFilter(contract, filterId)).length;
+}
+
+export function contractFilterButtonLabel(
+  filter: { id: ContractFilterId; label: string },
+  contracts: readonly ContractDefinition[] = CONTRACT_DEFINITIONS,
+): string {
+  return `${filter.label} ${contractFilterCount(filter.id, contracts)}`;
+}
+
 function contractPaceBadge(contract: ContractDefinition): string {
   if (contract.completionMode === "clear-patches") {
     return "Full clear";
@@ -2241,8 +2255,10 @@ function createIntroElements(
     button.type = "button";
     button.className = "intro-card__filter";
     button.dataset.contractFilter = filter.id;
+    const filterCount = contractFilterCount(filter.id, contracts);
     button.setAttribute("aria-pressed", "false");
-    button.textContent = filter.label;
+    button.setAttribute("aria-label", `${filter.label} contracts, ${filterCount} available`);
+    button.textContent = `${filter.label} ${filterCount}`;
     filterList.append(button);
     filterButtons.push(button);
   }
