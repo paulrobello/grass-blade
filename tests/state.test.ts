@@ -104,9 +104,17 @@ describe("active game state", () => {
     const rawFrameAdvance = (720 / 60) * Math.PI * 2 * FIXED_TIME_STEP_SECONDS;
     const visualFrameAdvance = deriveReadableBladeAngle(rawFrameAdvance);
 
-    expect(visualFrameAdvance).toBeGreaterThan(0.07);
-    expect(visualFrameAdvance).toBeLessThan(0.13);
+    expect(visualFrameAdvance).toBeGreaterThan(0.14);
+    expect(visualFrameAdvance).toBeLessThan(0.16);
     expect(visualFrameAdvance).toBeLessThan(rawFrameAdvance / 8);
+  });
+
+  it("keeps level-one blade contact visually spinning instead of reading stalled", () => {
+    const loadedRawFrameAdvance = (500 / 60) * Math.PI * 2 * FIXED_TIME_STEP_SECONDS;
+    const visualFrameAdvance = deriveReadableBladeAngle(loadedRawFrameAdvance);
+
+    expect(visualFrameAdvance).toBeGreaterThan(0.09);
+    expect(visualFrameAdvance).toBeLessThan(0.11);
   });
 
   it("keeps readable blade rotation continuous across raw angle wraparound", () => {
@@ -367,8 +375,8 @@ describe("active game state", () => {
     expect(state.contract).toEqual({
       id: "timed-harvest",
       title: "Timed Harvest",
-      summary: "A 60-second grass, flower, and fiber endurance route with no room to wander.",
-      timeLimitSeconds: 60,
+      summary: "A 65-second grass, flower, and fiber endurance route with no room to wander.",
+      timeLimitSeconds: 65,
       completionMode: "quota",
     });
     expect(state.objectives.grass.target).toBe(170);
@@ -379,11 +387,11 @@ describe("active game state", () => {
     completeContractThroughQuotaCuts(state);
 
     expect(state.mode).toBe("complete");
-    expect(state.elapsedSeconds).toBeLessThan(60);
+    expect(state.elapsedSeconds).toBeLessThan(65);
     expect(state.inventory).toEqual({ grass: 170, flowers: 300, fiber: 18, wood: 0 });
     expect(state.result).toMatchObject({
       status: "complete",
-      timeLimitSeconds: 60,
+      timeLimitSeconds: 65,
       cutTargets: 485,
       highestLevel: 8,
       finalInventory: { grass: 170, flowers: 300, fiber: 18, wood: 0 },
@@ -493,8 +501,8 @@ describe("active game state", () => {
     expect(state.contract).toEqual({
       id: "field-sprint",
       title: "Field Sprint",
-      summary: "A 45-second flower-lane sprint with only soft targets.",
-      timeLimitSeconds: 45,
+      summary: "A 50-second flower-lane sprint with only soft targets.",
+      timeLimitSeconds: 50,
       completionMode: "quota",
     });
     expect(state.objectives.grass.target).toBe(175);
@@ -505,11 +513,11 @@ describe("active game state", () => {
     completeContractThroughQuotaCuts(state);
 
     expect(state.mode).toBe("complete");
-    expect(state.elapsedSeconds).toBeLessThan(45);
+    expect(state.elapsedSeconds).toBeLessThan(50);
     expect(state.inventory).toEqual({ grass: 175, flowers: 230, fiber: 0, wood: 0 });
     expect(state.result).toMatchObject({
       status: "complete",
-      timeLimitSeconds: 45,
+      timeLimitSeconds: 50,
       cutTargets: 405,
       highestLevel: 8,
       finalInventory: { grass: 175, flowers: 230, fiber: 0, wood: 0 },
@@ -650,8 +658,8 @@ describe("active game state", () => {
     expect(state.contract).toEqual({
       id: "brook-bend",
       title: "Brook Bend",
-      summary: "A 60-second S-bend route through flower banks and Fiber weeds.",
-      timeLimitSeconds: 60,
+      summary: "A 65-second S-bend route through flower banks and Fiber weeds.",
+      timeLimitSeconds: 65,
       completionMode: "quota",
     });
     expect(state.objectives.grass.target).toBe(200);
@@ -662,11 +670,11 @@ describe("active game state", () => {
     completeContractThroughQuotaCuts(state);
 
     expect(state.mode).toBe("complete");
-    expect(state.elapsedSeconds).toBeLessThan(60);
+    expect(state.elapsedSeconds).toBeLessThan(65);
     expect(state.inventory).toEqual({ grass: 200, flowers: 250, fiber: 24, wood: 0 });
     expect(state.result).toMatchObject({
       status: "complete",
-      timeLimitSeconds: 60,
+      timeLimitSeconds: 65,
       cutTargets: 468,
       highestLevel: 8,
       finalInventory: { grass: 200, flowers: 250, fiber: 24, wood: 0 },
@@ -784,8 +792,8 @@ describe("active game state", () => {
     expect(state.contract).toEqual({
       id: "braided-meadow",
       title: "Braided Meadow",
-      summary: "A 65-second braided route through interwoven flower lanes and Fiber hedges.",
-      timeLimitSeconds: 65,
+      summary: "A 70-second braided route through interwoven flower lanes and Fiber hedges.",
+      timeLimitSeconds: 70,
       completionMode: "quota",
     });
     expect(state.objectives.grass.target).toBe(230);
@@ -796,11 +804,11 @@ describe("active game state", () => {
     completeContractThroughQuotaCuts(state);
 
     expect(state.mode).toBe("complete");
-    expect(state.elapsedSeconds).toBeLessThan(65);
+    expect(state.elapsedSeconds).toBeLessThan(70);
     expect(state.inventory).toEqual({ grass: 230, flowers: 300, fiber: 20, wood: 0 });
     expect(state.result).toMatchObject({
       status: "complete",
-      timeLimitSeconds: 65,
+      timeLimitSeconds: 70,
       cutTargets: 546,
       highestLevel: 8,
       finalInventory: { grass: 230, flowers: 300, fiber: 20, wood: 0 },
@@ -818,8 +826,8 @@ describe("active game state", () => {
     expect(state.contract).toEqual({
       id: "ring-grove",
       title: "Ring Grove",
-      summary: "A 75-second loop around a bare center clearing and timber pockets.",
-      timeLimitSeconds: 75,
+      summary: "An 80-second loop around a bare center clearing and timber pockets.",
+      timeLimitSeconds: 80,
       completionMode: "quota",
     });
     expect(state.objectives.grass.target).toBe(245);
@@ -830,11 +838,11 @@ describe("active game state", () => {
     completeContractThroughQuotaCuts(state);
 
     expect(state.mode).toBe("complete");
-    expect(state.elapsedSeconds).toBeLessThan(75);
+    expect(state.elapsedSeconds).toBeLessThan(80);
     expect(state.inventory).toEqual({ grass: 245, flowers: 260, fiber: 24, wood: 16 });
     expect(state.result).toMatchObject({
       status: "complete",
-      timeLimitSeconds: 75,
+      timeLimitSeconds: 80,
       cutTargets: 529,
       highestLevel: 8,
       finalInventory: { grass: 245, flowers: 260, fiber: 24, wood: 16 },
@@ -852,8 +860,8 @@ describe("active game state", () => {
     expect(state.contract).toEqual({
       id: "twin-glade",
       title: "Twin Glade",
-      summary: "A 70-second route joining two flower-heavy glades through narrow lanes.",
-      timeLimitSeconds: 70,
+      summary: "A 75-second route joining two flower-heavy glades through narrow lanes.",
+      timeLimitSeconds: 75,
       completionMode: "quota",
     });
     expect(state.objectives.grass.target).toBe(230);
@@ -864,11 +872,11 @@ describe("active game state", () => {
     completeContractThroughQuotaCuts(state);
 
     expect(state.mode).toBe("complete");
-    expect(state.elapsedSeconds).toBeLessThan(70);
+    expect(state.elapsedSeconds).toBeLessThan(75);
     expect(state.inventory).toEqual({ grass: 230, flowers: 260, fiber: 20, wood: 10 });
     expect(state.result).toMatchObject({
       status: "complete",
-      timeLimitSeconds: 70,
+      timeLimitSeconds: 75,
       cutTargets: 511,
       highestLevel: 8,
       finalInventory: { grass: 230, flowers: 260, fiber: 20, wood: 10 },
@@ -1158,8 +1166,8 @@ describe("active game state", () => {
     expect(state.contract).toEqual({
       id: "wildflower-narrows",
       title: "Wildflower Narrows",
-      summary: "A 66-second narrow bloom route through flower corridors and Fiber hedges.",
-      timeLimitSeconds: 66,
+      summary: "A 70-second narrow bloom route through flower corridors and Fiber hedges.",
+      timeLimitSeconds: 70,
       completionMode: "quota",
     });
     expect(state.objectives.grass.target).toBe(230);
@@ -1170,7 +1178,7 @@ describe("active game state", () => {
     completeContractThroughQuotaCuts(state);
 
     expect(state.mode).toBe("complete");
-    expect(state.elapsedSeconds).toBeLessThan(66);
+    expect(state.elapsedSeconds).toBeLessThan(70);
     expect(state.inventory).toEqual({
       grass: 230,
       flowers: FLOWER_TARGET_COUNT,
@@ -1179,7 +1187,7 @@ describe("active game state", () => {
     });
     expect(state.result).toMatchObject({
       status: "complete",
-      timeLimitSeconds: 66,
+      timeLimitSeconds: 70,
       cutTargets: 568,
       highestLevel: 8,
       finalInventory: {
@@ -1358,15 +1366,15 @@ describe("active game state", () => {
     const state = createInitialState(12345, "timed-harvest");
     state.targets = [];
 
-    advanceState(state, 60.5);
+    advanceState(state, 65.5);
 
     expect(state.mode).toBe("complete");
-    expect(state.elapsedSeconds).toBe(60);
+    expect(state.elapsedSeconds).toBe(65);
     expect(state.objectives.status).toBe("active");
     expect(state.result).toEqual({
       status: "timed-out",
-      completedAtSeconds: 60,
-      timeLimitSeconds: 60,
+      completedAtSeconds: 65,
+      timeLimitSeconds: 65,
       cutTargets: 0,
       highestLevel: 1,
       finalInventory: { grass: 0, flowers: 0, fiber: 0, wood: 0 },
@@ -1393,6 +1401,18 @@ describe("active game state", () => {
       }
     }
   }, 30000);
+
+  it("keeps timed contract benchmark buffers above the minimum playtest margin", () => {
+    const minimumBufferSeconds = 5;
+    const tightContracts = CONTRACT_DEFINITIONS.filter((contract) => "timeLimitSeconds" in contract)
+      .map((contract) => ({
+        id: contract.id,
+        bufferSeconds: Number((contract.timeLimitSeconds - contract.benchmarkSeconds).toFixed(3)),
+      }))
+      .filter((contract) => contract.bufferSeconds < minimumBufferSeconds);
+
+    expect(tightContracts).toEqual([]);
+  });
 
   it("builds deterministic logical targets and visual mappings", () => {
     const first = createMeadowLayout(12345);

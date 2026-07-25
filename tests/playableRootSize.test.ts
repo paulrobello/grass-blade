@@ -543,14 +543,14 @@ describe("contract best times", () => {
 
   it("derives target-time medals from balanced contract benchmarks", () => {
     expect(contractMedalTargets(contractById("field-sprint"))).toEqual({
-      goldSeconds: 43,
-      silverSeconds: 44,
-      bronzeSeconds: 45,
+      goldSeconds: 44,
+      silverSeconds: 47,
+      bronzeSeconds: 50,
     });
     expect(contractMedalTargets(contractById("timed-harvest"))).toEqual({
       goldSeconds: 57,
-      silverSeconds: 59,
-      bronzeSeconds: 60,
+      silverSeconds: 61,
+      bronzeSeconds: 65,
     });
     expect(contractMedalTargets(contractById("meadow-delivery"))).toEqual({
       goldSeconds: 29,
@@ -570,10 +570,10 @@ describe("contract best times", () => {
   });
 
   it("awards the best medal reached by a completed time", () => {
-    expect(contractMedalForTime("field-sprint", 43)).toBe("gold");
-    expect(contractMedalForTime("field-sprint", 44)).toBe("silver");
-    expect(contractMedalForTime("field-sprint", 45)).toBe("bronze");
-    expect(contractMedalForTime("field-sprint", 46)).toBeNull();
+    expect(contractMedalForTime("field-sprint", 44)).toBe("gold");
+    expect(contractMedalForTime("field-sprint", 47)).toBe("silver");
+    expect(contractMedalForTime("field-sprint", 50)).toBe("bronze");
+    expect(contractMedalForTime("field-sprint", 51)).toBeNull();
     expect(contractMedalForTime("unknown-contract", 30)).toBeNull();
     expect(contractMedalForTime("field-sprint", null)).toBeNull();
     expect(contractMedalForTime("field-sprint", Number.NaN)).toBeNull();
@@ -601,8 +601,8 @@ describe("contract best times", () => {
       recordedContracts: 4,
       medaledContracts: 3,
       gold: 1,
-      silver: 1,
-      bronze: 1,
+      silver: 2,
+      bronze: 0,
     });
   });
 });
@@ -642,13 +642,13 @@ describe("contract chooser filters", () => {
       "Starter paths",
     ]);
     expect(contractCardBadges(contractById("field-sprint"))).toEqual([
-      "45s",
+      "50s",
       "Soft cuts",
       "Medium",
       "Lanes",
     ]);
     expect(contractCardBadges(contractById("timed-harvest"))).toEqual([
-      "60s",
+      "65s",
       "Fiber",
       "Hard",
       "Loop",
@@ -665,14 +665,9 @@ describe("contract chooser filters", () => {
       "Expert",
       "Split clearings",
     ]);
-    expect(contractCardBadges(contractById("ring-grove"))).toEqual([
-      "75s",
-      "Wood",
-      "Expert",
-      "Ring",
-    ]);
+    expect(contractCardBadges(contractById("ring-grove"))).toEqual(["80s", "Wood", "Hard", "Ring"]);
     expect(contractCardBadges(contractById("twin-glade"))).toEqual([
-      "70s",
+      "75s",
       "Wood",
       "Hard",
       "Twin glades",
@@ -726,7 +721,7 @@ describe("contract chooser filters", () => {
       "Lagoon braid",
     ]);
     expect(contractCardBadges(contractById("wildflower-narrows"))).toEqual([
-      "66s",
+      "70s",
       "Fiber",
       "Hard",
       "Flower narrows",

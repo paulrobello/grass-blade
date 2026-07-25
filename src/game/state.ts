@@ -156,17 +156,17 @@ export const CONTRACT_DEFINITIONS = [
   {
     id: "timed-harvest",
     title: "Timed Harvest",
-    summary: "A 60-second grass, flower, and fiber endurance route with no room to wander.",
+    summary: "A 65-second grass, flower, and fiber endurance route with no room to wander.",
     benchmarkSeconds: 56.7,
-    timeLimitSeconds: 60,
+    timeLimitSeconds: 65,
     objectives: { grass: 170, flowers: 300, fiber: 18, wood: 0 },
   },
   {
     id: "field-sprint",
     title: "Field Sprint",
-    summary: "A 45-second flower-lane sprint with only soft targets.",
+    summary: "A 50-second flower-lane sprint with only soft targets.",
     benchmarkSeconds: 43.233,
-    timeLimitSeconds: 45,
+    timeLimitSeconds: 50,
     objectives: { grass: 175, flowers: 230, fiber: 0, wood: 0 },
   },
   {
@@ -204,9 +204,9 @@ export const CONTRACT_DEFINITIONS = [
   {
     id: "brook-bend",
     title: "Brook Bend",
-    summary: "A 60-second S-bend route through flower banks and Fiber weeds.",
+    summary: "A 65-second S-bend route through flower banks and Fiber weeds.",
     benchmarkSeconds: 55.65,
-    timeLimitSeconds: 60,
+    timeLimitSeconds: 65,
     objectives: { grass: 200, flowers: 250, fiber: 24, wood: 0 },
   },
   {
@@ -244,25 +244,25 @@ export const CONTRACT_DEFINITIONS = [
   {
     id: "braided-meadow",
     title: "Braided Meadow",
-    summary: "A 65-second braided route through interwoven flower lanes and Fiber hedges.",
+    summary: "A 70-second braided route through interwoven flower lanes and Fiber hedges.",
     benchmarkSeconds: 60.35,
-    timeLimitSeconds: 65,
+    timeLimitSeconds: 70,
     objectives: { grass: 230, flowers: 300, fiber: 20, wood: 0 },
   },
   {
     id: "ring-grove",
     title: "Ring Grove",
-    summary: "A 75-second loop around a bare center clearing and timber pockets.",
+    summary: "An 80-second loop around a bare center clearing and timber pockets.",
     benchmarkSeconds: 71.017,
-    timeLimitSeconds: 75,
+    timeLimitSeconds: 80,
     objectives: { grass: 245, flowers: 260, fiber: 24, wood: 16 },
   },
   {
     id: "twin-glade",
     title: "Twin Glade",
-    summary: "A 70-second route joining two flower-heavy glades through narrow lanes.",
+    summary: "A 75-second route joining two flower-heavy glades through narrow lanes.",
     benchmarkSeconds: 65.233,
-    timeLimitSeconds: 70,
+    timeLimitSeconds: 75,
     objectives: { grass: 230, flowers: 260, fiber: 20, wood: 10 },
   },
   {
@@ -332,9 +332,9 @@ export const CONTRACT_DEFINITIONS = [
   {
     id: "wildflower-narrows",
     title: "Wildflower Narrows",
-    summary: "A 66-second narrow bloom route through flower corridors and Fiber hedges.",
+    summary: "A 70-second narrow bloom route through flower corridors and Fiber hedges.",
     benchmarkSeconds: 64.15,
-    timeLimitSeconds: 66,
+    timeLimitSeconds: 70,
     objectives: { grass: 230, flowers: FLOWER_TARGET_COUNT, fiber: 24, wood: 0 },
   },
   {

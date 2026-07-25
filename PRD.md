@@ -207,7 +207,7 @@ Authored contracts are selected by deterministic contract ID and seed. The defau
 ### Timed Harvest
 
 - Contract ID: `timed-harvest`
-- Time limit: 60 seconds.
+- Time limit: 65 seconds.
 - Collect 170 Grass.
 - Collect 300 Flowers.
 - Collect 18 Fiber.
@@ -218,7 +218,7 @@ Authored contracts are selected by deterministic contract ID and seed. The defau
 ### Field Sprint
 
 - Contract ID: `field-sprint`
-- Time limit: 45 seconds.
+- Time limit: 50 seconds.
 - Collect 175 Grass.
 - Collect 230 Flowers.
 - No Fiber or Wood quota; this is a soft-target speed contract.
@@ -275,7 +275,7 @@ Authored contracts are selected by deterministic contract ID and seed. The defau
 ### Brook Bend
 
 - Contract ID: `brook-bend`
-- Time limit: 60 seconds.
+- Time limit: 65 seconds.
 - Collect 200 Grass.
 - Collect 250 Flowers.
 - Collect 24 Fiber.
@@ -335,7 +335,7 @@ Authored contracts are selected by deterministic contract ID and seed. The defau
 ### Braided Meadow
 
 - Contract ID: `braided-meadow`
-- Time limit: 65 seconds.
+- Time limit: 70 seconds.
 - Collect 230 Grass.
 - Collect 300 Flowers.
 - Collect 20 Fiber.
@@ -347,7 +347,7 @@ Authored contracts are selected by deterministic contract ID and seed. The defau
 ### Ring Grove
 
 - Contract ID: `ring-grove`
-- Time limit: 75 seconds.
+- Time limit: 80 seconds.
 - Collect 245 Grass.
 - Collect 260 Flowers.
 - Collect 24 Fiber.
@@ -359,7 +359,7 @@ Authored contracts are selected by deterministic contract ID and seed. The defau
 ### Twin Glade
 
 - Contract ID: `twin-glade`
-- Time limit: 70 seconds.
+- Time limit: 75 seconds.
 - Collect 230 Grass.
 - Collect 260 Flowers.
 - Collect 20 Fiber.
@@ -467,7 +467,7 @@ Authored contracts are selected by deterministic contract ID and seed. The defau
 ### Wildflower Narrows
 
 - Contract ID: `wildflower-narrows`
-- Time limit: 66 seconds.
+- Time limit: 70 seconds.
 - Collect 230 Grass.
 - Collect 320 Flowers.
 - Collect 24 Fiber.
