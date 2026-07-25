@@ -2,11 +2,12 @@ Original prompt: "i want create a threejs based game where you are a spinning bl
 
 # Grass Blade Progress
 
-Last updated: 2026-07-23
+Last updated: 2026-07-25
 Active milestone: Phase 5 — expansion after first-playable evidence, with the custom-domain site served over valid HTTPS through Cloudflare and native GitHub Pages HTTPS enforcement still optional/pending
 
 ## 2026-07-23 continuation notes
 
+- Fixed the performance capture verifier so it starts a contract before sampling frame diagnostics, records the final game mode in each summary, and fails if a scenario captures zero active frames or browser console errors. Fresh captures now show active Meadow Delivery gameplay on desktop/default, desktop/low, and phone/default with nonzero sampled frames.
 - Added timer urgency feedback for authored timed contracts: the HUD time dial switches to a low-time state with 10 seconds remaining and a critical state with 5 seconds remaining, and `render_game_to_text().time.urgency` exposes the same state for automated balance/debug checks.
 - Increased the too-tight timed-contract limits that had less than five seconds of deterministic benchmark buffer: Timed Harvest `65s`, Field Sprint `50s`, Brook Bend `65s`, Braided Meadow `70s`, Ring Grove `80s`, Twin Glade `75s`, and Wildflower Narrows `70s`. Added a reducer regression guard so future timed contracts keep at least a five-second benchmark buffer.
 - Increased the readable blade visual spin scale from `0.0775` to `0.115` after startup diagnostics showed real level-one RPM remained healthy but the two-arm blade could visually read as stalled under initial grass/flower load.

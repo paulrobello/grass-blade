@@ -85,6 +85,8 @@ async function captureScenario(browser, options, scenario) {
     await page.waitForFunction(() => window.__grassBladeReady === true, null, {
       timeout: 10000,
     });
+    await page.click("#start-contract");
+    await waitForState(page, (state) => state.mode === "active");
     await page.keyboard.down("ArrowUp");
     await page.waitForTimeout(options.durationMs);
     await page.keyboard.up("ArrowUp");
@@ -96,6 +98,11 @@ async function captureScenario(browser, options, scenario) {
     await page.screenshot({ path: screenshotPath, fullPage: false });
 
     const summary = buildSummary(scenario, state, errors, screenshotPath);
+    assert(
+      summary.frame.sampledFrames > 0,
+      `${scenario.name} captured no active frame diagnostics; ensure the contract starts before sampling`,
+    );
+    assert(errors.length === 0, `${scenario.name} browser errors: ${errors.join(" | ")}`);
     await fs.writeFile(statePath, `${JSON.stringify({ summary, state }, null, 2)}\n`);
     return summary;
   } finally {
@@ -107,6 +114,7 @@ function buildSummary(scenario, state, errors, screenshotPath) {
   const renderer = state.performance.graphicsAdapter.renderer;
   return {
     name: scenario.name,
+    mode: state.mode,
     quality: state.performance.qualityPreset,
     canvas: {
       cssWidth: state.performance.canvasCssWidth,
@@ -136,6 +144,17 @@ function buildSummary(scenario, state, errors, screenshotPath) {
     errors,
     screenshotPath,
   };
+}
+
+async function waitForState(page, predicate) {
+  await page.waitForFunction(
+    (predicateSource) => {
+      const state = JSON.parse(window.render_game_to_text());
+      return new Function("state", `return (${predicateSource})(state);`)(state);
+    },
+    predicate.toString(),
+    { timeout: 10000 },
+  );
 }
 
 function scenarioUrl(baseUrl, qualityQuery) {
@@ -215,6 +234,12 @@ function parsePositiveInteger(value, flag) {
     throw new Error(`${flag} must be a non-negative integer.`);
   }
   return parsed;
+}
+
+function assert(condition, message) {
+  if (!condition) {
+    throw new Error(message);
+  }
 }
 
 function printHelp() {
