@@ -233,6 +233,30 @@ body {
     0.08rem 0 #25336f;
 }
 
+.game-hud[data-timer-urgency="low"] .time-dial {
+  background: conic-gradient(
+    from -35deg,
+    #ffd65a 0 var(--rpm-progress),
+    var(--hud-indigo-deep) var(--rpm-progress) 100%
+  );
+}
+
+.game-hud[data-timer-urgency="critical"] .time-dial {
+  background: conic-gradient(
+    from -35deg,
+    #ff5d50 0 var(--rpm-progress),
+    var(--hud-indigo-deep) var(--rpm-progress) 100%
+  );
+}
+
+.game-hud[data-timer-urgency="critical"] .time-dial strong {
+  color: #fff4da;
+  text-shadow:
+    0 0.16rem 0 #832121,
+    -0.08rem 0 #832121,
+    0.08rem 0 #832121;
+}
+
 .time-dial__stats {
   display: flex;
   align-items: center;

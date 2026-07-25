@@ -1056,8 +1056,8 @@ describe("active game state", () => {
     expect(state.contract).toEqual({
       id: "sunset-switchback",
       title: "Sunset Switchback",
-      summary: "A 140-second diagonal route through sunset flower lanes and Fiber hedges.",
-      timeLimitSeconds: 140,
+      summary: "A 160-second diagonal route through sunset flower lanes and Fiber hedges.",
+      timeLimitSeconds: 160,
       completionMode: "quota",
     });
     expect(state.objectives.grass.target).toBe(260);
@@ -1068,11 +1068,11 @@ describe("active game state", () => {
     completeContractThroughQuotaCuts(state);
 
     expect(state.mode).toBe("complete");
-    expect(state.elapsedSeconds).toBeLessThan(140);
+    expect(state.elapsedSeconds).toBeLessThan(160);
     expect(state.inventory).toEqual({ grass: 260, flowers: 300, fiber: 28, wood: 0 });
     expect(state.result).toMatchObject({
       status: "complete",
-      timeLimitSeconds: 140,
+      timeLimitSeconds: 160,
       cutTargets: 580,
       highestLevel: 8,
       finalInventory: { grass: 260, flowers: 300, fiber: 28, wood: 0 },

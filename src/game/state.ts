@@ -308,9 +308,9 @@ export const CONTRACT_DEFINITIONS = [
   {
     id: "sunset-switchback",
     title: "Sunset Switchback",
-    summary: "A 140-second diagonal route through sunset flower lanes and Fiber hedges.",
+    summary: "A 160-second diagonal route through sunset flower lanes and Fiber hedges.",
     benchmarkSeconds: 65.45,
-    timeLimitSeconds: 140,
+    timeLimitSeconds: 160,
     objectives: { grass: 260, flowers: 300, fiber: 28, wood: 0 },
   },
   {

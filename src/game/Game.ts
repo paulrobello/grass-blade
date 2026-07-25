@@ -133,8 +133,11 @@ export interface MotionSettings {
 
 export type ContractBestTimes = Partial<Record<ContractDefinition["id"], number>>;
 export type ContractFilterId = "all" | "timed" | "wood" | "soft" | "clear";
+export type TimerUrgency = "none" | "low" | "critical";
 
 export const BEST_TIMES_STORAGE_KEY = "grass-blade.best-times.v1";
+const LOW_TIME_SECONDS = 10;
+const CRITICAL_TIME_SECONDS = 5;
 export const CONTRACT_FILTERS: ReadonlyArray<{ id: ContractFilterId; label: string }> = [
   { id: "all", label: "All" },
   { id: "timed", label: "Timed" },
@@ -481,10 +484,18 @@ export class Game {
     const timeLimit = this.state.contract.timeLimitSeconds;
     const remainingSeconds =
       timeLimit === null ? null : Math.max(0, timeLimit - this.state.elapsedSeconds);
+    const timerUrgency = deriveTimerUrgency(remainingSeconds);
     this.hud.timeDial.setAttribute(
       "aria-label",
-      remainingSeconds === null ? "Elapsed time" : "Time remaining",
+      timerUrgency === "critical"
+        ? "Critical time remaining"
+        : timerUrgency === "low"
+          ? "Low time remaining"
+          : remainingSeconds === null
+            ? "Elapsed time"
+            : "Time remaining",
     );
+    this.hud.root.dataset.timerUrgency = timerUrgency;
     setText(this.hud.timeLabel, remainingSeconds === null ? "TIME" : "LEFT");
     setText(this.hud.contractTitle, this.state.contract.title.toUpperCase());
     setText(this.hud.time, formatElapsedTime(remainingSeconds ?? this.state.elapsedSeconds));
@@ -1350,6 +1361,10 @@ export class Game {
     const playableRootBounds = this.appRoot.getBoundingClientRect();
     const activeElement = document.activeElement;
     const activeHtmlElement = activeElement instanceof HTMLElement ? activeElement : null;
+    const remainingSeconds =
+      this.state.contract.timeLimitSeconds === null
+        ? null
+        : Math.max(0, this.state.contract.timeLimitSeconds - this.state.elapsedSeconds);
 
     return JSON.stringify({
       coordinateSystem:
@@ -1367,10 +1382,8 @@ export class Game {
       elapsedSeconds: round(this.state.elapsedSeconds),
       time: {
         limitSeconds: this.state.contract.timeLimitSeconds,
-        remainingSeconds:
-          this.state.contract.timeLimitSeconds === null
-            ? null
-            : round(Math.max(0, this.state.contract.timeLimitSeconds - this.state.elapsedSeconds)),
+        remainingSeconds: remainingSeconds === null ? null : round(remainingSeconds),
+        urgency: deriveTimerUrgency(remainingSeconds),
       },
       result: this.state.result,
       records: {
@@ -1744,6 +1757,19 @@ export function contractFilterButtonLabel(
   contracts: readonly ContractDefinition[] = CONTRACT_DEFINITIONS,
 ): string {
   return `${filter.label} ${contractFilterCount(filter.id, contracts)}`;
+}
+
+export function deriveTimerUrgency(remainingSeconds: number | null): TimerUrgency {
+  if (remainingSeconds === null || !Number.isFinite(remainingSeconds)) {
+    return "none";
+  }
+  if (remainingSeconds <= CRITICAL_TIME_SECONDS) {
+    return "critical";
+  }
+  if (remainingSeconds <= LOW_TIME_SECONDS) {
+    return "low";
+  }
+  return "none";
 }
 
 function contractPaceBadge(contract: ContractDefinition): string {

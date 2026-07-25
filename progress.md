@@ -7,6 +7,7 @@ Active milestone: Phase 5 — expansion after first-playable evidence, with the 
 
 ## 2026-07-23 continuation notes
 
+- Added timer urgency feedback for authored timed contracts: the HUD time dial switches to a low-time state with 10 seconds remaining and a critical state with 5 seconds remaining, and `render_game_to_text().time.urgency` exposes the same state for automated balance/debug checks.
 - Added compact bucket counts to the Start-screen contract chooser filters (`All 32`, `Timed 16`, `Wood 14`, `Grass 1`, `Clear 1`) so the expanding authored contract list is easier to scan before scrolling.
 - Added the `daisy-drift` authored contract as a 76-second drifting bloom route with `245 Grass / 320 Flowers / 24 Fiber / 0 Wood`, open daisy lanes, Fiber bends, compact internal no-growth pockets, 583 selected cut targets, every flower target, all twelve dense weeds, and six shrubs without a Wood gate. Focused deterministic balance reports `64.90s / 76s` across the standard ten validation seeds.
 - Added the first soft-crop Flower-resource target family: 18 deterministic pass-through plant clusters, five visuals per target, two Flowers and five XP per cut, collection motes/audio/petal fragments, falling plant presentation, clear-patch inclusion, and balance-tool support. Focused state tests now distinguish Flower resource yield from cut-target count so `clear-every-patch` requires all `277` Grass, `320` classic Flowers, and `18` soft crops for `356` total Flowers and `615` cut targets.
@@ -19,6 +20,7 @@ Active milestone: Phase 5 — expansion after first-playable evidence, with the 
 - Increased `sunset-switchback` to a 100-second time limit after mobile play showed the route expiring with Grass/Fiber complete and only the final flower lane remaining; deterministic balance remains `65.45s`, so the contract keeps pressure without requiring benchmark-path execution.
 - Increased `sunset-switchback` again to a 120-second time limit after mobile play still expired with Grass/Fiber complete and about one flower lane remaining; quotas and route shape are unchanged.
 - Increased `sunset-switchback` again to a 140-second time limit after mobile play still expired with Grass/Fiber complete and 30 Flowers remaining; quotas and route shape are unchanged.
+- Increased `sunset-switchback` again to a 160-second time limit after mobile play still expired with Grass/Fiber complete and 30 Flowers remaining; quotas and route shape are unchanged.
 - Clarified results-card best-time feedback so successful runs show `New Best: M:SS` when they improve a contract record and `Best: M:SS` on replays without an improvement; tests now cover the formatter.
 - Added timed-out result feedback that names the remaining quota gaps, so balance playtests can immediately see whether Grass, Flowers, Fiber, or Wood caused the miss; the same copy is included in the polite screen-reader completion announcement.
 - Added start-screen keyboard contract selection: before starting, Left/Right or A/D cycles through contracts in the active chooser filter, and Enter/Space starts the selected contract. The chooser help copy and unit tests cover the navigation rules.

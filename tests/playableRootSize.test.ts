@@ -19,6 +19,7 @@ import {
   contractMedalTargets,
   contractMatchesFilter,
   contractNavigationSearch,
+  deriveTimerUrgency,
   derivePlayableRootSize,
   formatMissingQuotaSummary,
   formatResultsBestTime,
@@ -606,6 +607,18 @@ describe("contract best times", () => {
   });
 });
 
+describe("timer urgency", () => {
+  it("derives low and critical warning states from remaining time", () => {
+    expect(deriveTimerUrgency(null)).toBe("none");
+    expect(deriveTimerUrgency(Number.NaN)).toBe("none");
+    expect(deriveTimerUrgency(10.001)).toBe("none");
+    expect(deriveTimerUrgency(10)).toBe("low");
+    expect(deriveTimerUrgency(5.001)).toBe("low");
+    expect(deriveTimerUrgency(5)).toBe("critical");
+    expect(deriveTimerUrgency(0)).toBe("critical");
+  });
+});
+
 describe("contract chooser filters", () => {
   it("shows compact counts on contract filter labels", () => {
     expect(contractFilterCount("all")).toBe(32);
@@ -695,7 +708,7 @@ describe("contract chooser filters", () => {
       "Petal gate",
     ]);
     expect(contractCardBadges(contractById("sunset-switchback"))).toEqual([
-      "140s",
+      "160s",
       "Fiber",
       "Hard",
       "Sunset switch",
