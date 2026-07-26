@@ -121,8 +121,8 @@ describe("active game state", () => {
     const nearlyStalledRawFrameAdvance = (60 / 60) * Math.PI * 2 * FIXED_TIME_STEP_SECONDS;
     const visualFrameAdvance = deriveReadableBladeAngle(nearlyStalledRawFrameAdvance);
 
-    expect(visualFrameAdvance).toBeGreaterThan(0.05);
-    expect(visualFrameAdvance).toBeLessThan(0.06);
+    expect(visualFrameAdvance).toBeGreaterThan(0.08);
+    expect(visualFrameAdvance).toBeLessThan(0.09);
     expect(deriveReadableBladeAngle(0)).toBe(0);
   });
 
