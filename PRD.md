@@ -682,7 +682,7 @@ If Grass Blade copies or substantially derives upstream code, add a third-party 
 ## Performance targets
 
 - Maintain 60 FPS at 1920x1080 on a current desktop browser at device pixel ratio up to 1.5 in the first meadow.
-- Maintain at least 30 FPS on a representative mid-range integrated-GPU laptop; mobile support is a later phase.
+- Maintain at least 30 FPS on a representative mid-range integrated-GPU laptop, and keep browser phone/touch playability covered by the low-cost mobile preset, responsive HUD, PWA install path, and mobile verifier.
 - Keep average fixed-step simulation under 2 ms and p95 under 4 ms with the full Meadow Delivery population.
 - Keep render draw calls below 120 and visible grass geometry below 250,000 triangles in the first arena.
 - Meet the lush-field density contract with chunking, instancing, blade-width/segment LOD, and distance LOD; reducing vegetation to sparse props is not an acceptable performance fallback.
@@ -734,17 +734,17 @@ If Grass Blade copies or substantially derives upstream code, add a third-party 
 
 ## Risks and open questions
 
-| Topic            | Current decision                                                                                      | Open question / validation                                                               |
-| ---------------- | ----------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| Blade silhouette | Generated GLB cutter asset ships with two-arm, four-arm, and saw tiers plus a cyan orientation stripe | Continue testing silhouettes for readability and friendliness on physical mobile devices |
-| Tree finish      | Authored sever/fall presentation, not rigid-body simulation                                           | Pick fall direction rule that cannot obscure the player or block quotas                  |
-| Grass cut mask   | CPU grid projected into per-chunk GPU texture                                                         | Validate texel density so edges look organic without large texture updates               |
-| Camera           | Fixed orthographic isometric follow camera                                                            | Validate pitch and zoom on laptop and ultrawide displays                                 |
-| Contract length  | Meadow Delivery targets a 6-10 minute first run                                                       | Tune only after measuring novice completion and stall moments                            |
-| Timed contracts  | Allowed only as explicit authored contracts, not the default mode                                     | Tune time limits and quotas only with before/after playtest evidence                     |
-| Audio            | RPM pitch and material contact are important feedback                                                 | Select generation/licensing pipeline and reduced-sensory defaults later                  |
-| Art scope        | One meadow with six target types                                                                      | Decide whether shrubs/saplings use authored models or procedural primitives              |
-| Mobile           | Browser touch controls, responsive HUD, and mobile viewport sizing are implemented                    | Validate on more physical devices and tune mobile performance if needed                  |
+| Topic            | Current decision                                                                                                    | Open question / validation                                                                                    |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| Blade silhouette | Generated GLB cutter asset ships with two-arm, four-arm, and saw tiers plus a cyan orientation stripe               | Continue testing silhouettes for readability and friendliness on physical mobile devices                      |
+| Tree finish      | Authored sever/fall presentation, not rigid-body simulation                                                         | Pick fall direction rule that cannot obscure the player or block quotas                                       |
+| Grass cut mask   | CPU grid projected into per-chunk GPU texture                                                                       | Validate texel density so edges look organic without large texture updates                                    |
+| Camera           | Fixed orthographic isometric follow camera                                                                          | Validate pitch and zoom on laptop and ultrawide displays                                                      |
+| Contract length  | Meadow Delivery targets a 6-10 minute first run                                                                     | Tune only after measuring novice completion and stall moments                                                 |
+| Timed contracts  | Allowed only as explicit authored contracts, not the default mode                                                   | Tune time limits and quotas only with before/after playtest evidence                                          |
+| Audio            | Procedural WebAudio ships with RPM pitch, material contact cues, mute, volume controls, and reduced-motion defaults | Tune the mix on physical devices; generation/licensing only applies if future authored audio assets are added |
+| Art scope        | One meadow with six target types                                                                                    | Decide whether shrubs/saplings use authored models or procedural primitives                                   |
+| Mobile           | Browser touch controls, responsive HUD, and mobile viewport sizing are implemented                                  | Validate on more physical devices and tune mobile performance if needed                                       |
 
 ## Phased delivery plan
 

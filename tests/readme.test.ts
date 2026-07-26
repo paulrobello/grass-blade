@@ -36,4 +36,20 @@ describe("contract documentation", () => {
 
     expect(readme).toContain(`${minMarkers}-${maxMarkers} low-profile arena-edge marker instances`);
   });
+
+  it("does not retain superseded shipped-feature planning copy", async () => {
+    const readme = new TextDecoder().decode(await readFile(`${process.cwd()}/README.md`));
+    const prd = new TextDecoder().decode(await readFile(`${process.cwd()}/PRD.md`));
+
+    expect(readme).not.toContain("Phase 4 presentation/accessibility work has started");
+    expect(readme).toContain(
+      "Phase 4 presentation/accessibility systems are implemented and verified",
+    );
+    expect(prd).not.toContain("mobile support is a later phase");
+    expect(prd).not.toContain(
+      "Select generation/licensing pipeline and reduced-sensory defaults later",
+    );
+    expect(prd).toContain("browser phone/touch playability");
+    expect(prd).toContain("Procedural WebAudio ships");
+  });
 });
