@@ -38,6 +38,10 @@ Wildflower Narrows is available with `?contract=wildflower-narrows`: it is a 70-
 
 Daisy Drift is available with `?contract=daisy-drift`: it is a 76-second drifting bloom route with `245 Grass / 320 Flowers / 24 Fiber` quotas, open daisy lanes, Fiber bends, compact internal no-growth pockets, and deterministic balance that requires every flower pocket, all dense weeds, and six shrubs without a Wood gate.
 
+Berry Bloom is available with `?contract=berry-bloom`: it is an 88-second berry-bloom route with `240 Grass / 340 Flowers / 28 Fiber` quotas, connected soft-crop plant clusters, compact internal no-growth pockets, and deterministic balance that requires every classic flower target, ten soft-crop clusters, all dense weeds, and all shrubs without a Wood gate.
+
+Serpentine Grove is available with `?contract=serpentine-grove`: it is a 100-second snaking timber route with `275 Grass / 300 Flowers / 28 Fiber / 28 Wood` quotas, flower banks in every bend, Fiber hedge crossings, all dense weeds, all shrubs, all five saplings, and three mature trees.
+
 ## Play online
 
 The public GitHub Pages deployment is configured to publish the production Vite build from `main`:
@@ -123,7 +127,7 @@ Grass Blade starts with a keyboard-focusable `Start Cutting` button before gamep
 The browser-facing automation contract lets the game be observed and driven without synthetic mouse gestures:
 
 - `?seed=<uint32>` selects a deterministic world seed.
-- `?contract=meadow-delivery`, `?contract=flower-sweep`, `?contract=woodland-cleanup`, `?contract=timber-trail`, `?contract=rock-garden`, `?contract=hedge-maze`, `?contract=timed-harvest`, `?contract=field-sprint`, `?contract=weed-rush`, `?contract=clover-circuit`, `?contract=orchard-loop`, `?contract=brook-bend`, `?contract=harvest-spiral`, `?contract=crescent-grove`, `?contract=forked-thicket`, `?contract=switchback-orchard`, `?contract=braided-meadow`, `?contract=ring-grove`, `?contract=twin-glade`, `?contract=frost-ribbons`, `?contract=prism-prairie`, `?contract=stone-bloom`, `?contract=willow-weave`, `?contract=petal-gate`, `?contract=sunset-switchback`, `?contract=cedar-crossroads`, `?contract=lagoon-braid`, `?contract=wildflower-narrows`, `?contract=daisy-drift`, or `?contract=clear-every-patch` selects the authored contract template; unknown IDs fall back to `meadow-delivery`.
+- `?contract=meadow-delivery`, `?contract=flower-sweep`, `?contract=woodland-cleanup`, `?contract=timber-trail`, `?contract=rock-garden`, `?contract=hedge-maze`, `?contract=timed-harvest`, `?contract=field-sprint`, `?contract=weed-rush`, `?contract=reed-run`, `?contract=clover-circuit`, `?contract=orchard-loop`, `?contract=brook-bend`, `?contract=harvest-spiral`, `?contract=crescent-grove`, `?contract=forked-thicket`, `?contract=switchback-orchard`, `?contract=braided-meadow`, `?contract=ring-grove`, `?contract=twin-glade`, `?contract=frost-ribbons`, `?contract=prism-prairie`, `?contract=stone-bloom`, `?contract=willow-weave`, `?contract=petal-gate`, `?contract=sunset-switchback`, `?contract=cedar-crossroads`, `?contract=lagoon-braid`, `?contract=wildflower-narrows`, `?contract=berry-bloom`, `?contract=daisy-drift`, `?contract=serpentine-grove`, or `?contract=clear-every-patch` selects the authored contract template; unknown IDs fall back to `meadow-delivery`.
 - `window.__grassBladeReady` becomes `true` when the scene is controllable.
 - `window.render_game_to_text()` returns a concise JSON snapshot of visible game state.
 - `window.advanceTime(milliseconds)` switches automation to manual time, advances exact 60 Hz ticks, and renders.
