@@ -1880,6 +1880,8 @@ function contractRouteBadge(contract: ContractDefinition): string {
       return "Flower narrows";
     case "berry-bloom":
       return "Berry bloom";
+    case "crop-meander":
+      return "Crop meander";
     case "daisy-drift":
       return "Daisy drift";
     case "serpentine-grove":

@@ -182,7 +182,8 @@ describe("contract navigation URLs", () => {
     expect(nextAuthoredContractId("cedar-crossroads")).toBe("lagoon-braid");
     expect(nextAuthoredContractId("lagoon-braid")).toBe("wildflower-narrows");
     expect(nextAuthoredContractId("wildflower-narrows")).toBe("berry-bloom");
-    expect(nextAuthoredContractId("berry-bloom")).toBe("daisy-drift");
+    expect(nextAuthoredContractId("berry-bloom")).toBe("crop-meander");
+    expect(nextAuthoredContractId("crop-meander")).toBe("daisy-drift");
     expect(nextAuthoredContractId("daisy-drift")).toBe("serpentine-grove");
     expect(nextAuthoredContractId("serpentine-grove")).toBe("clear-every-patch");
     expect(nextAuthoredContractId("clear-every-patch")).toBe("meadow-delivery");
@@ -216,7 +217,8 @@ describe("contract navigation URLs", () => {
     expect(nextAuthoredContractTitle("cedar-crossroads")).toBe("Lagoon Braid");
     expect(nextAuthoredContractTitle("lagoon-braid")).toBe("Wildflower Narrows");
     expect(nextAuthoredContractTitle("wildflower-narrows")).toBe("Berry Bloom");
-    expect(nextAuthoredContractTitle("berry-bloom")).toBe("Daisy Drift");
+    expect(nextAuthoredContractTitle("berry-bloom")).toBe("Crop Meander");
+    expect(nextAuthoredContractTitle("crop-meander")).toBe("Daisy Drift");
     expect(nextAuthoredContractTitle("daisy-drift")).toBe("Serpentine Grove");
     expect(nextAuthoredContractTitle("serpentine-grove")).toBe("Clear Every Patch");
     expect(nextAuthoredContractTitle("clear-every-patch")).toBe("Meadow Delivery");
@@ -442,21 +444,28 @@ describe("contract navigation URLs", () => {
         nextAuthoredContractId("berry-bloom"),
         "?seed=3258960835&debug=1&contract=berry-bloom",
       ),
-    ).toBe("?seed=1632666204&debug=1&contract=daisy-drift");
+    ).toBe("?seed=1632666204&debug=1&contract=crop-meander");
     expect(
       contractNavigationSearch(
         2597112807,
+        nextAuthoredContractId("crop-meander"),
+        "?seed=1632666204&debug=1&contract=crop-meander",
+      ),
+    ).toBe("?seed=2597112807&debug=1&contract=daisy-drift");
+    expect(
+      contractNavigationSearch(
+        2445261230,
         nextAuthoredContractId("daisy-drift"),
-        "?seed=1632666204&debug=1&contract=daisy-drift",
+        "?seed=2597112807&debug=1&contract=daisy-drift",
       ),
-    ).toBe("?seed=2597112807&debug=1&contract=serpentine-grove");
+    ).toBe("?seed=2445261230&debug=1&contract=serpentine-grove");
     expect(
       contractNavigationSearch(
-        2597112807,
+        2445261230,
         nextAuthoredContractId("serpentine-grove"),
-        "?seed=2597112807&debug=1&contract=serpentine-grove",
+        "?seed=2445261230&debug=1&contract=serpentine-grove",
       ),
-    ).toBe("?seed=2597112807&debug=1&contract=clear-every-patch");
+    ).toBe("?seed=2445261230&debug=1&contract=clear-every-patch");
     expect(
       contractNavigationSearch(
         2597112807,
@@ -630,14 +639,14 @@ describe("timer urgency", () => {
 
 describe("contract chooser filters", () => {
   it("shows compact counts on contract filter labels", () => {
-    expect(contractFilterCount("all")).toBe(33);
-    expect(contractFilterCount("timed")).toBe(16);
+    expect(contractFilterCount("all")).toBe(34);
+    expect(contractFilterCount("timed")).toBe(17);
     expect(contractFilterCount("wood")).toBe(15);
     expect(contractFilterCount("soft")).toBe(1);
     expect(contractFilterCount("clear")).toBe(1);
 
-    expect(contractFilterButtonLabel({ id: "all", label: "All" })).toBe("All 33");
-    expect(contractFilterButtonLabel({ id: "timed", label: "Timed" })).toBe("Timed 16");
+    expect(contractFilterButtonLabel({ id: "all", label: "All" })).toBe("All 34");
+    expect(contractFilterButtonLabel({ id: "timed", label: "Timed" })).toBe("Timed 17");
     expect(contractFilterButtonLabel({ id: "wood", label: "Wood" })).toBe("Wood 15");
     expect(contractFilterButtonLabel({ id: "soft", label: "Grass" })).toBe("Grass 1");
     expect(contractFilterButtonLabel({ id: "clear", label: "Clear" })).toBe("Clear 1");

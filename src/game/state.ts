@@ -82,6 +82,7 @@ export interface ContractDefinition {
     | "lagoon-braid"
     | "wildflower-narrows"
     | "berry-bloom"
+    | "crop-meander"
     | "daisy-drift"
     | "serpentine-grove"
     | "clear-every-patch";
@@ -345,6 +346,14 @@ export const CONTRACT_DEFINITIONS = [
     benchmarkSeconds: 67.933,
     timeLimitSeconds: 88,
     objectives: { grass: 240, flowers: 340, fiber: 28, wood: 0 },
+  },
+  {
+    id: "crop-meander",
+    title: "Crop Meander",
+    summary: "A 90-second soft-crop meander through plant clusters and Fiber bends.",
+    benchmarkSeconds: 63.95,
+    timeLimitSeconds: 90,
+    objectives: { grass: 235, flowers: 350, fiber: 18, wood: 0 },
   },
   {
     id: "daisy-drift",

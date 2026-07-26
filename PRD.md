@@ -489,6 +489,18 @@ Authored contracts are selected by deterministic contract ID and seed. The defau
 - Deterministic balance requires every classic flower target, ten soft-crop clusters, all dense weeds, and all shrubs while preserving a human-play buffer inside the timer.
 - If the timer reaches zero before every quota is complete, the contract ends with the same `timed-out` result semantics as Timed Harvest.
 
+### Crop Meander
+
+- Contract ID: `crop-meander`
+- Time limit: 90 seconds.
+- Collect 235 Grass.
+- Collect 350 Flowers.
+- Collect 18 Fiber.
+- No Wood quota; this route emphasizes the soft-crop plant family without forcing timber cuts.
+- Uses a winding plant-cluster meander aligned to the soft-crop anchors, with cross-lane bends and compact no-growth pockets so the player has to sweep beyond the classic flower pockets.
+- Deterministic balance requires every classic flower target, fifteen soft-crop clusters, all dense weeds, and three shrubs while preserving a human-play buffer inside the timer.
+- If the timer reaches zero before every quota is complete, the contract ends with the same `timed-out` result semantics as Timed Harvest.
+
 ### Daisy Drift
 
 - Contract ID: `daisy-drift`

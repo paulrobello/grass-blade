@@ -113,16 +113,24 @@ describe("active game state", () => {
     const loadedRawFrameAdvance = (500 / 60) * Math.PI * 2 * FIXED_TIME_STEP_SECONDS;
     const visualFrameAdvance = deriveReadableBladeAngle(loadedRawFrameAdvance);
 
-    expect(visualFrameAdvance).toBeGreaterThan(0.09);
-    expect(visualFrameAdvance).toBeLessThan(0.11);
+    expect(visualFrameAdvance).toBeGreaterThan(0.11);
+    expect(visualFrameAdvance).toBeLessThan(0.13);
+  });
+
+  it("keeps startup blade motion readable on high-refresh displays", () => {
+    const highRefreshRawFrameAdvance = (720 / 60) * Math.PI * 2 * (1 / 120);
+    const visualFrameAdvance = deriveReadableBladeAngle(highRefreshRawFrameAdvance);
+
+    expect(visualFrameAdvance).toBeGreaterThan(0.11);
+    expect(visualFrameAdvance).toBeLessThan(0.13);
   });
 
   it("keeps deeply loaded level-one blade motion visible without changing stopped frames", () => {
     const nearlyStalledRawFrameAdvance = (60 / 60) * Math.PI * 2 * FIXED_TIME_STEP_SECONDS;
     const visualFrameAdvance = deriveReadableBladeAngle(nearlyStalledRawFrameAdvance);
 
-    expect(visualFrameAdvance).toBeGreaterThan(0.08);
-    expect(visualFrameAdvance).toBeLessThan(0.09);
+    expect(visualFrameAdvance).toBeGreaterThan(0.11);
+    expect(visualFrameAdvance).toBeLessThan(0.13);
     expect(deriveReadableBladeAngle(0)).toBe(0);
   });
 
@@ -1261,6 +1269,54 @@ describe("active game state", () => {
     expect(state.targets.filter((target) => target.kind === "matureTree")).toHaveLength(0);
   });
 
+  it("creates and completes the authored Crop Meander contract by cutting extra soft crops", () => {
+    const state = createInitialState(12345, "crop-meander");
+
+    expect(state.contract).toEqual({
+      id: "crop-meander",
+      title: "Crop Meander",
+      summary: "A 90-second soft-crop meander through plant clusters and Fiber bends.",
+      timeLimitSeconds: 90,
+      completionMode: "quota",
+    });
+    expect(state.objectives.grass.target).toBe(235);
+    expect(state.objectives.flowers.target).toBe(FLOWER_TARGET_COUNT + 30);
+    expect(state.objectives.fiber.target).toBe(18);
+    expect(state.objectives.wood.target).toBe(0);
+
+    completeContractThroughQuotaCuts(state);
+
+    expect(state.mode).toBe("complete");
+    expect(state.elapsedSeconds).toBeLessThan(90);
+    expect(state.inventory).toEqual({
+      grass: 235,
+      flowers: FLOWER_TARGET_COUNT + 30,
+      fiber: 18,
+      wood: 0,
+    });
+    expect(state.result).toMatchObject({
+      status: "complete",
+      timeLimitSeconds: 90,
+      cutTargets: 585,
+      highestLevel: 8,
+      finalInventory: {
+        grass: 235,
+        flowers: FLOWER_TARGET_COUNT + 30,
+        fiber: 18,
+        wood: 0,
+      },
+      completionRevision: 585,
+    });
+    expect(state.targets.filter((target) => target.kind === "flower")).toHaveLength(
+      FLOWER_TARGET_COUNT,
+    );
+    expect(state.targets.filter((target) => target.kind === "softCrop")).toHaveLength(15);
+    expect(state.targets.filter((target) => target.kind === "denseWeed")).toHaveLength(12);
+    expect(state.targets.filter((target) => target.kind === "shrub")).toHaveLength(3);
+    expect(state.targets.filter((target) => target.kind === "sapling")).toHaveLength(0);
+    expect(state.targets.filter((target) => target.kind === "matureTree")).toHaveLength(0);
+  });
+
   it("creates and completes the authored Daisy Drift contract before the clock expires", () => {
     const state = createInitialState(12345, "daisy-drift");
 
@@ -1658,6 +1714,7 @@ describe("active game state", () => {
     const lagoonBraid = createMeadowLayout(12345, "lagoon-braid");
     const wildflowerNarrows = createMeadowLayout(12345, "wildflower-narrows");
     const berryBloom = createMeadowLayout(12345, "berry-bloom");
+    const cropMeander = createMeadowLayout(12345, "crop-meander");
     const daisyDrift = createMeadowLayout(12345, "daisy-drift");
     const serpentineGrove = createMeadowLayout(12345, "serpentine-grove");
     const clearEveryPatch = createMeadowLayout(12345, "clear-every-patch");
@@ -1694,6 +1751,7 @@ describe("active game state", () => {
     expect(lagoonBraid.arenaShape).toBe("lagoon-braid");
     expect(wildflowerNarrows.arenaShape).toBe("wildflower-narrows");
     expect(berryBloom.arenaShape).toBe("berry-bloom");
+    expect(cropMeander.arenaShape).toBe("crop-meander");
     expect(daisyDrift.arenaShape).toBe("daisy-drift");
     expect(serpentineGrove.arenaShape).toBe("serpentine-grove");
     expect(clearEveryPatch.arenaShape).toBe("split-clearings");
@@ -1725,6 +1783,7 @@ describe("active game state", () => {
     expect(lagoonBraid.flowerTargets).toHaveLength(FLOWER_TARGET_COUNT);
     expect(wildflowerNarrows.flowerTargets).toHaveLength(FLOWER_TARGET_COUNT);
     expect(berryBloom.flowerTargets).toHaveLength(FLOWER_TARGET_COUNT);
+    expect(cropMeander.flowerTargets).toHaveLength(FLOWER_TARGET_COUNT);
     expect(daisyDrift.flowerTargets).toHaveLength(FLOWER_TARGET_COUNT);
     expect(serpentineGrove.flowerTargets).toHaveLength(FLOWER_TARGET_COUNT);
     expect(clearEveryPatch.flowerTargets).toHaveLength(FLOWER_TARGET_COUNT);
@@ -1756,6 +1815,7 @@ describe("active game state", () => {
     expect(lagoonBraid.boundaryMarkers.length).toBeGreaterThan(150);
     expect(wildflowerNarrows.boundaryMarkers.length).toBeGreaterThan(150);
     expect(berryBloom.boundaryMarkers.length).toBeGreaterThan(110);
+    expect(cropMeander.boundaryMarkers.length).toBeGreaterThan(120);
     expect(daisyDrift.boundaryMarkers.length).toBeGreaterThan(130);
     expect(serpentineGrove.boundaryMarkers.length).toBeGreaterThan(140);
     expect(clearEveryPatch.boundaryMarkers.length).toBeGreaterThan(90);

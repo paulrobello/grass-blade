@@ -40,6 +40,8 @@ Daisy Drift is available with `?contract=daisy-drift`: it is a 76-second driftin
 
 Berry Bloom is available with `?contract=berry-bloom`: it is an 88-second berry-bloom route with `240 Grass / 340 Flowers / 28 Fiber` quotas, connected soft-crop plant clusters, compact internal no-growth pockets, and deterministic balance that requires every classic flower target, ten soft-crop clusters, all dense weeds, and all shrubs without a Wood gate.
 
+Crop Meander is available with `?contract=crop-meander`: it is a 90-second soft-crop route with `235 Grass / 350 Flowers / 18 Fiber` quotas, a winding plant-cluster meander, and deterministic balance that requires every classic flower target, fifteen soft-crop clusters, all dense weeds, and three shrubs without a Wood gate.
+
 Serpentine Grove is available with `?contract=serpentine-grove`: it is a 100-second snaking timber route with `275 Grass / 300 Flowers / 28 Fiber / 28 Wood` quotas, flower banks in every bend, Fiber hedge crossings, all dense weeds, all shrubs, all five saplings, and three mature trees.
 
 ## Play online

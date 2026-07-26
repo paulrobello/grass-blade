@@ -66,6 +66,7 @@ export type ArenaLayoutId =
   | "lagoon-braid"
   | "wildflower-narrows"
   | "berry-bloom"
+  | "crop-meander"
   | "daisy-drift"
   | "serpentine-grove"
   | "clear-every-patch";
@@ -100,6 +101,7 @@ export type ArenaShape =
   | "lagoon-braid"
   | "wildflower-narrows"
   | "berry-bloom"
+  | "crop-meander"
   | "daisy-drift"
   | "serpentine-grove"
   | "split-clearings";
@@ -704,6 +706,7 @@ function resolveArenaLayoutId(arenaId: string): ArenaLayoutId {
     case "lagoon-braid":
     case "wildflower-narrows":
     case "berry-bloom":
+    case "crop-meander":
     case "daisy-drift":
     case "serpentine-grove":
     case "clear-every-patch":
@@ -773,6 +776,8 @@ function resolveArenaShape(arenaId: ArenaLayoutId): ArenaShape {
       return "wildflower-narrows";
     case "berry-bloom":
       return "berry-bloom";
+    case "crop-meander":
+      return "crop-meander";
     case "daisy-drift":
       return "daisy-drift";
     case "serpentine-grove":
@@ -1529,6 +1534,31 @@ function createFlowerClusterCenters(
       ],
       random,
       0.55,
+    );
+  }
+
+  if (arenaId === "crop-meander") {
+    return jitterAnchors(
+      [
+        [-15, -13],
+        [-9, -15],
+        [-3, -10],
+        [4, -13],
+        [11, -10],
+        [15, -4],
+        [9, 0],
+        [2, -4],
+        [-5, -2],
+        [-12, 1],
+        [-15, 7],
+        [-9, 11],
+        [-2, 14],
+        [5, 10],
+        [12, 14],
+        [15, 5],
+      ],
+      random,
+      0.56,
     );
   }
 
@@ -2353,6 +2383,39 @@ export function isPointInArenaGrowth(arenaId: ArenaLayoutId, x: number, z: numbe
         !isPointInCircle(x, z, -2, 4, 1.85) &&
         !isPointInCircle(x, z, 8, 5, 1.75) &&
         !isPointInCircle(x, z, -14, 13, 1.8)
+      );
+    case "crop-meander":
+      return (
+        (isPointInCapsule(x, z, -15, -13, -3, -10, 2.5) ||
+          isPointInCapsule(x, z, -3, -10, 11, -10, 2.45) ||
+          isPointInCapsule(x, z, 11, -10, 15, -4, 2.35) ||
+          isPointInCapsule(x, z, 15, -4, 9, 0, 2.3) ||
+          isPointInCapsule(x, z, 9, 0, 2, -4, 2.25) ||
+          isPointInCapsule(x, z, 2, -4, -5, -2, 2.25) ||
+          isPointInCapsule(x, z, -5, -2, -12, 1, 2.3) ||
+          isPointInCapsule(x, z, -12, 1, -15, 7, 2.35) ||
+          isPointInCapsule(x, z, -15, 7, -9, 11, 2.35) ||
+          isPointInCapsule(x, z, -9, 11, -2, 14, 2.35) ||
+          isPointInCapsule(x, z, -2, 14, 5, 10, 2.35) ||
+          isPointInCapsule(x, z, 5, 10, 12, 14, 2.35) ||
+          isPointInCapsule(x, z, 12, 14, 15, 5, 2.35) ||
+          isPointInCapsule(x, z, -14.4, 3.8, 14.4, -5.8, 1.55) ||
+          isPointInCapsule(x, z, -9.8, 8.2, 9.9, 11.8, 1.55) ||
+          isPointInCapsule(x, z, -8.8, -0.8, 10.8, -1.2, 1.55) ||
+          isPointInCircle(x, z, -15, -13, 3.35) ||
+          isPointInCircle(x, z, -3, -10, 3.3) ||
+          isPointInCircle(x, z, 11, -10, 3.25) ||
+          isPointInCircle(x, z, 15, -4, 3.15) ||
+          isPointInCircle(x, z, -12, 1, 3.15) ||
+          isPointInCircle(x, z, -9, 11, 3.15) ||
+          isPointInCircle(x, z, 5, 10, 3.15) ||
+          isPointInCircle(x, z, 12, 14, 3.05) ||
+          isPointInCircle(x, z, 0, 0, 3.15)) &&
+        !isPointInCircle(x, z, -7, -6, 1.85) &&
+        !isPointInCircle(x, z, 6, -6, 1.8) &&
+        !isPointInCircle(x, z, -1, 4, 1.8) &&
+        !isPointInCircle(x, z, 8, 5, 1.75) &&
+        !isPointInCircle(x, z, -13, 14, 1.8)
       );
     case "daisy-drift":
       return (
