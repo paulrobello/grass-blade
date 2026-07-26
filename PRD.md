@@ -2,7 +2,7 @@
 
 Status: Active product source of truth
 Owner: Paul Robello
-Last updated: 2026-07-23
+Last updated: 2026-07-25
 
 ## Product summary
 
@@ -142,6 +142,7 @@ Authored contracts are selected by deterministic contract ID and seed. The defau
 
 ### Meadow Delivery
 
+- Contract ID: `meadow-delivery`
 - Collect 50 Grass.
 - Collect 10 Flowers.
 - Collect 6 Fiber.
@@ -498,6 +499,18 @@ Authored contracts are selected by deterministic contract ID and seed. The defau
 - No Wood quota; this route emphasizes a drifting bloom sweep through open daisy lanes and Fiber bends without forcing timber cuts.
 - Uses an S/loop-shaped drifting bloom arena with flower anchors, diagonal connectors, and compact internal no-growth pockets so the route reads as a path network instead of a square lawn.
 - Deterministic balance requires every classic flower target, all dense weeds, and six shrubs while preserving a human-play buffer inside the timer.
+- If the timer reaches zero before every quota is complete, the contract ends with the same `timed-out` result semantics as Timed Harvest.
+
+### Serpentine Grove
+
+- Contract ID: `serpentine-grove`
+- Time limit: 100 seconds.
+- Collect 275 Grass.
+- Collect 300 Flowers.
+- Collect 28 Fiber.
+- Collect 28 Wood.
+- Uses a snaking timber route with flower banks in every bend, Fiber hedge crossings, and compact no-growth pockets so the level reads as a long routed grove instead of a square lawn.
+- Deterministic balance requires all dense weeds, all shrubs, all five saplings, and three mature trees while preserving a human-play buffer inside the timer.
 - If the timer reaches zero before every quota is complete, the contract ends with the same `timed-out` result semantics as Timed Harvest.
 
 ### Clear Every Patch
