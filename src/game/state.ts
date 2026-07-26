@@ -85,6 +85,7 @@ export interface ContractDefinition {
     | "crop-meander"
     | "daisy-drift"
     | "serpentine-grove"
+    | "timber-knot"
     | "clear-every-patch";
   title: string;
   summary: string;
@@ -370,6 +371,14 @@ export const CONTRACT_DEFINITIONS = [
     benchmarkSeconds: 85.017,
     timeLimitSeconds: 100,
     objectives: { grass: 275, flowers: 300, fiber: 28, wood: 28 },
+  },
+  {
+    id: "timber-knot",
+    title: "Timber Knot",
+    summary: "A 95-second knotted timber route through crossing lanes and tree pockets.",
+    benchmarkSeconds: 82.267,
+    timeLimitSeconds: 95,
+    objectives: { grass: 260, flowers: 280, fiber: 28, wood: 28 },
   },
   {
     id: "clear-every-patch",

@@ -185,7 +185,8 @@ describe("contract navigation URLs", () => {
     expect(nextAuthoredContractId("berry-bloom")).toBe("crop-meander");
     expect(nextAuthoredContractId("crop-meander")).toBe("daisy-drift");
     expect(nextAuthoredContractId("daisy-drift")).toBe("serpentine-grove");
-    expect(nextAuthoredContractId("serpentine-grove")).toBe("clear-every-patch");
+    expect(nextAuthoredContractId("serpentine-grove")).toBe("timber-knot");
+    expect(nextAuthoredContractId("timber-knot")).toBe("clear-every-patch");
     expect(nextAuthoredContractId("clear-every-patch")).toBe("meadow-delivery");
     expect(nextAuthoredContractId("unknown-contract")).toBe("meadow-delivery");
     expect(nextAuthoredContractTitle("meadow-delivery")).toBe("Flower Sweep");
@@ -220,7 +221,8 @@ describe("contract navigation URLs", () => {
     expect(nextAuthoredContractTitle("berry-bloom")).toBe("Crop Meander");
     expect(nextAuthoredContractTitle("crop-meander")).toBe("Daisy Drift");
     expect(nextAuthoredContractTitle("daisy-drift")).toBe("Serpentine Grove");
-    expect(nextAuthoredContractTitle("serpentine-grove")).toBe("Clear Every Patch");
+    expect(nextAuthoredContractTitle("serpentine-grove")).toBe("Timber Knot");
+    expect(nextAuthoredContractTitle("timber-knot")).toBe("Clear Every Patch");
     expect(nextAuthoredContractTitle("clear-every-patch")).toBe("Meadow Delivery");
     expect(nextAuthoredContractTitle("unknown-contract")).toBe("Meadow Delivery");
   });
@@ -231,7 +233,7 @@ describe("contract navigation URLs", () => {
     expect(adjacentFilteredContractId("timed-harvest", "timed", -1)).toBe("hedge-maze");
     expect(adjacentFilteredContractId("timed-harvest", "timed", 1)).toBe("weed-rush");
     expect(adjacentFilteredContractId("unknown-contract", "wood", 1)).toBe("meadow-delivery");
-    expect(adjacentFilteredContractId("unknown-contract", "wood", -1)).toBe("serpentine-grove");
+    expect(adjacentFilteredContractId("unknown-contract", "wood", -1)).toBe("timber-knot");
   });
 
   it("opens the next authored contract while preserving diagnostics", () => {
@@ -465,6 +467,13 @@ describe("contract navigation URLs", () => {
         nextAuthoredContractId("serpentine-grove"),
         "?seed=2445261230&debug=1&contract=serpentine-grove",
       ),
+    ).toBe("?seed=2445261230&debug=1&contract=timber-knot");
+    expect(
+      contractNavigationSearch(
+        2445261230,
+        nextAuthoredContractId("timber-knot"),
+        "?seed=2445261230&debug=1&contract=timber-knot",
+      ),
     ).toBe("?seed=2445261230&debug=1&contract=clear-every-patch");
     expect(
       contractNavigationSearch(
@@ -639,15 +648,15 @@ describe("timer urgency", () => {
 
 describe("contract chooser filters", () => {
   it("shows compact counts on contract filter labels", () => {
-    expect(contractFilterCount("all")).toBe(34);
+    expect(contractFilterCount("all")).toBe(35);
     expect(contractFilterCount("timed")).toBe(17);
-    expect(contractFilterCount("wood")).toBe(15);
+    expect(contractFilterCount("wood")).toBe(16);
     expect(contractFilterCount("soft")).toBe(1);
     expect(contractFilterCount("clear")).toBe(1);
 
-    expect(contractFilterButtonLabel({ id: "all", label: "All" })).toBe("All 34");
+    expect(contractFilterButtonLabel({ id: "all", label: "All" })).toBe("All 35");
     expect(contractFilterButtonLabel({ id: "timed", label: "Timed" })).toBe("Timed 17");
-    expect(contractFilterButtonLabel({ id: "wood", label: "Wood" })).toBe("Wood 15");
+    expect(contractFilterButtonLabel({ id: "wood", label: "Wood" })).toBe("Wood 16");
     expect(contractFilterButtonLabel({ id: "soft", label: "Grass" })).toBe("Grass 1");
     expect(contractFilterButtonLabel({ id: "clear", label: "Clear" })).toBe("Clear 1");
   });
@@ -762,6 +771,12 @@ describe("contract chooser filters", () => {
       "Expert",
       "Serpentine",
     ]);
+    expect(contractCardBadges(contractById("timber-knot"))).toEqual([
+      "95s",
+      "Wood",
+      "Expert",
+      "Timber knot",
+    ]);
 
     for (const contract of CONTRACT_DEFINITIONS as readonly ContractDefinition[]) {
       expect(contractCardBadges(contract)).toHaveLength(4);
@@ -793,6 +808,7 @@ describe("contract chooser filters", () => {
     expect(primaryContractFilterId(contractById("berry-bloom"))).toBe("timed");
     expect(primaryContractFilterId(contractById("daisy-drift"))).toBe("timed");
     expect(primaryContractFilterId(contractById("serpentine-grove"))).toBe("wood");
+    expect(primaryContractFilterId(contractById("timber-knot"))).toBe("wood");
     expect(primaryContractFilterId(contractById("field-sprint"))).toBe("soft");
     expect(primaryContractFilterId(contractById("clear-every-patch"))).toBe("clear");
   });
@@ -819,6 +835,7 @@ describe("contract chooser filters", () => {
     const berryBloom = contractById("berry-bloom");
     const daisyDrift = contractById("daisy-drift");
     const serpentineGrove = contractById("serpentine-grove");
+    const timberKnot = contractById("timber-knot");
     const reedRun = contractById("reed-run");
     const clearEveryPatch = contractById("clear-every-patch");
 
@@ -862,6 +879,8 @@ describe("contract chooser filters", () => {
     expect(contractMatchesFilter(daisyDrift, "wood")).toBe(false);
     expect(contractMatchesFilter(serpentineGrove, "wood")).toBe(true);
     expect(contractMatchesFilter(serpentineGrove, "timed")).toBe(false);
+    expect(contractMatchesFilter(timberKnot, "wood")).toBe(true);
+    expect(contractMatchesFilter(timberKnot, "timed")).toBe(false);
     expect(contractMatchesFilter(braidedMeadow, "timed")).toBe(true);
     expect(contractMatchesFilter(braidedMeadow, "soft")).toBe(false);
     expect(contractMatchesFilter(reedRun, "timed")).toBe(true);

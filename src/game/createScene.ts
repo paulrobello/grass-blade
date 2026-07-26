@@ -34,6 +34,7 @@ const CAMERA_OFFSET_Z = 8.5;
 const CAMERA_VIEW_HEIGHT = 15.5;
 const CAMERA_PORTRAIT_MIN_VIEW_WIDTH = CAMERA_VIEW_HEIGHT;
 const BLADE_VISUAL_SPIN_SCALE = 0.115;
+const MIN_TWO_ARM_BLADE_VISUAL_FRAME_ADVANCE = 0.15;
 const MIN_ACTIVE_BLADE_VISUAL_FRAME_ADVANCE = 0.12;
 const BLADE_VISUAL_SCALE_PER_LEVEL = 0.04;
 const BLADE_VISUAL_MAX_SCALE = 1.2;
@@ -557,15 +558,14 @@ export function createScene(
   };
 }
 
-export function deriveReadableBladeAngle(angleRadians: number): number {
+export function deriveReadableBladeAngle(angleRadians: number, level = 1): number {
   if (angleRadians <= 0) {
     return 0;
   }
 
-  return (
-    Math.max(angleRadians * BLADE_VISUAL_SPIN_SCALE, MIN_ACTIVE_BLADE_VISUAL_FRAME_ADVANCE) %
-    (Math.PI * 2)
-  );
+  const minimumFrameAdvance =
+    level < 2 ? MIN_TWO_ARM_BLADE_VISUAL_FRAME_ADVANCE : MIN_ACTIVE_BLADE_VISUAL_FRAME_ADVANCE;
+  return Math.max(angleRadians * BLADE_VISUAL_SPIN_SCALE, minimumFrameAdvance) % (Math.PI * 2);
 }
 
 export function deriveBladeVisualScale(level: number): number {
@@ -577,9 +577,10 @@ export function accumulateReadableBladeAngle(
   previousRawAngleRadians: number,
   currentRawAngleRadians: number,
   previousVisualAngleRadians: number,
+  level = 1,
 ): number {
   const rawDelta = (currentRawAngleRadians - previousRawAngleRadians + Math.PI * 2) % (Math.PI * 2);
-  return (previousVisualAngleRadians + deriveReadableBladeAngle(rawDelta)) % (Math.PI * 2);
+  return (previousVisualAngleRadians + deriveReadableBladeAngle(rawDelta, level)) % (Math.PI * 2);
 }
 
 function resolveReducedMotionPreference(): boolean {
@@ -3324,6 +3325,7 @@ function addBlade(playerRoot: THREE.Group, resources: SceneResource[]): BladeVis
       previousRawAngleRadians,
       angleRadians,
       accumulatedVisualAngleRadians,
+      level,
     );
     previousRawAngleRadians = angleRadians;
     const visualBladeAngleRadians = accumulatedVisualAngleRadians;

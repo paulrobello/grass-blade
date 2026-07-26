@@ -111,27 +111,35 @@ describe("active game state", () => {
 
   it("keeps level-one blade contact visually spinning instead of reading stalled", () => {
     const loadedRawFrameAdvance = (500 / 60) * Math.PI * 2 * FIXED_TIME_STEP_SECONDS;
-    const visualFrameAdvance = deriveReadableBladeAngle(loadedRawFrameAdvance);
+    const visualFrameAdvance = deriveReadableBladeAngle(loadedRawFrameAdvance, 1);
 
-    expect(visualFrameAdvance).toBeGreaterThan(0.11);
-    expect(visualFrameAdvance).toBeLessThan(0.13);
+    expect(visualFrameAdvance).toBeGreaterThan(0.14);
+    expect(visualFrameAdvance).toBeLessThan(0.16);
   });
 
   it("keeps startup blade motion readable on high-refresh displays", () => {
     const highRefreshRawFrameAdvance = (720 / 60) * Math.PI * 2 * (1 / 120);
-    const visualFrameAdvance = deriveReadableBladeAngle(highRefreshRawFrameAdvance);
+    const visualFrameAdvance = deriveReadableBladeAngle(highRefreshRawFrameAdvance, 1);
 
-    expect(visualFrameAdvance).toBeGreaterThan(0.11);
-    expect(visualFrameAdvance).toBeLessThan(0.13);
+    expect(visualFrameAdvance).toBeGreaterThan(0.14);
+    expect(visualFrameAdvance).toBeLessThan(0.16);
   });
 
   it("keeps deeply loaded level-one blade motion visible without changing stopped frames", () => {
     const nearlyStalledRawFrameAdvance = (60 / 60) * Math.PI * 2 * FIXED_TIME_STEP_SECONDS;
-    const visualFrameAdvance = deriveReadableBladeAngle(nearlyStalledRawFrameAdvance);
+    const visualFrameAdvance = deriveReadableBladeAngle(nearlyStalledRawFrameAdvance, 1);
+
+    expect(visualFrameAdvance).toBeGreaterThan(0.14);
+    expect(visualFrameAdvance).toBeLessThan(0.16);
+    expect(deriveReadableBladeAngle(0)).toBe(0);
+  });
+
+  it("keeps higher-tier blade presentation at the slower anti-strobe floor", () => {
+    const loadedRawFrameAdvance = (500 / 60) * Math.PI * 2 * FIXED_TIME_STEP_SECONDS;
+    const visualFrameAdvance = deriveReadableBladeAngle(loadedRawFrameAdvance, 2);
 
     expect(visualFrameAdvance).toBeGreaterThan(0.11);
     expect(visualFrameAdvance).toBeLessThan(0.13);
-    expect(deriveReadableBladeAngle(0)).toBe(0);
   });
 
   it("keeps readable blade rotation continuous across raw angle wraparound", () => {
@@ -1395,6 +1403,40 @@ describe("active game state", () => {
     expect(state.targets.filter((target) => target.kind === "matureTree")).toHaveLength(3);
   });
 
+  it("creates and completes the authored Timber Knot contract before the clock expires", () => {
+    const state = createInitialState(12345, "timber-knot");
+
+    expect(state.contract).toEqual({
+      id: "timber-knot",
+      title: "Timber Knot",
+      summary: "A 95-second knotted timber route through crossing lanes and tree pockets.",
+      timeLimitSeconds: 95,
+      completionMode: "quota",
+    });
+    expect(state.objectives.grass.target).toBe(260);
+    expect(state.objectives.flowers.target).toBe(280);
+    expect(state.objectives.fiber.target).toBe(28);
+    expect(state.objectives.wood.target).toBe(28);
+
+    completeContractThroughQuotaCuts(state);
+
+    expect(state.mode).toBe("complete");
+    expect(state.elapsedSeconds).toBeLessThan(95);
+    expect(state.inventory).toEqual({ grass: 260, flowers: 280, fiber: 28, wood: 28 });
+    expect(state.result).toMatchObject({
+      status: "complete",
+      timeLimitSeconds: 95,
+      cutTargets: 568,
+      highestLevel: 8,
+      finalInventory: { grass: 260, flowers: 280, fiber: 28, wood: 28 },
+      completionRevision: 568,
+    });
+    expect(state.targets.filter((target) => target.kind === "denseWeed")).toHaveLength(12);
+    expect(state.targets.filter((target) => target.kind === "shrub")).toHaveLength(8);
+    expect(state.targets.filter((target) => target.kind === "sapling")).toHaveLength(5);
+    expect(state.targets.filter((target) => target.kind === "matureTree")).toHaveLength(3);
+  });
+
   it("creates and completes the authored Clear Every Patch contract only after all soft patches are cut", () => {
     const state = createInitialState(12345, "clear-every-patch");
     const expectedGrassTargets = state.targets.filter((target) => target.kind === "grass").length;
@@ -1717,6 +1759,7 @@ describe("active game state", () => {
     const cropMeander = createMeadowLayout(12345, "crop-meander");
     const daisyDrift = createMeadowLayout(12345, "daisy-drift");
     const serpentineGrove = createMeadowLayout(12345, "serpentine-grove");
+    const timberKnot = createMeadowLayout(12345, "timber-knot");
     const clearEveryPatch = createMeadowLayout(12345, "clear-every-patch");
     const unknown = createMeadowLayout(12345, "unknown-contract");
 
@@ -1754,6 +1797,7 @@ describe("active game state", () => {
     expect(cropMeander.arenaShape).toBe("crop-meander");
     expect(daisyDrift.arenaShape).toBe("daisy-drift");
     expect(serpentineGrove.arenaShape).toBe("serpentine-grove");
+    expect(timberKnot.arenaShape).toBe("timber-knot");
     expect(clearEveryPatch.arenaShape).toBe("split-clearings");
     expect(flowerSweep.flowerTargets).toHaveLength(FLOWER_TARGET_COUNT);
     expect(woodland.flowerTargets).toHaveLength(FLOWER_TARGET_COUNT);
@@ -1786,6 +1830,7 @@ describe("active game state", () => {
     expect(cropMeander.flowerTargets).toHaveLength(FLOWER_TARGET_COUNT);
     expect(daisyDrift.flowerTargets).toHaveLength(FLOWER_TARGET_COUNT);
     expect(serpentineGrove.flowerTargets).toHaveLength(FLOWER_TARGET_COUNT);
+    expect(timberKnot.flowerTargets).toHaveLength(FLOWER_TARGET_COUNT);
     expect(clearEveryPatch.flowerTargets).toHaveLength(FLOWER_TARGET_COUNT);
     expect(meadow.boundaryMarkers.length).toBeGreaterThan(100);
     expect(flowerSweep.boundaryMarkers.length).toBeGreaterThan(80);
@@ -1818,6 +1863,7 @@ describe("active game state", () => {
     expect(cropMeander.boundaryMarkers.length).toBeGreaterThan(120);
     expect(daisyDrift.boundaryMarkers.length).toBeGreaterThan(130);
     expect(serpentineGrove.boundaryMarkers.length).toBeGreaterThan(140);
+    expect(timberKnot.boundaryMarkers.length).toBeGreaterThan(140);
     expect(clearEveryPatch.boundaryMarkers.length).toBeGreaterThan(90);
     expect(clearEveryPatch.boundaryMarkers).not.toEqual(meadow.boundaryMarkers);
     expect(flowerSweep.grassVisuals).toHaveLength(GRASS_VISUAL_COLUMNS * GRASS_VISUAL_COLUMNS);
@@ -1853,6 +1899,7 @@ describe("active game state", () => {
     expect(berryBloom.grassVisuals).toHaveLength(GRASS_VISUAL_COLUMNS * GRASS_VISUAL_COLUMNS);
     expect(daisyDrift.grassVisuals).toHaveLength(GRASS_VISUAL_COLUMNS * GRASS_VISUAL_COLUMNS);
     expect(serpentineGrove.grassVisuals).toHaveLength(GRASS_VISUAL_COLUMNS * GRASS_VISUAL_COLUMNS);
+    expect(timberKnot.grassVisuals).toHaveLength(GRASS_VISUAL_COLUMNS * GRASS_VISUAL_COLUMNS);
     expect(clearEveryPatch.grassVisuals).toHaveLength(GRASS_VISUAL_COLUMNS * GRASS_VISUAL_COLUMNS);
     expect(flowerSweep.grassCells.length).toBeGreaterThan(120);
     expect(woodland.grassCells.length).toBeGreaterThan(160);
@@ -1883,6 +1930,7 @@ describe("active game state", () => {
     expect(berryBloom.grassCells.length).toBeGreaterThan(240);
     expect(daisyDrift.grassCells.length).toBeGreaterThan(245);
     expect(serpentineGrove.grassCells.length).toBeGreaterThan(275);
+    expect(timberKnot.grassCells.length).toBeGreaterThan(260);
     expect(clearEveryPatch.grassCells.length).toBeGreaterThan(250);
     expect(flowerSweep.grassCells.length).toBeLessThan(meadow.grassCells.length * 0.72);
     expect(woodland.grassCells.length).toBeLessThan(meadow.grassCells.length * 0.78);
@@ -1912,6 +1960,7 @@ describe("active game state", () => {
     expect(wildflowerNarrows.grassCells.length).toBeLessThan(meadow.grassCells.length * 0.72);
     expect(berryBloom.grassCells.length).toBeLessThan(meadow.grassCells.length * 0.72);
     expect(serpentineGrove.grassCells.length).toBeLessThan(meadow.grassCells.length * 0.78);
+    expect(timberKnot.grassCells.length).toBeLessThan(meadow.grassCells.length * 0.78);
     expect(clearEveryPatch.grassCells.length).toBeLessThan(meadow.grassCells.length * 0.7);
     expect(countVisibleGrassVisuals(meadow)).toBeLessThan(
       GRASS_VISUAL_COLUMNS * GRASS_VISUAL_COLUMNS * 0.74,
@@ -1980,6 +2029,9 @@ describe("active game state", () => {
       GRASS_VISUAL_COLUMNS * GRASS_VISUAL_COLUMNS * 0.72,
     );
     expect(countVisibleGrassVisuals(serpentineGrove)).toBeLessThan(
+      GRASS_VISUAL_COLUMNS * GRASS_VISUAL_COLUMNS * 0.78,
+    );
+    expect(countVisibleGrassVisuals(timberKnot)).toBeLessThan(
       GRASS_VISUAL_COLUMNS * GRASS_VISUAL_COLUMNS * 0.78,
     );
     expect(countCoolGrassVisuals(frostRibbons)).toBeGreaterThan(400);
@@ -2697,6 +2749,40 @@ describe("active game state", () => {
       expect(scene.presentation.bladeTier).toBe("saw");
       expect(scene.presentation.bladeVisualScale).toBe(1.2);
       expect(state.player.radius).toBe(PLAYER_RADIUS);
+    } finally {
+      scene.dispose();
+      Object.defineProperty(globalThis, "window", {
+        configurable: true,
+        value: originalWindow,
+      });
+    }
+  });
+
+  it("applies the level-one readable spin floor through scene sync", () => {
+    const originalWindow = globalThis.window;
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      value: {
+        matchMedia: () => ({ matches: false }),
+      },
+    });
+    const scene = createScene(12345, resolveQualitySettings(null));
+    try {
+      const state = createInitialState(12345);
+      state.player.level = 1;
+      state.player.bladeAngleRadians = 0.01;
+      scene.sync(state, 0);
+
+      expect(scene.presentation.bladeTier).toBe("two-arm");
+      expect(scene.presentation.visualBladeAngleRadians).toBeGreaterThan(0.14);
+      expect(scene.presentation.visualBladeAngleRadians).toBeLessThan(0.16);
+
+      state.player.level = 2;
+      state.player.bladeAngleRadians = 0.02;
+      scene.sync(state, 1);
+      expect(scene.presentation.bladeTier).toBe("four-arm");
+      expect(scene.presentation.visualBladeAngleRadians).toBeGreaterThan(0.26);
+      expect(scene.presentation.visualBladeAngleRadians).toBeLessThan(0.28);
     } finally {
       scene.dispose();
       Object.defineProperty(globalThis, "window", {

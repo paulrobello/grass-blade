@@ -44,6 +44,8 @@ Crop Meander is available with `?contract=crop-meander`: it is a 90-second soft-
 
 Serpentine Grove is available with `?contract=serpentine-grove`: it is a 100-second snaking timber route with `275 Grass / 300 Flowers / 28 Fiber / 28 Wood` quotas, flower banks in every bend, Fiber hedge crossings, all dense weeds, all shrubs, all five saplings, and three mature trees.
 
+Timber Knot is available with `?contract=timber-knot`: it is a 95-second knotted timber route with `260 Grass / 280 Flowers / 28 Fiber / 28 Wood` quotas, crossing lanes through tree pockets, and deterministic balance that requires all dense weeds, all shrubs, all five saplings, and three mature trees.
+
 ## Play online
 
 The public GitHub Pages deployment is configured to publish the production Vite build from `main`:
@@ -129,7 +131,7 @@ Grass Blade starts with a keyboard-focusable `Start Cutting` button before gamep
 The browser-facing automation contract lets the game be observed and driven without synthetic mouse gestures:
 
 - `?seed=<uint32>` selects a deterministic world seed.
-- `?contract=meadow-delivery`, `?contract=flower-sweep`, `?contract=woodland-cleanup`, `?contract=timber-trail`, `?contract=rock-garden`, `?contract=hedge-maze`, `?contract=timed-harvest`, `?contract=field-sprint`, `?contract=weed-rush`, `?contract=reed-run`, `?contract=clover-circuit`, `?contract=orchard-loop`, `?contract=brook-bend`, `?contract=harvest-spiral`, `?contract=crescent-grove`, `?contract=forked-thicket`, `?contract=switchback-orchard`, `?contract=braided-meadow`, `?contract=ring-grove`, `?contract=twin-glade`, `?contract=frost-ribbons`, `?contract=prism-prairie`, `?contract=stone-bloom`, `?contract=willow-weave`, `?contract=petal-gate`, `?contract=sunset-switchback`, `?contract=cedar-crossroads`, `?contract=lagoon-braid`, `?contract=wildflower-narrows`, `?contract=berry-bloom`, `?contract=daisy-drift`, `?contract=serpentine-grove`, or `?contract=clear-every-patch` selects the authored contract template; unknown IDs fall back to `meadow-delivery`.
+- `?contract=meadow-delivery`, `?contract=flower-sweep`, `?contract=woodland-cleanup`, `?contract=timber-trail`, `?contract=rock-garden`, `?contract=hedge-maze`, `?contract=timed-harvest`, `?contract=field-sprint`, `?contract=weed-rush`, `?contract=reed-run`, `?contract=clover-circuit`, `?contract=orchard-loop`, `?contract=brook-bend`, `?contract=harvest-spiral`, `?contract=crescent-grove`, `?contract=forked-thicket`, `?contract=switchback-orchard`, `?contract=braided-meadow`, `?contract=ring-grove`, `?contract=twin-glade`, `?contract=frost-ribbons`, `?contract=prism-prairie`, `?contract=stone-bloom`, `?contract=willow-weave`, `?contract=petal-gate`, `?contract=sunset-switchback`, `?contract=cedar-crossroads`, `?contract=lagoon-braid`, `?contract=wildflower-narrows`, `?contract=berry-bloom`, `?contract=crop-meander`, `?contract=daisy-drift`, `?contract=serpentine-grove`, `?contract=timber-knot`, or `?contract=clear-every-patch` selects the authored contract template; unknown IDs fall back to `meadow-delivery`.
 - `window.__grassBladeReady` becomes `true` when the scene is controllable.
 - `window.render_game_to_text()` returns a concise JSON snapshot of visible game state.
 - `window.advanceTime(milliseconds)` switches automation to manual time, advances exact 60 Hz ticks, and renders.

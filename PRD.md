@@ -525,6 +525,18 @@ Authored contracts are selected by deterministic contract ID and seed. The defau
 - Deterministic balance requires all dense weeds, all shrubs, all five saplings, and three mature trees while preserving a human-play buffer inside the timer.
 - If the timer reaches zero before every quota is complete, the contract ends with the same `timed-out` result semantics as Timed Harvest.
 
+### Timber Knot
+
+- Contract ID: `timber-knot`
+- Time limit: 95 seconds.
+- Collect 260 Grass.
+- Collect 280 Flowers.
+- Collect 28 Fiber.
+- Collect 28 Wood.
+- Uses a knotted timber route with crossing lanes, diagonal connector cuts, tree-pocket clearings, and compact no-growth pockets so the route reads as a looped grove knot instead of a square lawn.
+- Deterministic balance requires all dense weeds, all shrubs, all five saplings, and three mature trees while preserving a human-play buffer inside the timer.
+- If the timer reaches zero before every quota is complete, the contract ends with the same `timed-out` result semantics as Timed Harvest.
+
 ### Clear Every Patch
 
 - Contract ID: `clear-every-patch`
