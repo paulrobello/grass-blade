@@ -1882,6 +1882,8 @@ function contractRouteBadge(contract: ContractDefinition): string {
       return "Berry bloom";
     case "daisy-drift":
       return "Daisy drift";
+    case "serpentine-grove":
+      return "Serpentine";
     case "clear-every-patch":
       return "Split clearings";
   }

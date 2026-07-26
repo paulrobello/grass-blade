@@ -83,6 +83,7 @@ export interface ContractDefinition {
     | "wildflower-narrows"
     | "berry-bloom"
     | "daisy-drift"
+    | "serpentine-grove"
     | "clear-every-patch";
   title: string;
   summary: string;
@@ -352,6 +353,14 @@ export const CONTRACT_DEFINITIONS = [
     benchmarkSeconds: 64.9,
     timeLimitSeconds: 76,
     objectives: { grass: 245, flowers: FLOWER_TARGET_COUNT, fiber: 24, wood: 0 },
+  },
+  {
+    id: "serpentine-grove",
+    title: "Serpentine Grove",
+    summary: "A 100-second snaking timber route with flower banks in every bend.",
+    benchmarkSeconds: 85.017,
+    timeLimitSeconds: 100,
+    objectives: { grass: 275, flowers: 300, fiber: 28, wood: 28 },
   },
   {
     id: "clear-every-patch",
