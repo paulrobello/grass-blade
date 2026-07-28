@@ -1,3 +1,4 @@
+import * as THREE from "three";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -6,9 +7,28 @@ import {
   REDUCED_MOTION_WOOD_CONTACT_FRAGMENTS_PER_EMISSION,
   ROCK_CONTACT_FRAGMENTS_PER_EMISSION,
   WOOD_CONTACT_FRAGMENTS_PER_EMISSION,
+  createCutEffects,
   planWoodContactChipEmissions,
   shouldEmitRockContactDeflection,
 } from "../src/game/cutEffects";
+
+describe("cut fragment rendering", () => {
+  it("uses a faceted six-point silhouette instead of rectangular planes", () => {
+    const scene = new THREE.Scene();
+    const effects = createCutEffects(scene, 12345, false);
+
+    try {
+      const fragments = scene.children.find(
+        (child): child is THREE.InstancedMesh => child instanceof THREE.InstancedMesh,
+      );
+      expect(fragments).toBeDefined();
+      expect(fragments?.geometry.getAttribute("position").count).toBe(7);
+      expect(fragments?.geometry.index?.count).toBe(18);
+    } finally {
+      effects.dispose();
+    }
+  });
+});
 
 describe("wood contact chip thresholds", () => {
   it("does not consume or emit thresholds while a woody target is out of contact", () => {

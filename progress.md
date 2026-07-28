@@ -10,6 +10,12 @@ Active milestone: Phase 5 — expansion after first-playable evidence, with the 
 - Replaced all-or-nothing solid collision stopping with bounded swept-circle sliding. Direct movement into a rock still stops at contact, while diagonal input removes only the inward velocity component and preserves tangent motion around the visible obstacle without penetration, cut work, or rewards.
 - Added a deterministic reducer regression that starts at exact rock contact, holds diagonal input for 90 fixed steps, and verifies tangential travel, nonzero retained velocity, collision separation, and unchanged rock/inventory/cut-event state.
 - Corrected stale historical handoff text about authored growth-mask collision: arena silhouettes shape vegetation and visible route edges, while movement remains constrained by square world bounds and authoritative visible solid targets, matching the current reducer and `PRD.md`.
+- Replaced rectangular cut-effect planes with larger faceted six-point fragments for grass, petals, leaves, wood chips, and rock sparks. The shared instanced effect remains bounded and deterministic, while active cutting now reads as irregular clippings instead of flat cards.
+- Added subtly varied, contract-themed turf plates beneath every authored arena cell. The filled interiors make branching, ribbon, grove, wetland, bloom, and rock-route silhouettes readable even after grass is cut, without turning the authored growth masks into movement collision.
+- The required web-game Playwright client inspected active Flower Sweep and Frost Ribbons runs at `/tmp/grass-blade-visual-019fa69b-flower/shot-0.png` and `/tmp/grass-blade-visual-019fa69b-frost/shot-0.png`; both show distinct filled arena silhouettes and active faceted cut fragments with no browser error artifacts.
+- A deterministic Rock Garden browser route contacted `rock-7`, emitted one rock-deflection burst, and continued past the obstacle at `(2.901, -15.088)` with velocity `(4.828, -5.739)`. The inspected artifact is `/tmp/grass-blade-visual-019fa69b-rock-route-b/shot-0.png`, and state reports `activeFragments: 120` with no browser error artifact.
+- `make mobile-check` passes across all seventeen chooser, large-text, HUD, and touch-drag scenarios after the rendering-polish slice.
+- `make checkall` passes after the collision and rendering-polish slices. The full gate covers Prettier formatting, ESLint, strict TypeScript, 189 deterministic Vitest tests across ten files, and the Vite production build.
 
 ## 2026-07-23 continuation notes
 

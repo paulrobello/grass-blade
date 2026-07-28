@@ -1732,6 +1732,31 @@ describe("active game state", () => {
     }
   });
 
+  it("renders one interior turf plate for every authored arena cell", () => {
+    const originalWindow = globalThis.window;
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      value: {
+        matchMedia: () => ({ matches: false }),
+      },
+    });
+    const layout = createMeadowLayout(12345, "flower-sweep");
+    const scene = createScene(12345, resolveQualitySettings(null), false, "flower-sweep");
+
+    try {
+      const arenaFloor = scene.scene.getObjectByName("GB_ArenaFloor");
+      expect(arenaFloor).toBeInstanceOf(THREE.InstancedMesh);
+      expect((arenaFloor as THREE.InstancedMesh).count).toBe(layout.grassCells.length);
+      expect(scene.density.arenaFloorInstances).toBe(layout.grassCells.length);
+    } finally {
+      scene.dispose();
+      Object.defineProperty(globalThis, "window", {
+        configurable: true,
+        value: originalWindow,
+      });
+    }
+  });
+
   it("builds contract-specific non-square growth arenas", () => {
     const meadow = createMeadowLayout(12345, "meadow-delivery");
     const flowerSweep = createMeadowLayout(12345, "flower-sweep");

@@ -22,6 +22,7 @@ import {
   createMeadowDensityReport,
   FLOWER_VISUAL_COUNT,
   GRASS_FIELD_SIZE,
+  GRASS_LOGICAL_COLUMNS,
   GRASS_VISUAL_COLUMNS,
   SOFT_CROP_VISUAL_COUNT,
   type MeadowLayout,
@@ -191,6 +192,7 @@ export interface MeadowScene {
     treeInstances: number;
     rockInstances: number;
     boundaryInstances: number;
+    arenaFloorInstances: number;
     report: MeadowDensityReport;
   };
   presentation: MeadowPresentationDiagnostics;
@@ -243,6 +245,16 @@ export function createScene(
     scratchPosition,
     scratchRotation,
     scratchScale,
+  );
+  addArenaFloor(
+    scene,
+    resources,
+    layout,
+    scratchMatrix,
+    scratchPosition,
+    scratchRotation,
+    scratchScale,
+    scratchColor,
   );
   addArenaBoundaryMarkers(
     scene,
@@ -549,6 +561,7 @@ export function createScene(
       treeInstances: layout.matureTreeVisuals.length,
       rockInstances: layout.rockVisuals.length,
       boundaryInstances: layout.boundaryMarkers.length,
+      arenaFloorInstances: layout.grassCells.length,
       report: densityReport,
     },
     presentation,
@@ -616,6 +629,93 @@ function addGroundPatches(
   patches.receiveShadow = true;
   patches.instanceMatrix.needsUpdate = true;
   scene.add(patches);
+}
+
+function addArenaFloor(
+  scene: THREE.Scene,
+  resources: SceneResource[],
+  layout: MeadowLayout,
+  matrix: THREE.Matrix4,
+  position: THREE.Vector3,
+  rotation: THREE.Quaternion,
+  scale: THREE.Vector3,
+  color: THREE.Color,
+): void {
+  const count = layout.grassCells.length;
+  const cellSize = GRASS_FIELD_SIZE / GRASS_LOGICAL_COLUMNS;
+  const geometry = track(
+    resources,
+    new THREE.BoxGeometry(cellSize * 1.045, 0.04, cellSize * 1.045),
+  );
+  const material = track(
+    resources,
+    new THREE.MeshStandardMaterial({
+      color: 0xffffff,
+      roughness: 0.96,
+      metalness: 0,
+    }),
+  );
+  const floor = new THREE.InstancedMesh(geometry, material, count);
+  const palette = arenaFloorPalette(layout.arenaId);
+
+  for (let index = 0; index < count; index += 1) {
+    const cell = layout.grassCells[index];
+    if (cell === undefined) {
+      continue;
+    }
+    position.set(cell.x, 0.02, cell.z);
+    rotation.identity();
+    scale.set(1, 1, 1);
+    matrix.compose(position, rotation, scale);
+    floor.setMatrixAt(index, matrix);
+    const colorIndex =
+      Math.abs(Math.round(cell.x * 13) + Math.round(cell.z * 17) + index * 7) % palette.length;
+    color.setHex(palette[colorIndex] ?? palette[0] ?? 0x70bf54);
+    floor.setColorAt(index, color);
+  }
+
+  floor.name = "GB_ArenaFloor";
+  floor.receiveShadow = true;
+  floor.instanceMatrix.needsUpdate = true;
+  if (floor.instanceColor !== null) {
+    floor.instanceColor.needsUpdate = true;
+  }
+  floor.computeBoundingSphere();
+  scene.add(floor);
+}
+
+function arenaFloorPalette(arenaId: string): readonly number[] {
+  switch (arenaId) {
+    case "frost-ribbons":
+      return [0x8fc5a1, 0x9acdab, 0x82b99a, 0xa7d5b4];
+    case "lagoon-braid":
+    case "brook-bend":
+    case "reed-run":
+      return [0x64b765, 0x6dbf6e, 0x75c474, 0x5eae62];
+    case "flower-sweep":
+    case "petal-gate":
+    case "wildflower-narrows":
+    case "berry-bloom":
+    case "crop-meander":
+    case "daisy-drift":
+    case "sunset-switchback":
+      return [0x79c85c, 0x84ce65, 0x72bd58, 0x8ed36d];
+    case "woodland-cleanup":
+    case "timber-trail":
+    case "orchard-loop":
+    case "switchback-orchard":
+    case "willow-weave":
+    case "cedar-crossroads":
+    case "serpentine-grove":
+    case "timber-knot":
+      return [0x62b44d, 0x6abc50, 0x5aa944, 0x74c35a];
+    case "rock-garden":
+    case "stone-bloom":
+    case "prism-prairie":
+      return [0x6eb75a, 0x78bd65, 0x66ac54, 0x82c46f];
+    default:
+      return [0x70bf54, 0x79c75b, 0x68b64d, 0x83cc65];
+  }
 }
 
 function addArenaBoundaryMarkers(

@@ -116,7 +116,7 @@ export function createCutEffects(
   seed: number,
   reducedMotion: boolean,
 ): CutEffects {
-  const geometry = new THREE.PlaneGeometry(1, 1);
+  const geometry = createCutFragmentGeometry();
   const material = new THREE.MeshBasicMaterial({
     color: 0xffffff,
     side: THREE.DoubleSide,
@@ -179,6 +179,7 @@ export function createCutEffects(
   }
   fragments.frustumCulled = false;
   fragments.renderOrder = 3;
+  fragments.name = "GB_CutFragments";
   scene.add(fragments);
 
   function spawnFragment(
@@ -235,28 +236,28 @@ export function createCutEffects(
 
     switch (style) {
       case PETAL_FRAGMENT:
-        width[slot] = 0.24 + randomUnit(seed, key, 8) * 0.12;
-        height[slot] = 0.14 + randomUnit(seed, key, 9) * 0.08;
+        width[slot] = 0.28 + randomUnit(seed, key, 8) * 0.14;
+        height[slot] = 0.17 + randomUnit(seed, key, 9) * 0.09;
         color.setHex(paletteColor(PETAL_COLORS, seed, key, 10));
         break;
       case LEAF_FRAGMENT:
-        width[slot] = 0.28 + randomUnit(seed, key, 8) * 0.16;
-        height[slot] = 0.11 + randomUnit(seed, key, 9) * 0.07;
+        width[slot] = 0.32 + randomUnit(seed, key, 8) * 0.18;
+        height[slot] = 0.14 + randomUnit(seed, key, 9) * 0.08;
         color.setHex(paletteColor(LEAF_COLORS, seed, key, 10));
         break;
       case WOOD_FRAGMENT:
-        width[slot] = 0.24 + randomUnit(seed, key, 8) * 0.16;
-        height[slot] = 0.09 + randomUnit(seed, key, 9) * 0.06;
+        width[slot] = 0.27 + randomUnit(seed, key, 8) * 0.17;
+        height[slot] = 0.11 + randomUnit(seed, key, 9) * 0.07;
         color.setHex(paletteColor(WOOD_COLORS, seed, key, 10));
         break;
       case STONE_FRAGMENT:
-        width[slot] = 0.18 + randomUnit(seed, key, 8) * 0.13;
-        height[slot] = 0.075 + randomUnit(seed, key, 9) * 0.055;
+        width[slot] = 0.22 + randomUnit(seed, key, 8) * 0.14;
+        height[slot] = 0.09 + randomUnit(seed, key, 9) * 0.06;
         color.setHex(paletteColor(STONE_COLORS, seed, key, 10));
         break;
       default:
-        width[slot] = 0.16 + randomUnit(seed, key, 8) * 0.1;
-        height[slot] = 0.055 + randomUnit(seed, key, 9) * 0.035;
+        width[slot] = 0.18 + randomUnit(seed, key, 8) * 0.12;
+        height[slot] = 0.07 + randomUnit(seed, key, 9) * 0.04;
         color.setHex(paletteColor(GRASS_COLORS, seed, key, 10));
         break;
     }
@@ -542,6 +543,23 @@ export function createCutEffects(
   }
 
   return { diagnostics, sync, dispose };
+}
+
+function createCutFragmentGeometry(): THREE.BufferGeometry {
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute(
+    "position",
+    new THREE.Float32BufferAttribute(
+      [
+        0, 0, 0, 0, 0.64, 0, 0.38, 0.12, 0, 0.18, -0.5, 0, 0, -0.68, 0, -0.18, -0.5, 0, -0.38, 0.12,
+        0,
+      ],
+      3,
+    ),
+  );
+  geometry.setIndex([0, 1, 2, 0, 2, 3, 0, 3, 4, 0, 4, 5, 0, 5, 6, 0, 6, 1]);
+  geometry.computeBoundingSphere();
+  return geometry;
 }
 
 function isWoodyTargetKind(kind: TargetState["kind"]): kind is WoodyTargetKind {
