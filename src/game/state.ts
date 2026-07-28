@@ -24,6 +24,7 @@ const RECOVERY_APPROACH_RATE = 3;
 const BASE_WORK_RATE = 12;
 const MAX_BLADE_LEVEL = 8;
 const COLLISION_TIME_EPSILON = 1e-6;
+const MAX_SOLID_COLLISION_ITERATIONS = 3;
 const GRASS_VISUAL_JITTER_RATIO = 0.42;
 const TARGET_SPATIAL_CELL_SIZE = 4;
 const TAU = Math.PI * 2;
@@ -1226,45 +1227,91 @@ function resolveSolidMovement(
   intendedX: number,
   intendedZ: number,
 ): void {
-  let earliestHitTime: number | null = null;
   const index = ensureTargetSpatialIndex(state);
-  const candidates = queryTargetsInSweptBounds(
-    state,
-    startX,
-    startZ,
-    intendedX,
-    intendedZ,
-    PLAYER_HUB_RADIUS + index.maxSolidRadius,
-  );
+  let currentX = startX;
+  let currentZ = startZ;
+  let remainingX = intendedX - startX;
+  let remainingZ = intendedZ - startZ;
 
-  for (const target of candidates) {
-    if (target.status === "cut" || target.solidRadius <= 0) {
-      continue;
-    }
-
-    const hitTime = sweptCircleHitTime(
-      startX,
-      startZ,
-      intendedX,
-      intendedZ,
-      target.x,
-      target.z,
-      PLAYER_HUB_RADIUS + target.solidRadius,
+  for (let iteration = 0; iteration < MAX_SOLID_COLLISION_ITERATIONS; iteration += 1) {
+    const segmentEndX = currentX + remainingX;
+    const segmentEndZ = currentZ + remainingZ;
+    let earliestHitTime: number | null = null;
+    let hitTarget: TargetState | null = null;
+    const candidates = queryTargetsInSweptBounds(
+      state,
+      currentX,
+      currentZ,
+      segmentEndX,
+      segmentEndZ,
+      PLAYER_HUB_RADIUS + index.maxSolidRadius,
     );
-    if (hitTime !== null && (earliestHitTime === null || hitTime < earliestHitTime)) {
-      earliestHitTime = hitTime;
+
+    for (const target of candidates) {
+      if (target.status === "cut" || target.solidRadius <= 0) {
+        continue;
+      }
+
+      const hitTime = sweptCircleHitTime(
+        currentX,
+        currentZ,
+        segmentEndX,
+        segmentEndZ,
+        target.x,
+        target.z,
+        PLAYER_HUB_RADIUS + target.solidRadius,
+      );
+      if (hitTime !== null && (earliestHitTime === null || hitTime < earliestHitTime)) {
+        earliestHitTime = hitTime;
+        hitTarget = target;
+      }
+    }
+
+    if (earliestHitTime === null || hitTarget === null) {
+      currentX = segmentEndX;
+      currentZ = segmentEndZ;
+      break;
+    }
+
+    const contactX = currentX + remainingX * earliestHitTime;
+    const contactZ = currentZ + remainingZ * earliestHitTime;
+    const movementFraction = Math.max(0, earliestHitTime - COLLISION_TIME_EPSILON);
+    currentX += remainingX * movementFraction;
+    currentZ += remainingZ * movementFraction;
+
+    const normalX = contactX - hitTarget.x;
+    const normalZ = contactZ - hitTarget.z;
+    const normalLength = Math.hypot(normalX, normalZ);
+    if (normalLength <= Number.EPSILON) {
+      state.player.vx = 0;
+      state.player.vz = 0;
+      break;
+    }
+
+    const unitNormalX = normalX / normalLength;
+    const unitNormalZ = normalZ / normalLength;
+    const remainingFraction = 1 - earliestHitTime;
+    remainingX *= remainingFraction;
+    remainingZ *= remainingFraction;
+    const inwardMovement = remainingX * unitNormalX + remainingZ * unitNormalZ;
+    if (inwardMovement < 0) {
+      remainingX -= unitNormalX * inwardMovement;
+      remainingZ -= unitNormalZ * inwardMovement;
+    }
+
+    const inwardVelocity = state.player.vx * unitNormalX + state.player.vz * unitNormalZ;
+    if (inwardVelocity < 0) {
+      state.player.vx -= unitNormalX * inwardVelocity;
+      state.player.vz -= unitNormalZ * inwardVelocity;
+    }
+
+    if (Math.hypot(remainingX, remainingZ) <= Number.EPSILON) {
+      break;
     }
   }
 
-  if (earliestHitTime === null) {
-    return;
-  }
-
-  const movementFraction = Math.max(0, earliestHitTime - COLLISION_TIME_EPSILON);
-  state.player.x = startX + (intendedX - startX) * movementFraction;
-  state.player.z = startZ + (intendedZ - startZ) * movementFraction;
-  state.player.vx = 0;
-  state.player.vz = 0;
+  state.player.x = currentX;
+  state.player.z = currentZ;
 }
 
 function sweptCircleHitTime(

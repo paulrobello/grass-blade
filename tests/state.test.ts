@@ -70,6 +70,13 @@ const positiveXInput: MovementInput = {
   backward: true,
 };
 
+const positiveXZInput: MovementInput = {
+  left: false,
+  right: false,
+  forward: false,
+  backward: true,
+};
+
 const negativeXInput: MovementInput = {
   left: true,
   right: false,
@@ -3820,6 +3827,27 @@ describe("active game state", () => {
     expect(state.xp).toBe(0);
     expect(state.cutEvents).toEqual([]);
     expect(state.cutRevision).toBe(0);
+  });
+
+  it("slides around a non-cuttable rock while preserving tangential movement", () => {
+    const state = createInitialState(344);
+    const target = isolateTarget(state, "rock");
+    placeTargetAtPositiveXContact(state, target);
+    const contactRadius = PLAYER_HUB_RADIUS + target.solidRadius;
+
+    for (let frame = 0; frame < 90; frame += 1) {
+      stepState(state, positiveXZInput, FIXED_TIME_STEP_SECONDS);
+      expect(
+        Math.hypot(state.player.x - target.x, state.player.z - target.z),
+      ).toBeGreaterThanOrEqual(contactRadius - 0.0001);
+    }
+
+    expect(state.player.z).toBeGreaterThan(1);
+    expect(Math.hypot(state.player.vx, state.player.vz)).toBeGreaterThan(0);
+    expect(target.status).toBe("standing");
+    expect(target.accumulatedWork).toBe(0);
+    expect(state.inventory).toEqual({ grass: 0, flowers: 0, fiber: 0, wood: 0 });
+    expect(state.cutEvents).toEqual([]);
   });
 
   it("emits a bounded rock deflection burst without making rocks cuttable", () => {

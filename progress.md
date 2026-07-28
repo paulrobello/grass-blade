@@ -2,8 +2,14 @@ Original prompt: "i want create a threejs based game where you are a spinning bl
 
 # Grass Blade Progress
 
-Last updated: 2026-07-25
+Last updated: 2026-07-27
 Active milestone: Phase 5 — expansion after first-playable evidence, with the custom-domain site served over valid HTTPS through Cloudflare and native GitHub Pages HTTPS enforcement still optional/pending
+
+## 2026-07-27 continuation notes
+
+- Replaced all-or-nothing solid collision stopping with bounded swept-circle sliding. Direct movement into a rock still stops at contact, while diagonal input removes only the inward velocity component and preserves tangent motion around the visible obstacle without penetration, cut work, or rewards.
+- Added a deterministic reducer regression that starts at exact rock contact, holds diagonal input for 90 fixed steps, and verifies tangential travel, nonzero retained velocity, collision separation, and unchanged rock/inventory/cut-event state.
+- Corrected stale historical handoff text about authored growth-mask collision: arena silhouettes shape vegetation and visible route edges, while movement remains constrained by square world bounds and authoritative visible solid targets, matching the current reducer and `PRD.md`.
 
 ## 2026-07-23 continuation notes
 
@@ -394,9 +400,9 @@ Active milestone: Phase 5 — expansion after first-playable evidence, with the 
 - Added the matching rock-contact audio cue. Contact entry now plays a short layered clang through the existing effects channel, without making audio time authoritative; `render_game_to_text()` reports `audio.processedRockDeflections` and `audio.lastRockDeflectionTargetId`.
 - Focused audio tests pass after the rock-audio slice. New coverage verifies muted/no-WebAudio diagnostics still record the rock deflection event, and the existing RPM/cut audio settings remain unchanged.
 - The required web-game Playwright client reran against `?seed=343&debug=1` after the rock-audio slice and again hit `rock-5`. The inspected state in `output/playwright/rock-deflection-audio-client-smoke/state-0.json` reports WebAudio `contextState: "running"`, `processedRockDeflections: 1`, `lastRockDeflectionTargetId: "rock-5"`, visual `rockDeflectionEmissions: 1`, Wood still `0`, and `canvasAspectMismatchRatio: 1`.
-- Constrained player movement to each selected contract's authored arena mask, so active play stops at the organic route/loop/clearing edge instead of only at the old square world clamp. `PRD.md` now records the movement-boundary contract explicitly.
+- Authored arena masks shape vegetation and visible route edges without becoming invisible movement walls. The blade center remains constrained by the square world clamp and authoritative visible solid targets, matching the current `PRD.md` movement-boundary contract.
 - Tightened flower harvesting again by separating flower cut contact from visual blossom spread and widening the twenty authoritative sub-targets inside each visual drift. A one-second edge hold on a real drift now cuts only three local flower targets instead of behaving like the whole patch was harvested.
-- `bun test tests/state.test.ts` passes after the arena-boundary/flower-edge slice. New coverage verifies the timed-loop arena mask blocks movement into an authored hole while keeping the player inside the route, and the strengthened flower-edge regression holds contact for one second without cutting the full twenty-target patch.
+- `bun test tests/state.test.ts` passes after the arena-boundary/flower-edge slice. Coverage verifies timed-loop mask generation and the strengthened flower-edge regression where one second of contact does not cut the full twenty-target patch; the mask is not an invisible movement collider.
 - The required web-game Playwright client ran against `?seed=12345&contract=timed-harvest&debug=1` after the arena-boundary/flower-edge slice and wrote `output/playwright/arena-flower-boundary-smoke/shot-0.png` through `shot-2.png` plus state files without browser error artifacts. The inspected screenshot shows a non-square timed-loop play area with a countdown HUD, dense flowers, the cutter, and partial flower falling feedback; state reports `arenaShape: "timed-loop"`, `time.limitSeconds: 60`, `canvasAspectMismatchRatio: 1`, and active localized flower contacts rather than a whole-drift clear.
 - Changed Flower Sweep from a small `16`-Flower quota to all `320` authored flower targets. This keeps Meadow Delivery as the short starter quota and makes Flower Sweep require deliberate passes through the flower patches instead of allowing one edge graze to satisfy the objective.
 - `bun test tests/state.test.ts -t "Flower Sweep|flower patch|authored arena|timed contract|authored contract completable|visual-only cutter"` passes after the Flower Sweep quota tightening. The new regression verifies that a one-second edge hold cuts local flowers but leaves Flower Sweep active because `flowers.collected` remains below the full `320` target.
