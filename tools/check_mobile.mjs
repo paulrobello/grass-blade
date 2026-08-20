@@ -88,6 +88,7 @@ async function main() {
       summaries.push(await checkActiveHud(browser, options, viewport));
     }
     summaries.push(await checkTouchDrag(browser, options));
+    summaries.push(await checkMouseDrag(browser, options));
   } finally {
     await browser.close();
   }
@@ -322,6 +323,104 @@ async function checkTouchDrag(browser, options) {
     return {
       name: "phone-touch-drag",
       viewport: `${viewport.width}x${viewport.height}`,
+      movedZ: round(beforeDrag.player.position.z - duringDrag.player.position.z),
+      dragState: duringDrag.controls.input.pointerDrag,
+      afterRelease: afterRelease.controls.input.pointerDrag,
+      screenshot: dragPath,
+      errors,
+    };
+  } finally {
+    await page.close();
+  }
+}
+
+async function checkMouseDrag(browser, options) {
+  const viewport = {
+    name: "desktop-1280x720-mouse-drag",
+    width: 1280,
+    height: 720,
+    isMobile: false,
+    hasTouch: false,
+    deviceScaleFactor: 1,
+  };
+  const page = await newMobilePage(browser, viewport);
+  const errors = collectBrowserErrors(page);
+
+  try {
+    await openGame(page, scenarioUrl(options.url, { contract: "meadow-delivery" }));
+    await page.click("#start-contract");
+    await waitForState(page, (state) => state.mode === "active");
+
+    const beforeDrag = await renderState(page);
+    const canvasBox = await page.locator("#game-canvas").boundingBox();
+    assert(canvasBox !== null, "game canvas has a layout box");
+    const anchor = {
+      x: Math.round(canvasBox.x + canvasBox.width * 0.24),
+      y: Math.round(canvasBox.y + canvasBox.height * 0.72),
+    };
+    const dragTo = { x: anchor.x + 94, y: anchor.y - 94 };
+
+    await page.mouse.move(anchor.x, anchor.y);
+    await page.mouse.down();
+    await page.mouse.move(dragTo.x, dragTo.y);
+    await page.evaluate(() => window.advanceTime(700));
+    const duringDrag = await renderState(page);
+    const stick = await page.locator("#touch-stick").evaluate((element) => ({
+      hidden: element.hidden,
+      left: element.style.left,
+      top: element.style.top,
+    }));
+    assert(
+      duringDrag.controls.input.pointerDrag.active,
+      "mouse drag is active during pointer hold",
+    );
+    assertEqual(duringDrag.controls.input.pointerDrag.type, "mouse", "mouse drag type is reported");
+    assert(
+      duringDrag.controls.input.pointerDrag.stickVisible,
+      "mouse stick is visible during drag",
+    );
+    assertEqual(stick.hidden, false, "mouse stick element is visible");
+    assertEqual(stick.left, `${anchor.x}px`, "mouse stick stays at the drag origin");
+    assertEqual(stick.top, `${anchor.y}px`, "mouse stick stays at the drag origin");
+    assert(
+      duringDrag.controls.input.active.right && duringDrag.controls.input.active.forward,
+      "mouse drag preserves the shown right-forward input",
+    );
+    assert(
+      Math.hypot(
+        duringDrag.player.position.x - beforeDrag.player.position.x,
+        duringDrag.player.position.z - beforeDrag.player.position.z,
+      ) > 0.5,
+      "mouse drag moves the blade",
+    );
+
+    const dragPath = path.join(options.outputDir, "desktop-1280x720-mouse-drag.png");
+    await page.screenshot({ path: dragPath, fullPage: false });
+
+    await page.mouse.up();
+    await waitForState(
+      page,
+      (state) =>
+        state.controls.input.pointerDrag.active === false &&
+        state.controls.input.pointerDrag.stickVisible === false,
+    );
+    const afterRelease = await renderState(page);
+    assertEqual(
+      afterRelease.controls.input.active.forward,
+      false,
+      "mouse release clears forward movement",
+    );
+    assertEqual(
+      afterRelease.controls.input.active.right,
+      false,
+      "mouse release clears right movement",
+    );
+    assertNoBrowserErrors(errors, "mouse-drag");
+
+    return {
+      name: "desktop-mouse-drag",
+      viewport: `${viewport.width}x${viewport.height}`,
+      movedX: round(duringDrag.player.position.x - beforeDrag.player.position.x),
       movedZ: round(beforeDrag.player.position.z - duringDrag.player.position.z),
       dragState: duringDrag.controls.input.pointerDrag,
       afterRelease: afterRelease.controls.input.pointerDrag,

@@ -7,6 +7,7 @@ Active milestone: Phase 5 — expansion after first-playable evidence, with the 
 
 ## 2026-07-27 continuation notes
 
+- Mouse drags now show the same origin-anchored virtual joystick as touch and pen drags, so pointer direction is visible even when the click starts away from the cutter. The mobile/browser verifier covers the desktop mouse hold, movement, visual anchor, and release alongside the existing touch path.
 - Removed the production service-worker `controllerchange` forced reload, so an update cannot interrupt the first load or an active contract. Added a minimal inline green canvas shell in `index.html` so delayed stylesheet loading cannot present a white page; PWA regression checks require both protections.
 - Replaced all-or-nothing solid collision stopping with bounded swept-circle sliding. Direct movement into a rock still stops at contact, while diagonal input removes only the inward velocity component and preserves tangent motion around the visible obstacle without penetration, cut work, or rewards.
 - Added a deterministic reducer regression that starts at exact rock contact, holds diagonal input for 90 fixed steps, and verifies tangential travel, nonzero retained velocity, collision separation, and unchanged rock/inventory/cut-event state.

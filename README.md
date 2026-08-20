@@ -108,18 +108,18 @@ bun run typecheck
 
 ## Controls
 
-| Input            | Action                                                 |
-| ---------------- | ------------------------------------------------------ |
-| Start button     | Begin the contract before movement keys are captured   |
-| Contract card    | Choose an authored contract before starting            |
-| Touch / pen drag | Move with a temporary on-screen stick affordance       |
-| `W A S D`        | Move relative to the screen                            |
-| Arrow keys       | Equivalent movement controls                           |
-| `F`              | Toggle fullscreen                                      |
-| `M`              | Toggle mute                                            |
-| `Escape`         | Leave fullscreen if active; otherwise pause/resume     |
-| `R`              | Restart the current seed from pause or results         |
-| `N`              | Open the next authored contract and deterministic seed |
+| Input                   | Action                                                 |
+| ----------------------- | ------------------------------------------------------ |
+| Start button            | Begin the contract before movement keys are captured   |
+| Contract card           | Choose an authored contract before starting            |
+| Mouse, touch / pen drag | Move with a temporary on-screen stick affordance       |
+| `W A S D`               | Move relative to the screen                            |
+| Arrow keys              | Equivalent movement controls                           |
+| `F`                     | Toggle fullscreen                                      |
+| `M`                     | Toggle mute                                            |
+| `Escape`                | Leave fullscreen if active; otherwise pause/resume     |
+| `R`                     | Restart the current seed from pause or results         |
+| `N`                     | Open the next authored contract and deterministic seed |
 
 The blade spins automatically; there is no attack button.
 

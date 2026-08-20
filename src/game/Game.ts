@@ -1011,10 +1011,7 @@ export class Game {
 
   private updateTouchStick(): void {
     const visible =
-      this.activePointerId !== null &&
-      this.activePointerType !== "mouse" &&
-      this.contractStarted &&
-      this.state.mode === "active";
+      this.activePointerId !== null && this.contractStarted && this.state.mode === "active";
 
     this.touchStick.hidden = !visible;
     if (!visible) {
