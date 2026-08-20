@@ -80,20 +80,25 @@ export function targetProgressHeight(kind: TargetKind): number {
 export function collectTargetProgressEntries(
   targets: readonly TargetState[],
   maxEntries = MAX_TARGET_PROGRESS_BARS,
+  isVisible: (entry: TargetProgressEntry) => boolean = () => true,
 ): TargetProgressEntry[] {
   const entries: TargetProgressEntry[] = [];
   for (const target of targets) {
     if (!shouldShowTargetProgress(target)) {
       continue;
     }
-    entries.push({
+    const entry = {
       id: target.id,
       kind: target.kind,
       x: target.x,
       y: targetProgressHeight(target.kind),
       z: target.z,
       progress: targetProgressFraction(target),
-    });
+    };
+    if (!isVisible(entry)) {
+      continue;
+    }
+    entries.push(entry);
     if (entries.length >= maxEntries) {
       break;
     }
@@ -140,7 +145,10 @@ export function createTargetProgressOverlay(root: HTMLElement): TargetProgressOv
     camera: THREE.Camera,
     canvas: HTMLCanvasElement,
   ): void {
-    const entries = collectTargetProgressEntries(targets, slots.length);
+    const entries = collectTargetProgressEntries(targets, slots.length, (entry) => {
+      worldPoint.set(entry.x, entry.y, entry.z).project(camera);
+      return isProjectedPointInView(worldPoint);
+    });
     const rootBounds = root.getBoundingClientRect();
     const canvasBounds = canvas.getBoundingClientRect();
     diagnostics.activeBars = 0;
@@ -164,14 +172,7 @@ export function createTargetProgressOverlay(root: HTMLElement): TargetProgressOv
       }
 
       worldPoint.set(entry.x, entry.y, entry.z).project(camera);
-      if (
-        worldPoint.z < -1 ||
-        worldPoint.z > 1 ||
-        worldPoint.x < -1.08 ||
-        worldPoint.x > 1.08 ||
-        worldPoint.y < -1.08 ||
-        worldPoint.y > 1.08
-      ) {
+      if (!isProjectedPointInView(worldPoint)) {
         slot.element.hidden = true;
         continue;
       }
@@ -182,6 +183,7 @@ export function createTargetProgressOverlay(root: HTMLElement): TargetProgressOv
         canvasBounds.top - rootBounds.top + (1 - worldPoint.y) * 0.5 * canvasBounds.height;
       slot.element.hidden = false;
       slot.element.dataset.kind = entry.kind;
+      slot.element.dataset.targetId = entry.id;
       slot.element.style.transform = `translate3d(${screenX}px, ${screenY}px, 0) translate(-50%, -100%)`;
       slot.fill.style.width = `${Math.round(entry.progress * 100)}%`;
       diagnostics.activeBars += 1;
@@ -200,14 +202,7 @@ export function createTargetProgressOverlay(root: HTMLElement): TargetProgressOv
     }
 
     worldPoint.set(notice.x, targetProgressHeight(notice.kind) + 0.75, notice.z).project(camera);
-    if (
-      worldPoint.z < -1 ||
-      worldPoint.z > 1 ||
-      worldPoint.x < -1.08 ||
-      worldPoint.x > 1.08 ||
-      worldPoint.y < -1.08 ||
-      worldPoint.y > 1.08
-    ) {
+    if (!isProjectedPointInView(worldPoint)) {
       tooToughElement.hidden = true;
       return false;
     }
@@ -233,4 +228,15 @@ export function createTargetProgressOverlay(root: HTMLElement): TargetProgressOv
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max);
+}
+
+function isProjectedPointInView(point: THREE.Vector3): boolean {
+  return (
+    point.z >= -1 &&
+    point.z <= 1 &&
+    point.x >= -1.08 &&
+    point.x <= 1.08 &&
+    point.y >= -1.08 &&
+    point.y <= 1.08
+  );
 }

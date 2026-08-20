@@ -89,6 +89,7 @@ async function main() {
     }
     summaries.push(await checkTouchDrag(browser, options));
     summaries.push(await checkMouseDrag(browser, options));
+    summaries.push(await checkDurableTargetProgress(browser, options));
   } finally {
     await browser.close();
   }
@@ -425,6 +426,52 @@ async function checkMouseDrag(browser, options) {
       dragState: duringDrag.controls.input.pointerDrag,
       afterRelease: afterRelease.controls.input.pointerDrag,
       screenshot: dragPath,
+      errors,
+    };
+  } finally {
+    await page.close();
+  }
+}
+
+async function checkDurableTargetProgress(browser, options) {
+  const viewport = {
+    name: "desktop-1280x720-target-progress",
+    width: 1280,
+    height: 720,
+    isMobile: false,
+    hasTouch: false,
+    deviceScaleFactor: 1,
+  };
+  const targetKinds = ["denseWeed", "fiberReed", "shrub", "sapling", "matureTree"];
+  const page = await newMobilePage(browser, viewport);
+  const errors = collectBrowserErrors(page);
+
+  try {
+    await openGame(page, scenarioUrl(options.url, { debug: "1", contract: "meadow-delivery" }));
+
+    for (const kind of targetKinds) {
+      const targetId = await page.evaluate(
+        (targetKind) => window.damageTargetForDebug?.(targetKind) ?? null,
+        kind,
+      );
+      assert(targetId !== null, `${kind} can take debug damage`);
+      const targetBar = page.locator(`.target-progress[data-target-id="${targetId}"]`);
+      assertEqual(await targetBar.count(), 1, `${kind} has one progress bar`);
+      assertEqual(
+        await targetBar.isVisible(),
+        true,
+        `${kind} progress bar is visible after damage`,
+      );
+      await page.screenshot({
+        path: path.join(options.outputDir, `desktop-1280x720-${kind}-progress.png`),
+        fullPage: false,
+      });
+    }
+
+    assertNoBrowserErrors(errors, "durable-target-progress");
+    return {
+      name: "durable-target-progress",
+      viewport: `${viewport.width}x${viewport.height}`,
       errors,
     };
   } finally {

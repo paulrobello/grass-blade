@@ -283,6 +283,7 @@ export class Game {
     if (new URLSearchParams(window.location.search).get("debug") === "1") {
       window.completeContractForDebug = this.completeContractForDebug;
       window.cutTargetForDebug = this.cutTargetForDebug;
+      window.damageTargetForDebug = this.damageTargetForDebug;
     }
   }
 
@@ -372,6 +373,7 @@ export class Game {
     this.pause.overlay.remove();
     delete window.completeContractForDebug;
     delete window.cutTargetForDebug;
+    delete window.damageTargetForDebug;
     this.collectionMotes.dispose();
     this.audio.dispose();
     this.targetProgress.dispose();
@@ -1304,6 +1306,30 @@ export class Game {
     this.resetInput();
     this.step(FIXED_TIME_STEP_SECONDS);
     this.render();
+  };
+
+  private readonly damageTargetForDebug = (kind: string): string | null => {
+    if (this.state.mode === "complete") {
+      return null;
+    }
+    this.beginContract();
+
+    const target = this.state.targets.find(
+      (candidate) => candidate.kind === kind && candidate.status !== "cut",
+    );
+    if (target === undefined || target.requiredWork <= 0) {
+      return null;
+    }
+
+    this.state.player.x = target.x;
+    this.state.player.z = target.z;
+    this.state.player.vx = 0;
+    this.state.player.vz = 0;
+    target.status = "cutting";
+    target.accumulatedWork = target.requiredWork * 0.5;
+    this.resetInput();
+    this.render();
+    return target.id;
   };
 
   private readonly renderGameToText = (): string => {

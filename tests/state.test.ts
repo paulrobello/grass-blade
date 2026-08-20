@@ -26,6 +26,7 @@ import {
 } from "../src/game/state";
 import {
   collectTargetProgressEntries,
+  MAX_TARGET_PROGRESS_BARS,
   shouldShowTargetProgress,
   targetProgressFraction,
 } from "../src/game/targetProgress";
@@ -323,8 +324,42 @@ describe("active game state", () => {
     expect(targetProgressFraction(sapling)).toBe(0.75);
     expect(targetProgressFraction(matureTree)).toBe(0.5);
 
-    sapling.status = "cut";
-    expect(shouldShowTargetProgress(sapling)).toBe(false);
+    for (const durableTarget of [weed, reed, shrub, sapling, matureTree]) {
+      durableTarget.status = "cut";
+      expect(shouldShowTargetProgress(durableTarget)).toBe(false);
+    }
+  });
+
+  it("prioritizes visible damaged targets before limiting progress-bar slots", () => {
+    const state = createInitialState();
+    const focusedTarget = requireTarget(state, "matureTree");
+    const durableKinds = new Set<TargetKind>([
+      "denseWeed",
+      "fiberReed",
+      "shrub",
+      "sapling",
+      "matureTree",
+    ]);
+    const historicalTargets = state.targets
+      .filter((target) => target !== focusedTarget && durableKinds.has(target.kind))
+      .slice(0, MAX_TARGET_PROGRESS_BARS);
+
+    expect(historicalTargets).toHaveLength(MAX_TARGET_PROGRESS_BARS);
+    for (const target of historicalTargets) {
+      target.status = "cutting";
+      target.accumulatedWork = 1;
+    }
+    focusedTarget.status = "cutting";
+    focusedTarget.accumulatedWork = 1;
+
+    const entries = collectTargetProgressEntries(
+      state.targets,
+      MAX_TARGET_PROGRESS_BARS,
+      (entry) => entry.id === focusedTarget.id,
+    );
+
+    expect(entries).toHaveLength(1);
+    expect(entries[0]?.id).toBe(focusedTarget.id);
   });
 
   it("uses an explicit seed without changing the active contract", () => {

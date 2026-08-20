@@ -6,6 +6,7 @@ declare global {
     advanceTime: (milliseconds: number) => void;
     completeContractForDebug?: () => void;
     cutTargetForDebug?: (kind: string) => void;
+    damageTargetForDebug?: (kind: string) => string | null;
     nextContract: () => void;
     render_game_to_text: () => string;
     restartContract: () => void;
