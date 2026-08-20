@@ -48,16 +48,6 @@ function registerServiceWorker(): void {
   window.addEventListener(
     "load",
     () => {
-      const hadController = navigator.serviceWorker.controller !== null;
-      let reloadedForControllerUpdate = false;
-      navigator.serviceWorker.addEventListener("controllerchange", () => {
-        if (!hadController || reloadedForControllerUpdate) {
-          return;
-        }
-        reloadedForControllerUpdate = true;
-        window.location.reload();
-      });
-
       navigator.serviceWorker
         .register("/service-worker.js", { updateViaCache: "none" })
         .then((registration) => registration.update())

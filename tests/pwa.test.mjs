@@ -19,6 +19,7 @@ describe("mobile PWA install metadata", () => {
       '<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />',
     );
     expect(indexHtml).toContain('<link rel="apple-touch-icon" href="/pwa-icon-180.png" />');
+    expect(indexHtml).toContain("background: #9bdc6a;");
   });
 
   it("defines a fullscreen manifest with installable raster and maskable icons", () => {
@@ -54,6 +55,7 @@ describe("mobile PWA install metadata", () => {
     const serviceWorkerSource = fs.readFileSync(serviceWorkerPath, "utf8");
 
     expect(mainSource).toContain('updateViaCache: "none"');
+    expect(mainSource).not.toContain("window.location.reload()");
     expect(serviceWorkerSource).toContain('self.addEventListener("install"');
     expect(serviceWorkerSource).toContain("self.skipWaiting()");
     expect(serviceWorkerSource).toContain('const CACHE_NAME = "grass-blade-v4"');
