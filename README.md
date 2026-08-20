@@ -89,6 +89,7 @@ bun run typecheck
 
 | Target                          | Purpose                                                                       |
 | ------------------------------- | ----------------------------------------------------------------------------- |
+| `make install`                  | Install the lockfile-pinned Bun dependencies                                  |
 | `make dev`                      | Start the Vite development server on `127.0.0.1:4209`                         |
 | `make build`                    | Produce the production bundle                                                 |
 | `make test`                     | Run deterministic unit tests                                                  |
