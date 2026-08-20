@@ -643,10 +643,7 @@ function addArenaFloor(
 ): void {
   const count = layout.grassCells.length;
   const cellSize = GRASS_FIELD_SIZE / GRASS_LOGICAL_COLUMNS;
-  const geometry = track(
-    resources,
-    new THREE.BoxGeometry(cellSize * 1.045, 0.04, cellSize * 1.045),
-  );
+  const geometry = track(resources, new THREE.BoxGeometry(cellSize, 0.04, cellSize));
   const material = track(
     resources,
     new THREE.MeshStandardMaterial({
@@ -656,7 +653,7 @@ function addArenaFloor(
     }),
   );
   const floor = new THREE.InstancedMesh(geometry, material, count);
-  const palette = arenaFloorPalette(layout.arenaId);
+  const turfColor = arenaFloorPalette(layout.arenaId)[0] ?? 0x70bf54;
 
   for (let index = 0; index < count; index += 1) {
     const cell = layout.grassCells[index];
@@ -668,9 +665,7 @@ function addArenaFloor(
     scale.set(1, 1, 1);
     matrix.compose(position, rotation, scale);
     floor.setMatrixAt(index, matrix);
-    const colorIndex =
-      Math.abs(Math.round(cell.x * 13) + Math.round(cell.z * 17) + index * 7) % palette.length;
-    color.setHex(palette[colorIndex] ?? palette[0] ?? 0x70bf54);
+    color.setHex(turfColor);
     floor.setColorAt(index, color);
   }
 

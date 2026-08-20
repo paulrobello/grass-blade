@@ -7,6 +7,7 @@ Active milestone: Phase 5 — expansion after first-playable evidence, with the 
 
 ## 2026-07-27 continuation notes
 
+- Removed the vibrating checker turf artifact from exposed arena cells. Floor plates now meet exactly edge-to-edge with one low-contrast arena tone instead of overlapping, alternately colored box tops; a renderer regression protects the stable geometry and color contract.
 - Progress bars now fill their bounded overlay pool only after off-screen damaged targets are filtered out, so a currently visible weed, reed, shrub, sapling, or mature tree cannot be hidden by historical damage elsewhere in the arena. The browser verifier damages every durable family through the debug path, while the state regression confirms all of their bars clear on cut.
 - Mouse drags now show the same origin-anchored virtual joystick as touch and pen drags, so pointer direction is visible even when the click starts away from the cutter. The mobile/browser verifier covers the desktop mouse hold, movement, visual anchor, and release alongside the existing touch path.
 - Removed the production service-worker `controllerchange` forced reload, so an update cannot interrupt the first load or an active contract. Added a minimal inline green canvas shell in `index.html` so delayed stylesheet loading cannot present a white page; PWA regression checks require both protections.

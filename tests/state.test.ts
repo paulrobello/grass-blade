@@ -1781,7 +1781,11 @@ describe("active game state", () => {
     try {
       const arenaFloor = scene.scene.getObjectByName("GB_ArenaFloor");
       expect(arenaFloor).toBeInstanceOf(THREE.InstancedMesh);
-      expect((arenaFloor as THREE.InstancedMesh).count).toBe(layout.grassCells.length);
+      const floorMesh = arenaFloor as THREE.InstancedMesh<THREE.BoxGeometry>;
+      expect(floorMesh.count).toBe(layout.grassCells.length);
+      expect(floorMesh.geometry.parameters.width).toBe(GRASS_FIELD_SIZE / GRASS_LOGICAL_COLUMNS);
+      expect(floorMesh.geometry.parameters.depth).toBe(GRASS_FIELD_SIZE / GRASS_LOGICAL_COLUMNS);
+      expect(new Set(floorMesh.instanceColor?.array ?? []).size).toBeLessThanOrEqual(3);
       expect(scene.density.arenaFloorInstances).toBe(layout.grassCells.length);
     } finally {
       scene.dispose();
