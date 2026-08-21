@@ -108,6 +108,7 @@ export type BladeTier = "two-arm" | "four-arm" | "saw";
 
 export interface MeadowPresentationDiagnostics {
   reducedMotion: boolean;
+  environment: MeadowLayout["environment"];
   bladeTier: BladeTier;
   visibleBladeCount: number;
   visibleTeeth: number;
@@ -208,12 +209,13 @@ export function createScene(
   arenaId = "meadow-delivery",
 ): MeadowScene {
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0xb5df8b);
-  scene.fog = new THREE.Fog(0xb5df8b, 28, 58);
+  const layout = createMeadowLayout(seed, arenaId);
+  const environmentPalette = environmentPaletteFor(layout.environment);
+  scene.background = new THREE.Color(environmentPalette.sky);
+  scene.fog = new THREE.Fog(environmentPalette.sky, 28, 58);
 
   const camera = new THREE.OrthographicCamera(-10, 10, 10, -10, 0.1, 100);
   const resources: SceneResource[] = [];
-  const layout = createMeadowLayout(seed, arenaId);
   const densityReport = createMeadowDensityReport(layout, quality.grassBladesPerVisual);
   const random = createSeededRandom(seed);
   const scratchMatrix = new THREE.Matrix4();
@@ -227,7 +229,7 @@ export function createScene(
   const groundMaterial = track(
     resources,
     new THREE.MeshStandardMaterial({
-      color: 0x74c85c,
+      color: environmentPalette.ground,
       roughness: 0.92,
       metalness: 0,
     }),
@@ -245,6 +247,7 @@ export function createScene(
     scratchPosition,
     scratchRotation,
     scratchScale,
+    environmentPalette.patch,
   );
   addArenaFloor(
     scene,
@@ -391,6 +394,7 @@ export function createScene(
 
   const presentation: MeadowPresentationDiagnostics = {
     reducedMotion,
+    environment: layout.environment,
     bladeTier: blade.diagnostics.bladeTier,
     visibleBladeCount: blade.diagnostics.visibleBladeCount,
     visibleTeeth: blade.diagnostics.visibleTeeth,
@@ -608,12 +612,13 @@ function addGroundPatches(
   position: THREE.Vector3,
   rotation: THREE.Quaternion,
   scale: THREE.Vector3,
+  patchColor: number,
 ): void {
   const count = 24;
   const geometry = track(resources, new THREE.CylinderGeometry(1, 1, 0.035, 18));
   const material = track(
     resources,
-    new THREE.MeshStandardMaterial({ color: 0x66b953, roughness: 1 }),
+    new THREE.MeshStandardMaterial({ color: patchColor, roughness: 1 }),
   );
   const patches = new THREE.InstancedMesh(geometry, material, count);
 
@@ -629,6 +634,21 @@ function addGroundPatches(
   patches.receiveShadow = true;
   patches.instanceMatrix.needsUpdate = true;
   scene.add(patches);
+}
+
+function environmentPaletteFor(environment: MeadowLayout["environment"]): {
+  sky: number;
+  ground: number;
+  patch: number;
+} {
+  switch (environment) {
+    case "berry-basin":
+      return { sky: 0xc9b8dc, ground: 0x749e68, patch: 0x5f8759 };
+    case "orchard-canopy":
+      return { sky: 0xf0ca85, ground: 0x88b55d, patch: 0x6e994d };
+    case "meadow":
+      return { sky: 0xb5df8b, ground: 0x74c85c, patch: 0x66b953 };
+  }
 }
 
 function addArenaFloor(
@@ -2351,9 +2371,16 @@ function addShrubs(
     }),
   );
   const shrubs = new THREE.InstancedMesh(geometry, material, count);
+  const berryGeometry = track(resources, new THREE.IcosahedronGeometry(0.23, 1));
+  const berryMaterial = track(
+    resources,
+    new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.56, flatShading: true }),
+  );
+  const berries = new THREE.InstancedMesh(berryGeometry, berryMaterial, count);
   const palette = [0x2f9b45, 0x46b756, 0x6bcb61] as const;
   const standingMatrices = new Float32Array(count * 16);
   const flattenedMatrices = new Float32Array(count * 16);
+  const hiddenBerryMatrices = new Float32Array(count * 16);
   const queuedCutTargets = new Uint8Array(count);
   const movingTargets = new Uint8Array(count);
   const fallStartTimes = new Float32Array(count);
@@ -2392,16 +2419,32 @@ function addShrubs(
 
     color.setHex(palette[visual.colorIndex] ?? palette[0]);
     shrubs.setColorAt(visual.targetIndex, color);
+
+    position.set(visual.x, 1.03 * visual.size, visual.z);
+    rotation.setFromAxisAngle(yAxis, visual.rotation + 0.4);
+    scale.setScalar(
+      layout.shrubTargets[visual.targetIndex]?.collectible === "berries" ? visual.size : 0,
+    );
+    matrix.compose(position, rotation, scale);
+    berries.setMatrixAt(visual.targetIndex, matrix);
+    color.setHex(visual.colorIndex % 2 === 0 ? 0x8d2f82 : 0xc3426e);
+    berries.setColorAt(visual.targetIndex, color);
+
+    scale.setScalar(0);
+    matrix.compose(position, rotation, scale);
+    writeMatrix(hiddenBerryMatrices, visual.targetIndex, matrix);
   }
 
-  shrubs.castShadow = true;
-  shrubs.receiveShadow = true;
-  shrubs.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-  shrubs.instanceMatrix.needsUpdate = true;
-  if (shrubs.instanceColor !== null) {
-    shrubs.instanceColor.needsUpdate = true;
+  for (const mesh of [shrubs, berries]) {
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    mesh.instanceMatrix.needsUpdate = true;
+    if (mesh.instanceColor !== null) {
+      mesh.instanceColor.needsUpdate = true;
+    }
   }
-  scene.add(shrubs);
+  scene.add(shrubs, berries);
 
   return {
     diagnostics,
@@ -2422,6 +2465,9 @@ function addShrubs(
                 ? Math.atan2(deltaZ, deltaX)
                 : visual.rotation + Math.PI * 0.5;
             fallingTargetIndices.push(visual.targetIndex);
+            readMatrix(matrix, hiddenBerryMatrices, visual.targetIndex);
+            berries.setMatrixAt(visual.targetIndex, matrix);
+            matricesChanged = true;
           }
           continue;
         }
@@ -2507,6 +2553,7 @@ function addShrubs(
 
       if (matricesChanged) {
         shrubs.instanceMatrix.needsUpdate = true;
+        berries.instanceMatrix.needsUpdate = true;
       }
     },
   };
@@ -2906,11 +2953,19 @@ function addTrees(
   const trunks = new THREE.InstancedMesh(trunkGeometry, trunkMaterial, count);
   const stumps = new THREE.InstancedMesh(trunkGeometry, trunkMaterial, count);
   const crowns = new THREE.InstancedMesh(crownGeometry, crownMaterial, count);
+  const fruitPerTree = 3;
+  const fruitGeometry = track(resources, new THREE.SphereGeometry(0.34, 8, 6));
+  const fruitMaterial = track(
+    resources,
+    new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5, flatShading: true }),
+  );
+  const fruits = new THREE.InstancedMesh(fruitGeometry, fruitMaterial, count * fruitPerTree);
   const crownPalette = [0x2f9c55, 0x42b45f, 0x5ac56a] as const;
   const standingTrunkMatrices = new Float32Array(count * 16);
   const standingCrownMatrices = new Float32Array(count * 16);
   const cutTrunkMatrices = new Float32Array(count * 16);
   const cutCrownMatrices = new Float32Array(count * 16);
+  const hiddenFruitMatrices = new Float32Array(count * fruitPerTree * 16);
   const queuedCutTargets = new Uint8Array(count);
   const movingTargets = new Uint8Array(count);
   const fallStartTimes = new Float32Array(count);
@@ -2966,9 +3021,29 @@ function addTrees(
     matrix.compose(position, rotation, scale);
     writeMatrix(cutCrownMatrices, index, matrix);
     stumps.setMatrixAt(index, matrix);
+
+    for (let fruitIndex = 0; fruitIndex < fruitPerTree; fruitIndex += 1) {
+      const instanceIndex = index * fruitPerTree + fruitIndex;
+      const angle = index * 1.7 + fruitIndex * ((Math.PI * 2) / fruitPerTree);
+      position.set(
+        x + Math.cos(angle) * size * 1.2,
+        (3.1 + (fruitIndex % 2) * 0.42) * size,
+        z + Math.sin(angle) * size * 1.2,
+      );
+      rotation.identity();
+      scale.setScalar(layout.matureTreeTargets[index]?.collectible === "fruit" ? size : 0);
+      matrix.compose(position, rotation, scale);
+      fruits.setMatrixAt(instanceIndex, matrix);
+      color.setHex(fruitIndex % 2 === 0 ? 0xe05a35 : 0xf2b84b);
+      fruits.setColorAt(instanceIndex, color);
+
+      scale.setScalar(0);
+      matrix.compose(position, rotation, scale);
+      writeMatrix(hiddenFruitMatrices, instanceIndex, matrix);
+    }
   }
 
-  for (const mesh of [trunks, stumps, crowns]) {
+  for (const mesh of [trunks, stumps, crowns, fruits]) {
     mesh.castShadow = true;
     mesh.receiveShadow = true;
     mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
@@ -2977,7 +3052,7 @@ function addTrees(
       mesh.instanceColor.needsUpdate = true;
     }
   }
-  scene.add(trunks, stumps, crowns);
+  scene.add(trunks, stumps, crowns, fruits);
 
   return {
     diagnostics,
@@ -2993,6 +3068,11 @@ function addTrees(
             fallStartTimes[visual.targetIndex] = simulationTimeSeconds;
             readMatrix(matrix, cutTrunkMatrices, visual.targetIndex);
             stumps.setMatrixAt(visual.targetIndex, matrix);
+            for (let fruitIndex = 0; fruitIndex < fruitPerTree; fruitIndex += 1) {
+              const instanceIndex = visual.targetIndex * fruitPerTree + fruitIndex;
+              readMatrix(matrix, hiddenFruitMatrices, instanceIndex);
+              fruits.setMatrixAt(instanceIndex, matrix);
+            }
             const deltaX = visual.x - state.player.x;
             const deltaZ = visual.z - state.player.z;
             fallDirections[visual.targetIndex] =
@@ -3159,6 +3239,7 @@ function addTrees(
         trunks.instanceMatrix.needsUpdate = true;
         stumps.instanceMatrix.needsUpdate = true;
         crowns.instanceMatrix.needsUpdate = true;
+        fruits.instanceMatrix.needsUpdate = true;
       }
     },
   };

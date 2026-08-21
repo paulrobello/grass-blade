@@ -108,6 +108,8 @@ export type ArenaShape =
   | "timber-knot"
   | "split-clearings";
 
+export type MeadowEnvironment = "meadow" | "berry-basin" | "orchard-canopy";
+
 const DENSE_WEED_CLUSTER_CENTERS = [
   [-4.8, -3.5],
   [4.5, -4.2],
@@ -301,11 +303,13 @@ export interface TargetSeed {
   resistance: number;
   yield: number;
   xp: number;
+  collectible?: "berries" | "fruit";
 }
 
 export interface MeadowLayout {
   arenaId: ArenaLayoutId;
   arenaShape: ArenaShape;
+  environment: MeadowEnvironment;
   grassCells: TargetSeed[];
   grassVisuals: GrassVisual[];
   flowerTargets: TargetSeed[];
@@ -373,14 +377,14 @@ export function createMeadowLayout(
     fiberReedTargets,
     createSeededRandom(seed ^ 0x131a2e03),
   );
-  const shrubTargets = createShrubTargets(createSeededRandom(seed ^ 0x452821e6));
+  const shrubTargets = createShrubTargets(createSeededRandom(seed ^ 0x452821e6), resolvedArenaId);
   const shrubVisuals = createShrubVisuals(shrubTargets, createSeededRandom(seed ^ 0x38d01377));
   const saplingTargets = createSaplingTargets(createSeededRandom(seed ^ 0xa4093822));
   const saplingVisuals = createSaplingVisuals(
     saplingTargets,
     createSeededRandom(seed ^ 0x299f31d0),
   );
-  const matureTreeTargets = createMatureTreeTargets();
+  const matureTreeTargets = createMatureTreeTargets(resolvedArenaId);
   const matureTreeVisuals = createMatureTreeVisuals();
   const rockTargets = createRockTargets();
   const rockVisuals = createRockVisuals(createSeededRandom(seed ^ 0x082efa98));
@@ -388,6 +392,7 @@ export function createMeadowLayout(
   return {
     arenaId: resolvedArenaId,
     arenaShape,
+    environment: resolveMeadowEnvironment(resolvedArenaId),
     grassCells: grass.cells,
     grassVisuals,
     flowerTargets,
@@ -408,6 +413,18 @@ export function createMeadowLayout(
     rockVisuals,
     boundaryMarkers,
   };
+}
+
+function resolveMeadowEnvironment(arenaId: ArenaLayoutId): MeadowEnvironment {
+  switch (arenaId) {
+    case "berry-bloom":
+      return "berry-basin";
+    case "orchard-loop":
+    case "switchback-orchard":
+      return "orchard-canopy";
+    default:
+      return "meadow";
+  }
 }
 
 export function createMeadowDensityReport(
@@ -1905,27 +1922,27 @@ export function isPointInArenaGrowth(arenaId: ArenaLayoutId, x: number, z: numbe
       );
     case "orchard-loop":
       return (
-        (isPointInCapsule(x, z, -16, -15, -8, -18, 2.0) ||
-          isPointInCapsule(x, z, -8, -18, 8, -17, 2.0) ||
-          isPointInCapsule(x, z, 8, -17, 17, -10, 2.0) ||
-          isPointInCapsule(x, z, 17, -10, 17, 13, 2.0) ||
-          isPointInCapsule(x, z, 17, 13, 7, 18, 2.0) ||
-          isPointInCapsule(x, z, 7, 18, -10, 17, 2.0) ||
-          isPointInCapsule(x, z, -10, 17, -18, 8, 2.0) ||
-          isPointInCapsule(x, z, -18, 8, -16, -15, 2.0) ||
-          isPointInCapsule(x, z, -8.5, -7, 8.5, -6.5, 1.85) ||
-          isPointInCapsule(x, z, 8.5, -6.5, 8, 9, 1.85) ||
-          isPointInCapsule(x, z, 8, 9, -7.5, 8.5, 1.85) ||
-          isPointInCapsule(x, z, -7.5, 8.5, -8.5, -7, 1.85) ||
-          isPointInCapsule(x, z, -8.5, -7, 0, 0, 1.75) ||
-          isPointInCapsule(x, z, 0, 0, 8, 9, 1.75) ||
-          isPointInCircle(x, z, -16, -15, 3.25) ||
-          isPointInCircle(x, z, 8, -17, 3.2) ||
-          isPointInCircle(x, z, 17, 13, 3.2) ||
-          isPointInCircle(x, z, -10, 17, 3.2) ||
-          isPointInCircle(x, z, -8.5, -7, 3.15) ||
-          isPointInCircle(x, z, 8, 9, 3.15) ||
-          isPointInCircle(x, z, 0, 0, 2.9)) &&
+        (isPointInCapsule(x, z, -16, -15, -8, -18, 2.7) ||
+          isPointInCapsule(x, z, -8, -18, 8, -17, 2.7) ||
+          isPointInCapsule(x, z, 8, -17, 17, -10, 2.7) ||
+          isPointInCapsule(x, z, 17, -10, 17, 13, 2.7) ||
+          isPointInCapsule(x, z, 17, 13, 7, 18, 2.7) ||
+          isPointInCapsule(x, z, 7, 18, -10, 17, 2.7) ||
+          isPointInCapsule(x, z, -10, 17, -18, 8, 2.7) ||
+          isPointInCapsule(x, z, -18, 8, -16, -15, 2.7) ||
+          isPointInCapsule(x, z, -8.5, -7, 8.5, -6.5, 2.35) ||
+          isPointInCapsule(x, z, 8.5, -6.5, 8, 9, 2.35) ||
+          isPointInCapsule(x, z, 8, 9, -7.5, 8.5, 2.35) ||
+          isPointInCapsule(x, z, -7.5, 8.5, -8.5, -7, 2.35) ||
+          isPointInCapsule(x, z, -8.5, -7, 0, 0, 2.15) ||
+          isPointInCapsule(x, z, 0, 0, 8, 9, 2.15) ||
+          isPointInCircle(x, z, -16, -15, 5.2) ||
+          isPointInCircle(x, z, 8, -17, 5.1) ||
+          isPointInCircle(x, z, 17, 13, 5.1) ||
+          isPointInCircle(x, z, -10, 17, 5.1) ||
+          isPointInCircle(x, z, -8.5, -7, 4.8) ||
+          isPointInCircle(x, z, 8, 9, 4.8) ||
+          isPointInCircle(x, z, 0, 0, 4.8)) &&
         !isPointInCircle(x, z, 0, -12, 2.35) &&
         !isPointInCircle(x, z, 0, 12, 2.35) &&
         !isPointInCircle(x, z, 12, 2, 2.15) &&
@@ -2406,8 +2423,10 @@ export function isPointInArenaGrowth(arenaId: ArenaLayoutId, x: number, z: numbe
           isPointInCircle(x, z, -10, 8, 3.1) ||
           isPointInCircle(x, z, -3, 12, 3.05) ||
           isPointInCircle(x, z, 10, 12, 3.05) ||
-          isPointInCircle(x, z, 6, 15, 2.95) ||
-          isPointInCircle(x, z, 0, 0, 2.9)) &&
+          isPointInCircle(x, z, 6, 15, 3.55) ||
+          isPointInCircle(x, z, 0, 0, 5.25) ||
+          isPointInCircle(x, z, -16, 14, 3.8) ||
+          isPointInCircle(x, z, 15, 14, 3.7)) &&
         !isPointInCircle(x, z, -6, -7, 1.75) &&
         !isPointInCircle(x, z, 6, -7, 1.75) &&
         !isPointInCircle(x, z, -2, 4, 1.85) &&
@@ -2754,7 +2773,7 @@ function createFiberReedVisuals(targets: TargetSeed[], random: () => number): Fi
   return visuals;
 }
 
-function createShrubTargets(random: () => number): TargetSeed[] {
+function createShrubTargets(random: () => number, arenaId: ArenaLayoutId): TargetSeed[] {
   return SHRUB_PLACEMENT_ANCHORS.map(([anchorX, anchorZ], index) => {
     const size = 0.84 + random() * 0.24;
     const solidRadius = size * 0.54;
@@ -2770,6 +2789,7 @@ function createShrubTargets(random: () => number): TargetSeed[] {
       resistance: 0.55,
       yield: 2,
       xp: 14,
+      ...(arenaId === "berry-bloom" ? { collectible: "berries" as const } : {}),
     };
   });
 }
@@ -2816,7 +2836,7 @@ function createSaplingVisuals(targets: TargetSeed[], random: () => number): Sapl
   }));
 }
 
-function createMatureTreeTargets(): TargetSeed[] {
+function createMatureTreeTargets(arenaId: ArenaLayoutId): TargetSeed[] {
   return MATURE_TREE_PLACEMENTS.map(([x, z, size], index) => {
     const trunkRadius = 0.5 * size;
     return {
@@ -2831,6 +2851,9 @@ function createMatureTreeTargets(): TargetSeed[] {
       resistance: 1.6,
       yield: 6,
       xp: 75,
+      ...(arenaId === "orchard-loop" || arenaId === "switchback-orchard"
+        ? { collectible: "fruit" as const }
+        : {}),
     };
   });
 }

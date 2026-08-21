@@ -5,6 +5,13 @@ Original prompt: "i want create a threejs based game where you are a spinning bl
 Last updated: 2026-08-20
 Active milestone: Phase 5 — expansion after first-playable evidence, with the custom-domain site served over valid HTTPS through Cloudflare and native GitHub Pages HTTPS enforcement still optional/pending
 
+## 2026-08-20 continuation notes
+
+- Berry Bloom is now a broad berry-basin landscape with visibly harvestable berry bushes. Orchard Loop and Switchback Orchard use a warmer orchard-canopy environment, broader non-square growth silhouettes, and visible red/gold fruit clusters on mature trees.
+- Berry-bush and fruit-tree cuts remain compatible with the existing Flower and Wood quota loop while also incrementing `GameState.harvests.berries` and `GameState.harvests.fruit`, exposed in `window.render_game_to_text()` for deterministic verification.
+- Inspected active 1280 by 720 browser captures at `/tmp/grass-blade-berry-basin-browser.png`, `/tmp/grass-blade-orchard-browser-after-fruit.png`, and `/tmp/grass-blade-switchback-browser.png`; all reached their themed active contract state with no console or page errors. The Orchard capture was repeated after enlarging/exposing fruit clusters outside the canopy.
+- README arena-edge documentation now matches the verified authored-layout range of `83-180` markers after the broader Orchard Loop silhouette changed the maximum.
+
 ## 2026-07-27 continuation notes
 
 - Removed the vibrating checker turf artifact from exposed arena cells. Floor plates now meet exactly edge-to-edge with one low-contrast arena tone instead of overlapping, alternately colored box tops; a renderer regression protects the stable geometry and color contract.

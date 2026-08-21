@@ -398,6 +398,11 @@ export interface InventoryState {
   wood: number;
 }
 
+export interface HarvestsState {
+  berries: number;
+  fruit: number;
+}
+
 export type TargetStatus = "standing" | "cutting" | "cut";
 
 export interface TargetState extends TargetSeed {
@@ -470,6 +475,7 @@ export interface GameState {
   elapsedSeconds: number;
   player: PlayerState;
   inventory: InventoryState;
+  harvests: HarvestsState;
   objectives: ObjectivesState;
   result: ContractResult | null;
   xp: number;
@@ -534,6 +540,10 @@ export function createInitialState(
       flowers: 0,
       fiber: 0,
       wood: 0,
+    },
+    harvests: {
+      berries: 0,
+      fruit: 0,
     },
     objectives: {
       status: "active",
@@ -1031,6 +1041,12 @@ function distanceToSegment(
 
 function awardTarget(state: GameState, target: TargetState): void {
   const levelBefore = levelForXp(state.xp);
+
+  if (target.collectible === "berries") {
+    state.harvests.berries += target.yield;
+  } else if (target.collectible === "fruit") {
+    state.harvests.fruit += target.yield;
+  }
 
   switch (target.kind) {
     case "grass":

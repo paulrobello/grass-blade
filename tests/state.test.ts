@@ -198,6 +198,7 @@ describe("active game state", () => {
       targetRpm: 720,
     });
     expect(first.inventory).toEqual({ grass: 0, flowers: 0, fiber: 0, wood: 0 });
+    expect(first.harvests).toEqual({ berries: 0, fruit: 0 });
     expect(first.objectives).toEqual({
       status: "active",
       grass: { status: "active", collected: 0, target: 50 },
@@ -266,6 +267,47 @@ describe("active game state", () => {
     expect(first.tooToughNotice).toBeNull();
     expect(first.tooToughRevision).toBe(0);
     expect(first.tooToughNoticeCooldowns).toEqual({});
+  });
+
+  it("makes berry bushes and fruit trees visible collectible targets in their themed contracts", () => {
+    const berryBasin = createInitialState(12345, "berry-bloom");
+    const orchard = createInitialState(12345, "orchard-loop");
+    const switchbackOrchard = createInitialState(12345, "switchback-orchard");
+
+    expect(createMeadowLayout(12345, "berry-bloom").environment).toBe("berry-basin");
+    expect(createMeadowLayout(12345, "orchard-loop").environment).toBe("orchard-canopy");
+    expect(createMeadowLayout(12345, "switchback-orchard").environment).toBe("orchard-canopy");
+
+    const berryBush = berryBasin.targets.find((target) => target.collectible === "berries");
+    expect(berryBush).toBeDefined();
+    berryBasin.player.x = berryBush?.x ?? 0;
+    berryBasin.player.z = berryBush?.z ?? 0;
+    berryBasin.player.level = 3;
+    berryBasin.xp = 55;
+    if (berryBush !== undefined) {
+      berryBush.status = "cutting";
+      berryBush.accumulatedWork = berryBush.requiredWork - 0.001;
+    }
+    stepState(berryBasin, idleInput, FIXED_TIME_STEP_SECONDS);
+    expect(berryBush?.status).toBe("cut");
+    expect(berryBasin.harvests.berries).toBe(berryBush?.yield ?? 0);
+
+    const fruitTree = orchard.targets.find((target) => target.collectible === "fruit");
+    expect(fruitTree).toBeDefined();
+    orchard.player.x = fruitTree?.x ?? 0;
+    orchard.player.z = fruitTree?.z ?? 0;
+    orchard.player.level = 6;
+    orchard.xp = 300;
+    if (fruitTree !== undefined) {
+      fruitTree.status = "cutting";
+      fruitTree.accumulatedWork = fruitTree.requiredWork - 0.001;
+    }
+    stepState(orchard, idleInput, FIXED_TIME_STEP_SECONDS);
+    expect(fruitTree?.status).toBe("cut");
+    expect(orchard.harvests.fruit).toBe(fruitTree?.yield ?? 0);
+    expect(
+      switchbackOrchard.targets.filter((target) => target.collectible === "fruit"),
+    ).not.toHaveLength(0);
   });
 
   it("shows progress only after durable targets take initial damage", () => {
@@ -2012,7 +2054,8 @@ describe("active game state", () => {
     expect(sprint.grassCells.length).toBeLessThan(meadow.grassCells.length * 0.5);
     expect(weedRush.grassCells.length).toBeLessThan(meadow.grassCells.length * 0.55);
     expect(reedRun.grassCells.length).toBeLessThan(meadow.grassCells.length * 0.58);
-    expect(orchardLoop.grassCells.length).toBeLessThan(meadow.grassCells.length * 0.7);
+    expect(orchardLoop.grassCells.length).toBeGreaterThan(meadow.grassCells.length * 0.9);
+    expect(orchardLoop.grassCells.length).toBeLessThan(meadow.grassCells.length);
     expect(brookBend.grassCells.length).toBeLessThan(meadow.grassCells.length * 0.58);
     expect(harvestSpiral.grassCells.length).toBeLessThan(meadow.grassCells.length * 0.7);
     expect(crescentGrove.grassCells.length).toBeLessThan(meadow.grassCells.length * 0.62);
@@ -2595,11 +2638,12 @@ describe("active game state", () => {
     expect(hasGrassCellNear(berryBloom, -3, 12)).toBe(true);
     expect(hasGrassCellNear(berryBloom, 10, 12)).toBe(true);
     expect(hasGrassCellNear(berryBloom, 6, 15)).toBe(true);
+    expect(hasGrassCellNear(berryBloom, 1, 1)).toBe(true);
     expect(hasGrassCellNear(berryBloom, -6, -7)).toBe(false);
     expect(hasGrassCellNear(berryBloom, 6, -7)).toBe(false);
     expect(hasGrassCellNear(berryBloom, -2, 4)).toBe(false);
     expect(hasGrassCellNear(berryBloom, 8, 5)).toBe(false);
-    expect(hasGrassCellNear(berryBloom, 17, 17)).toBe(false);
+    expect(hasGrassCellNear(berryBloom, 17, 17)).toBe(true);
 
     expect(hasGrassCellNear(daisyDrift, -16, -15)).toBe(true);
     expect(hasGrassCellNear(daisyDrift, 2, -13)).toBe(true);

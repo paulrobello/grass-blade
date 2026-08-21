@@ -1504,6 +1504,7 @@ export class Game {
         },
       },
       inventory: this.state.inventory,
+      harvests: this.state.harvests,
       xp: this.state.xp,
       objectives,
       targets: {
