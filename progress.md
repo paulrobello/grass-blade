@@ -502,6 +502,8 @@ Active milestone: Phase 5 — expansion after first-playable evidence, with the 
 
 ## Remaining TODOs
 
+- Expanded Hedge Maze from a 7-by-7 / 31-wall layout to an 11-by-11 / 72-wall route. The topology regression proves the fruit exit remains connected by a 24-cell hedge-free path; focused state tests, headed browser success/fail checks, and the 19-scenario mobile suite passed against the expanded maze.
+
 - Rebuilt Hedge Maze as a deterministic bush-walled puzzle: the no-timer/no-quota contract now succeeds only by collecting one fruit at the exit and fails immediately if a hedge is cut. The maze omits unrelated target families and uses dark hedge wall treatment so the route stays readable. Verification passed strict TypeScript, the full `make checkall` gate (192 tests plus production build), the headed desktop success/fail result captures, and the 19-scenario `mobile:check` suite against the branch server with no browser errors.
 
 - [ ] Optionally retry GitHub Pages native HTTPS enforcement later; the site is already valid over HTTPS through Cloudflare proxying, but GitHub Pages still rejects native enforcement with `The certificate does not exist yet`.

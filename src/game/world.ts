@@ -2812,17 +2812,21 @@ function createShrubTargets(random: () => number, arenaId: ArenaLayoutId): Targe
 }
 
 const HEDGE_MAZE_GRID = [
-  "#######",
-  "#...#.#",
-  "#.#.#.#",
-  "#.#...#",
-  "#.###.#",
-  "#.....#",
-  "#######",
+  "###########",
+  "#.......#.#",
+  "#.#####.#.#",
+  "#.#.....#.#",
+  "#.#####.#.#",
+  "#.....#.#.#",
+  "#######.#.#",
+  "#.....#.#.#",
+  "#.#####.#.#",
+  "#.........#",
+  "###########",
 ] as const;
 
-const HEDGE_MAZE_CELL_SIZE = 4;
-const HEDGE_MAZE_GOAL_CELL = { column: 5, row: 5 } as const;
+const HEDGE_MAZE_CELL_SIZE = 3.6;
+const HEDGE_MAZE_GOAL_CELL = { column: 9, row: 9 } as const;
 
 function createHedgeMazeShrubTargets(random: () => number): TargetSeed[] {
   const halfSize = (HEDGE_MAZE_GRID.length - 1) / 2;
@@ -2837,14 +2841,14 @@ function createHedgeMazeShrubTargets(random: () => number): TargetSeed[] {
       if (rowPattern[column] !== "#") {
         continue;
       }
-      const visualSize = 1.7 + random() * 0.12;
+      const visualSize = 1.56 + random() * 0.12;
       hedges.push({
         id: `hedge-${row}-${column}`,
         kind: "shrub",
         x: (column - halfSize) * HEDGE_MAZE_CELL_SIZE,
         z: (row - halfSize) * HEDGE_MAZE_CELL_SIZE,
-        radius: 1.16,
-        solidRadius: 0.8,
+        radius: 1.05,
+        solidRadius: 0.75,
         recommendedLevel: 1,
         requiredWork: 1,
         resistance: 0.28,

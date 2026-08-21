@@ -196,7 +196,7 @@ Authored contracts are selected by deterministic contract ID and seed. The defau
 ### Hedge Maze
 
 - Contract ID: `hedge-maze`
-- Navigate a deterministic bush-walled maze to the fruit collectible at its exit.
+- Navigate a deterministic 11-by-11 bush-walled maze to the fruit collectible at its exit; it has 72 hedge walls and a 24-cell safe route from the centered start.
 - The fruit is the only success condition; the route has no resource quotas or countdown.
 - Collecting any hedge immediately fails the attempt and offers Restart or Next Contract.
 

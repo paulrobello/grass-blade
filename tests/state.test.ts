@@ -638,6 +638,55 @@ describe("active game state", () => {
     expect(state.result).toEqual(failedResult);
   });
 
+  it("builds a longer connected Hedge Maze route to the fruit exit", () => {
+    const state = createInitialState(12345, "hedge-maze");
+    const hedges = state.targets.filter((target) => target.mazeRole === "hedge");
+    const goal = state.targets.find((target) => target.mazeRole === "exit-goal");
+    expect(hedges).toHaveLength(72);
+    expect(goal).toBeDefined();
+    if (goal === undefined) {
+      throw new Error("Hedge Maze goal is missing");
+    }
+
+    const cellSize = 3.6;
+    const cellKey = (x: number, z: number): string =>
+      `${Math.round(x / cellSize)},${Math.round(z / cellSize)}`;
+    const blocked = new Set(hedges.map((hedge) => cellKey(hedge.x, hedge.z)));
+    const goalCell = { x: Math.round(goal.x / cellSize), z: Math.round(goal.z / cellSize) };
+    const queue: Array<{ x: number; z: number; distance: number }> = [{ x: 0, z: 0, distance: 0 }];
+    const visited = new Set(["0,0"]);
+    let shortestRoute = null as number | null;
+
+    while (queue.length > 0) {
+      const current = queue.shift();
+      if (current === undefined) {
+        continue;
+      }
+      if (current.x === goalCell.x && current.z === goalCell.z) {
+        shortestRoute = current.distance;
+        break;
+      }
+
+      for (const [offsetX, offsetZ] of [
+        [1, 0],
+        [-1, 0],
+        [0, 1],
+        [0, -1],
+      ] as const) {
+        const x = current.x + offsetX;
+        const z = current.z + offsetZ;
+        const key = `${x},${z}`;
+        if (Math.abs(x) > 5 || Math.abs(z) > 5 || blocked.has(key) || visited.has(key)) {
+          continue;
+        }
+        visited.add(key);
+        queue.push({ x, z, distance: current.distance + 1 });
+      }
+    }
+
+    expect(shortestRoute).toBe(24);
+  });
+
   it("creates and completes the authored Field Sprint contract before the clock expires", () => {
     const state = createInitialState(12345, "field-sprint");
 
