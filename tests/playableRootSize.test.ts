@@ -230,7 +230,7 @@ describe("contract navigation URLs", () => {
   it("cycles start-screen keyboard selection within the active filter", () => {
     expect(adjacentFilteredContractId("meadow-delivery", "all", 1)).toBe("flower-sweep");
     expect(adjacentFilteredContractId("meadow-delivery", "all", -1)).toBe("clear-every-patch");
-    expect(adjacentFilteredContractId("timed-harvest", "timed", -1)).toBe("hedge-maze");
+    expect(adjacentFilteredContractId("timed-harvest", "timed", -1)).toBe("daisy-drift");
     expect(adjacentFilteredContractId("timed-harvest", "timed", 1)).toBe("weed-rush");
     expect(adjacentFilteredContractId("unknown-contract", "wood", 1)).toBe("meadow-delivery");
     expect(adjacentFilteredContractId("unknown-contract", "wood", -1)).toBe("timber-knot");
@@ -649,15 +649,15 @@ describe("timer urgency", () => {
 describe("contract chooser filters", () => {
   it("shows compact counts on contract filter labels", () => {
     expect(contractFilterCount("all")).toBe(35);
-    expect(contractFilterCount("timed")).toBe(17);
+    expect(contractFilterCount("timed")).toBe(16);
     expect(contractFilterCount("wood")).toBe(16);
-    expect(contractFilterCount("soft")).toBe(1);
+    expect(contractFilterCount("soft")).toBe(2);
     expect(contractFilterCount("clear")).toBe(1);
 
     expect(contractFilterButtonLabel({ id: "all", label: "All" })).toBe("All 35");
-    expect(contractFilterButtonLabel({ id: "timed", label: "Timed" })).toBe("Timed 17");
+    expect(contractFilterButtonLabel({ id: "timed", label: "Timed" })).toBe("Timed 16");
     expect(contractFilterButtonLabel({ id: "wood", label: "Wood" })).toBe("Wood 16");
-    expect(contractFilterButtonLabel({ id: "soft", label: "Grass" })).toBe("Grass 1");
+    expect(contractFilterButtonLabel({ id: "soft", label: "Grass" })).toBe("Grass 2");
     expect(contractFilterButtonLabel({ id: "clear", label: "Clear" })).toBe("Clear 1");
   });
 

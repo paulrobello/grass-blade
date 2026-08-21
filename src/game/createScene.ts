@@ -2378,6 +2378,7 @@ function addShrubs(
   );
   const berries = new THREE.InstancedMesh(berryGeometry, berryMaterial, count);
   const palette = [0x2f9b45, 0x46b756, 0x6bcb61] as const;
+  const hedgePalette = [0x173d27, 0x205531, 0x2a6a3b] as const;
   const standingMatrices = new Float32Array(count * 16);
   const flattenedMatrices = new Float32Array(count * 16);
   const hiddenBerryMatrices = new Float32Array(count * 16);
@@ -2417,17 +2418,27 @@ function addShrubs(
     matrix.compose(position, rotation, scale);
     writeMatrix(flattenedMatrices, visual.targetIndex, matrix);
 
-    color.setHex(palette[visual.colorIndex] ?? palette[0]);
+    color.setHex(
+      layout.shrubTargets[visual.targetIndex]?.mazeRole === "hedge"
+        ? (hedgePalette[visual.colorIndex] ?? hedgePalette[0])
+        : (palette[visual.colorIndex] ?? palette[0]),
+    );
     shrubs.setColorAt(visual.targetIndex, color);
 
     position.set(visual.x, 1.03 * visual.size, visual.z);
     rotation.setFromAxisAngle(yAxis, visual.rotation + 0.4);
     scale.setScalar(
-      layout.shrubTargets[visual.targetIndex]?.collectible === "berries" ? visual.size : 0,
+      layout.shrubTargets[visual.targetIndex]?.collectible !== undefined ? visual.size : 0,
     );
     matrix.compose(position, rotation, scale);
     berries.setMatrixAt(visual.targetIndex, matrix);
-    color.setHex(visual.colorIndex % 2 === 0 ? 0x8d2f82 : 0xc3426e);
+    color.setHex(
+      layout.shrubTargets[visual.targetIndex]?.collectible === "fruit"
+        ? 0xf2b84b
+        : visual.colorIndex % 2 === 0
+          ? 0x8d2f82
+          : 0xc3426e,
+    );
     berries.setColorAt(visual.targetIndex, color);
 
     scale.setScalar(0);

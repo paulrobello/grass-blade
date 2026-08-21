@@ -196,14 +196,9 @@ Authored contracts are selected by deterministic contract ID and seed. The defau
 ### Hedge Maze
 
 - Contract ID: `hedge-maze`
-- Time limit: 80 seconds.
-- Collect 183 Grass.
-- Collect 300 Flowers.
-- Collect 28 Fiber.
-- No Wood quota.
-- Uses a shrub-maze route that turns durable hedge cutting into the Fiber objective.
-- The deterministic quota path requires every grass target, all twelve dense weeds, all eight shrubs, and most flower pockets, so progress bars and durable-target blocking are part of the intended route.
-- If the timer reaches zero before every quota is complete, the contract ends with the same `timed-out` result semantics as Timed Harvest.
+- Navigate a deterministic bush-walled maze to the fruit collectible at its exit.
+- The fruit is the only success condition; the route has no resource quotas or countdown.
+- Collecting any hedge immediately fails the attempt and offers Restart or Next Contract.
 
 ### Timed Harvest
 

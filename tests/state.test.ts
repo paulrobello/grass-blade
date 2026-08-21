@@ -572,36 +572,70 @@ describe("active game state", () => {
     expect(state.targets.filter((target) => target.kind === "sapling")).toHaveLength(5);
   });
 
-  it("creates and completes the authored Hedge Maze contract before the clock expires", () => {
+  it("uses a hedge-fail maze contract with a collectible exit goal", () => {
     const state = createInitialState(12345, "hedge-maze");
 
     expect(state.contract).toEqual({
       id: "hedge-maze",
       title: "Hedge Maze",
-      summary: "An 80-second shrub maze that turns durable hedges into the Fiber objective.",
-      timeLimitSeconds: 80,
-      completionMode: "quota",
+      summary:
+        "Navigate the hedge walls, collect the fruit at the maze exit, and leave every hedge standing.",
+      timeLimitSeconds: null,
+      completionMode: "maze-goal",
     });
-    expect(state.objectives.grass.target).toBe(183);
-    expect(state.objectives.flowers.target).toBe(300);
-    expect(state.objectives.fiber.target).toBe(28);
-    expect(state.objectives.wood.target).toBe(0);
+    expect(state.objectives).toMatchObject({
+      grass: { target: 0 },
+      flowers: { target: 0 },
+      fiber: { target: 0 },
+      wood: { target: 0 },
+    });
 
-    completeContractThroughQuotaCuts(state);
+    const goal = state.targets.find((target) => target.mazeRole === "exit-goal");
+    expect(goal).toBeDefined();
+    if (goal === undefined) {
+      throw new Error("Hedge Maze goal is missing");
+    }
+    goal.x = state.player.x;
+    goal.z = state.player.z;
+    goal.status = "cutting";
+    goal.accumulatedWork = goal.requiredWork - 0.001;
+
+    stepState(state, idleInput, FIXED_TIME_STEP_SECONDS);
 
     expect(state.mode).toBe("complete");
-    expect(state.elapsedSeconds).toBeLessThan(80);
-    expect(state.inventory).toEqual({ grass: 183, flowers: 300, fiber: 28, wood: 0 });
-    expect(state.result).toMatchObject({
-      status: "complete",
-      timeLimitSeconds: 80,
-      cutTargets: 503,
-      highestLevel: 8,
-      finalInventory: { grass: 183, flowers: 300, fiber: 28, wood: 0 },
-      completionRevision: 503,
-    });
-    expect(state.targets.filter((target) => target.kind === "denseWeed")).toHaveLength(12);
-    expect(state.targets.filter((target) => target.kind === "shrub")).toHaveLength(8);
+    expect(state.result).toMatchObject({ status: "complete", timeLimitSeconds: null });
+    expect(state.objectives.status).toBe("complete");
+  });
+
+  it("fails Hedge Maze exactly once when a hedge is collected", () => {
+    const state = createInitialState(12345, "hedge-maze");
+    const hedge = state.targets.find((target) => target.mazeRole === "hedge");
+    const goal = state.targets.find((target) => target.mazeRole === "exit-goal");
+    expect(hedge).toBeDefined();
+    expect(goal).toBeDefined();
+    if (hedge === undefined || goal === undefined) {
+      throw new Error("Hedge Maze targets are missing");
+    }
+
+    hedge.x = state.player.x;
+    hedge.z = state.player.z;
+    hedge.solidRadius = 0;
+    hedge.status = "cutting";
+    hedge.accumulatedWork = hedge.requiredWork - 0.001;
+
+    stepState(state, idleInput, FIXED_TIME_STEP_SECONDS);
+
+    expect(state.mode).toBe("complete");
+    expect(state.result).toMatchObject({ status: "failed" });
+    const failedResult = state.result;
+
+    goal.x = state.player.x;
+    goal.z = state.player.z;
+    goal.status = "cutting";
+    goal.accumulatedWork = goal.requiredWork - 0.001;
+    stepState(state, idleInput, FIXED_TIME_STEP_SECONDS);
+
+    expect(state.result).toEqual(failedResult);
   });
 
   it("creates and completes the authored Field Sprint contract before the clock expires", () => {
@@ -1612,6 +1646,10 @@ describe("active game state", () => {
       for (const contract of CONTRACT_DEFINITIONS) {
         const state = createInitialState(seed, contract.id);
 
+        if (state.contract.completionMode === "maze-goal") {
+          continue;
+        }
+
         completeContractThroughQuotaCuts(state);
 
         expect(state.mode).toBe("complete");
@@ -1916,7 +1954,15 @@ describe("active game state", () => {
     expect(woodland.flowerTargets).toHaveLength(FLOWER_TARGET_COUNT);
     expect(timber.flowerTargets).toHaveLength(FLOWER_TARGET_COUNT);
     expect(rockGarden.flowerTargets).toHaveLength(FLOWER_TARGET_COUNT);
-    expect(hedgeMaze.flowerTargets).toHaveLength(FLOWER_TARGET_COUNT);
+    expect(hedgeMaze.flowerTargets).toHaveLength(0);
+    expect(hedgeMaze.softCropTargets).toHaveLength(0);
+    expect(hedgeMaze.denseWeedTargets).toHaveLength(0);
+    expect(
+      hedgeMaze.shrubTargets.filter((target) => target.mazeRole === "hedge").length,
+    ).toBeGreaterThan(20);
+    expect(hedgeMaze.shrubTargets.filter((target) => target.mazeRole === "exit-goal")).toHaveLength(
+      1,
+    );
     expect(timed.flowerTargets).toHaveLength(FLOWER_TARGET_COUNT);
     expect(sprint.flowerTargets).toHaveLength(FLOWER_TARGET_COUNT);
     expect(weedRush.flowerTargets).toHaveLength(FLOWER_TARGET_COUNT);

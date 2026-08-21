@@ -303,7 +303,9 @@ export interface TargetSeed {
   resistance: number;
   yield: number;
   xp: number;
+  visualSize?: number;
   collectible?: "berries" | "fruit";
+  mazeRole?: "hedge" | "exit-goal";
 }
 
 export interface MeadowLayout {
@@ -360,34 +362,45 @@ export function createMeadowLayout(
     resolvedArenaId,
     grass.logicalCellIndexToCellIndex,
   );
-  const flowerTargets = createFlowerTargets(createSeededRandom(seed ^ 0x243f6a88), resolvedArenaId);
+  const isHedgeMaze = resolvedArenaId === "hedge-maze";
+  const flowerTargets = isHedgeMaze
+    ? []
+    : createFlowerTargets(createSeededRandom(seed ^ 0x243f6a88), resolvedArenaId);
   const flowerVisuals = createFlowerVisuals(flowerTargets, createSeededRandom(seed ^ 0xb7e15162));
-  const softCropTargets = createSoftCropTargets(createSeededRandom(seed ^ 0x8aed2a6b));
+  const softCropTargets = isHedgeMaze
+    ? []
+    : createSoftCropTargets(createSeededRandom(seed ^ 0x8aed2a6b));
   const softCropVisuals = createSoftCropVisuals(
     softCropTargets,
     createSeededRandom(seed ^ 0xf2b9d4e5),
   );
-  const denseWeedTargets = createDenseWeedTargets(createSeededRandom(seed ^ 0x13198a2e));
+  const denseWeedTargets = isHedgeMaze
+    ? []
+    : createDenseWeedTargets(createSeededRandom(seed ^ 0x13198a2e));
   const denseWeedVisuals = createDenseWeedVisuals(
     denseWeedTargets,
     createSeededRandom(seed ^ 0x03707344),
   );
-  const fiberReedTargets = createFiberReedTargets(createSeededRandom(seed ^ 0x85a308d3));
+  const fiberReedTargets = isHedgeMaze
+    ? []
+    : createFiberReedTargets(createSeededRandom(seed ^ 0x85a308d3));
   const fiberReedVisuals = createFiberReedVisuals(
     fiberReedTargets,
     createSeededRandom(seed ^ 0x131a2e03),
   );
   const shrubTargets = createShrubTargets(createSeededRandom(seed ^ 0x452821e6), resolvedArenaId);
   const shrubVisuals = createShrubVisuals(shrubTargets, createSeededRandom(seed ^ 0x38d01377));
-  const saplingTargets = createSaplingTargets(createSeededRandom(seed ^ 0xa4093822));
+  const saplingTargets = isHedgeMaze
+    ? []
+    : createSaplingTargets(createSeededRandom(seed ^ 0xa4093822));
   const saplingVisuals = createSaplingVisuals(
     saplingTargets,
     createSeededRandom(seed ^ 0x299f31d0),
   );
-  const matureTreeTargets = createMatureTreeTargets(resolvedArenaId);
-  const matureTreeVisuals = createMatureTreeVisuals();
-  const rockTargets = createRockTargets();
-  const rockVisuals = createRockVisuals(createSeededRandom(seed ^ 0x082efa98));
+  const matureTreeTargets = isHedgeMaze ? [] : createMatureTreeTargets(resolvedArenaId);
+  const matureTreeVisuals = isHedgeMaze ? [] : createMatureTreeVisuals();
+  const rockTargets = isHedgeMaze ? [] : createRockTargets();
+  const rockVisuals = isHedgeMaze ? [] : createRockVisuals(createSeededRandom(seed ^ 0x082efa98));
 
   return {
     arenaId: resolvedArenaId,
@@ -2774,6 +2787,10 @@ function createFiberReedVisuals(targets: TargetSeed[], random: () => number): Fi
 }
 
 function createShrubTargets(random: () => number, arenaId: ArenaLayoutId): TargetSeed[] {
+  if (arenaId === "hedge-maze") {
+    return createHedgeMazeShrubTargets(random);
+  }
+
   return SHRUB_PLACEMENT_ANCHORS.map(([anchorX, anchorZ], index) => {
     const size = 0.84 + random() * 0.24;
     const solidRadius = size * 0.54;
@@ -2794,11 +2811,75 @@ function createShrubTargets(random: () => number, arenaId: ArenaLayoutId): Targe
   });
 }
 
+const HEDGE_MAZE_GRID = [
+  "#######",
+  "#...#.#",
+  "#.#.#.#",
+  "#.#...#",
+  "#.###.#",
+  "#.....#",
+  "#######",
+] as const;
+
+const HEDGE_MAZE_CELL_SIZE = 4;
+const HEDGE_MAZE_GOAL_CELL = { column: 5, row: 5 } as const;
+
+function createHedgeMazeShrubTargets(random: () => number): TargetSeed[] {
+  const halfSize = (HEDGE_MAZE_GRID.length - 1) / 2;
+  const hedges: TargetSeed[] = [];
+
+  for (let row = 0; row < HEDGE_MAZE_GRID.length; row += 1) {
+    const rowPattern = HEDGE_MAZE_GRID[row];
+    if (rowPattern === undefined) {
+      continue;
+    }
+    for (let column = 0; column < rowPattern.length; column += 1) {
+      if (rowPattern[column] !== "#") {
+        continue;
+      }
+      const visualSize = 1.7 + random() * 0.12;
+      hedges.push({
+        id: `hedge-${row}-${column}`,
+        kind: "shrub",
+        x: (column - halfSize) * HEDGE_MAZE_CELL_SIZE,
+        z: (row - halfSize) * HEDGE_MAZE_CELL_SIZE,
+        radius: 1.16,
+        solidRadius: 0.8,
+        recommendedLevel: 1,
+        requiredWork: 1,
+        resistance: 0.28,
+        yield: 0,
+        xp: 0,
+        visualSize,
+        mazeRole: "hedge",
+      });
+    }
+  }
+
+  hedges.push({
+    id: "hedge-maze-exit",
+    kind: "shrub",
+    x: (HEDGE_MAZE_GOAL_CELL.column - halfSize) * HEDGE_MAZE_CELL_SIZE,
+    z: (HEDGE_MAZE_GOAL_CELL.row - halfSize) * HEDGE_MAZE_CELL_SIZE,
+    radius: 0.82,
+    solidRadius: 0,
+    recommendedLevel: 1,
+    requiredWork: 1,
+    resistance: 0.08,
+    yield: 1,
+    xp: 1,
+    collectible: "fruit",
+    mazeRole: "exit-goal",
+  });
+
+  return hedges;
+}
+
 function createShrubVisuals(targets: TargetSeed[], random: () => number): ShrubVisual[] {
   return targets.map((target, targetIndex) => ({
     x: target.x,
     z: target.z,
-    size: target.radius,
+    size: target.visualSize ?? target.radius,
     rotation: random() * TAU,
     targetIndex,
     colorIndex: Math.floor(random() * SHRUB_COLOR_COUNT),

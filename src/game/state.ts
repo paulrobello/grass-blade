@@ -92,7 +92,7 @@ export interface ContractDefinition {
   summary: string;
   benchmarkSeconds: number;
   timeLimitSeconds?: number;
-  completionMode?: "quota" | "clear-patches";
+  completionMode?: "quota" | "clear-patches" | "maze-goal";
   objectives: {
     grass: number;
     flowers: number;
@@ -106,7 +106,7 @@ export interface ContractState {
   title: string;
   summary: string;
   timeLimitSeconds: number | null;
-  completionMode: "quota" | "clear-patches";
+  completionMode: "quota" | "clear-patches" | "maze-goal";
 }
 
 export const DEFAULT_CONTRACT_ID: ContractDefinition["id"] = "meadow-delivery";
@@ -152,10 +152,11 @@ export const CONTRACT_DEFINITIONS = [
   {
     id: "hedge-maze",
     title: "Hedge Maze",
-    summary: "An 80-second shrub maze that turns durable hedges into the Fiber objective.",
-    benchmarkSeconds: 61.7,
-    timeLimitSeconds: 80,
-    objectives: { grass: 183, flowers: 300, fiber: 28, wood: 0 },
+    summary:
+      "Navigate the hedge walls, collect the fruit at the maze exit, and leave every hedge standing.",
+    benchmarkSeconds: 45,
+    completionMode: "maze-goal",
+    objectives: { grass: 0, flowers: 0, fiber: 0, wood: 0 },
   },
   {
     id: "timed-harvest",
@@ -457,7 +458,7 @@ export interface PlayerState {
 }
 
 export interface ContractResult {
-  status: "complete" | "timed-out";
+  status: "complete" | "timed-out" | "failed";
   completedAtSeconds: number;
   timeLimitSeconds: number | null;
   cutTargets: number;
@@ -634,7 +635,15 @@ export function stepState(state: GameState, input: MovementInput, deltaSeconds: 
   clampPlayerToWorld(state.player);
   const intendedX = state.player.x;
   const intendedZ = state.player.z;
-  stepCutting(state, startX, startZ, intendedX, intendedZ, delta);
+  stepCutting(
+    state,
+    startX,
+    startZ,
+    intendedX,
+    intendedZ,
+    state.contract.completionMode === "maze-goal" ? 0.7 : state.player.radius,
+    delta,
+  );
   resolveSolidMovement(state, startX, startZ, intendedX, intendedZ);
   updateContractTimeout(state);
 
@@ -796,11 +805,12 @@ function stepCutting(
   startZ: number,
   endX: number,
   endZ: number,
+  bladeRadius: number,
   deltaSeconds: number,
 ): void {
   const currentTargetRpm = targetRpmForLevel(state.player.level);
   const torque = torqueForLevel(state.player.level);
-  const contacts = findTargetContacts(state, startX, startZ, endX, endZ, state.player.radius);
+  const contacts = findTargetContacts(state, startX, startZ, endX, endZ, bladeRadius);
   state.bladeContactTargetIds.length = 0;
   for (const contact of contacts) {
     state.bladeContactTargetIds.push(contact.target.id);
@@ -824,7 +834,7 @@ function stepCutting(
       : clamp((state.player.rpm - MIN_CUTTING_RPM) / (currentTargetRpm - MIN_CUTTING_RPM), 0, 1);
 
   if (normalizedRpm > 0) {
-    markCutGrassVisuals(state, startX, startZ, endX, endZ, state.player.radius);
+    markCutGrassVisuals(state, startX, startZ, endX, endZ, bladeRadius);
   } else {
     emitTooToughNoticeIfNeeded(state, contacts);
   }
@@ -844,6 +854,10 @@ function stepCutting(
     if (target.accumulatedWork >= target.requiredWork) {
       target.status = "cut";
       awardTarget(state, target);
+      if (state.contract.completionMode === "maze-goal" && target.mazeRole === "hedge") {
+        finalizeContractResult(state, "failed");
+        return;
+      }
     } else if (target.accumulatedWork > 0) {
       target.status = "cutting";
     }
@@ -1131,6 +1145,12 @@ function isContractComplete(state: GameState): boolean {
 
   if (!objectivesComplete) {
     return false;
+  }
+
+  if (state.contract.completionMode === "maze-goal") {
+    return state.targets.some(
+      (target) => target.mazeRole === "exit-goal" && target.status === "cut",
+    );
   }
 
   if (state.contract.completionMode !== "clear-patches") {

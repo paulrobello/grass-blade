@@ -628,6 +628,7 @@ export class Game {
     }
 
     const timedOut = result.status === "timed-out";
+    const failed = result.status === "failed";
     const bestSnapshot = this.updateBestTimeForResult(result);
     const resultMedal =
       result.status === "complete"
@@ -638,17 +639,27 @@ export class Game {
       "aria-label",
       timedOut
         ? `${this.state.contract.title} time-up results`
-        : `${this.state.contract.title} results`,
+        : failed
+          ? `${this.state.contract.title} failed results`
+          : `${this.state.contract.title} results`,
     );
-    setText(this.results.eyebrow, timedOut ? "Time up" : "Contract complete");
-    setText(this.results.title, timedOut ? "Time Up" : this.state.contract.title);
+    setText(
+      this.results.eyebrow,
+      timedOut ? "Time up" : failed ? "Hedge collected" : "Contract complete",
+    );
+    setText(
+      this.results.title,
+      timedOut ? "Time Up" : failed ? "Maze Failed" : this.state.contract.title,
+    );
     setText(
       this.results.summary,
       timedOut
         ? `The timer ended before every quota was packed. ${formatMissingQuotaSummary(
             this.state.objectives,
           )} Restart this contract or try the next route.`
-        : this.state.contract.summary,
+        : failed
+          ? "A hedge was collected. Restart and guide the blade through the maze without cutting the walls."
+          : this.state.contract.summary,
     );
     setText(this.results.elapsed, formatElapsedTime(result.completedAtSeconds));
     setText(
@@ -811,6 +822,10 @@ export class Game {
             `Time up at ${formatElapsedTime(result.completedAtSeconds)}. ` +
               `${formatMissingQuotaSummary(this.state.objectives)} ` +
               `${result.cutTargets} targets cut. Highest blade level ${result.highestLevel}.`,
+          );
+        } else if (result.status === "failed") {
+          announcements.push(
+            `Maze failed at ${formatElapsedTime(result.completedAtSeconds)}. A hedge was collected. Restart to try again.`,
           );
         } else {
           announcements.push(
@@ -1224,9 +1239,13 @@ export class Game {
     this.beginContract();
 
     const clearPatchMode = this.state.contract.completionMode === "clear-patches";
+    const mazeGoalMode = this.state.contract.completionMode === "maze-goal";
     const finalTarget = this.state.targets.find((target) => {
       if (target.status === "cut") {
         return false;
+      }
+      if (mazeGoalMode) {
+        return target.mazeRole === "exit-goal";
       }
       return clearPatchMode
         ? target.kind === "flower" || target.kind === "softCrop"
@@ -1262,7 +1281,7 @@ export class Game {
         0,
         this.state.objectives.flowers.target - 1,
       );
-    } else {
+    } else if (!mazeGoalMode) {
       const grassBeforeFinalCut = Math.max(0, this.state.objectives.grass.target - 1);
       this.state.inventory = {
         grass: grassBeforeFinalCut,
@@ -1338,6 +1357,7 @@ export class Game {
     const activeTargets: Array<{
       id: string;
       kind: string;
+      mazeRole?: string;
       status: string;
       work: number;
       requiredWork: number;
@@ -1361,6 +1381,7 @@ export class Game {
         activeTargets.push({
           id: target.id,
           kind: target.kind,
+          mazeRole: target.mazeRole,
           status: target.status,
           work: round(target.accumulatedWork),
           requiredWork: target.requiredWork,
@@ -1517,6 +1538,11 @@ export class Game {
         visuallyCutGrassTufts: this.state.cutGrassVisualIndices.length,
         cutRevision: this.state.cutRevision,
         recentCutEvents: this.state.cutEvents.slice(-8),
+        maze: {
+          goalTargetId:
+            this.state.targets.find((target) => target.mazeRole === "exit-goal")?.id ?? null,
+          hedgeCount: this.state.targets.filter((target) => target.mazeRole === "hedge").length,
+        },
       },
     });
   };
