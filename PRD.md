@@ -532,6 +532,27 @@ Authored contracts are selected by deterministic contract ID and seed. The defau
 - Deterministic balance requires all dense weeds, all shrubs, all five saplings, and three mature trees while preserving a human-play buffer inside the timer.
 - If the timer reaches zero before every quota is complete, the contract ends with the same `timed-out` result semantics as Timed Harvest.
 
+### Pocket Garden
+
+- Contract ID: `pocket-garden`
+- No time limit.
+- Collect 120 Grass, 180 Flowers, 8 Fiber, and 4 Wood.
+- Uses a compact garden footprint with tight bloom pockets, four shrubs, and two rocks while keeping the origin clearing traversable.
+
+### Long Orchard
+
+- Contract ID: `long-orchard`
+- No time limit.
+- Collect 260 Grass, 260 Flowers, 18 Fiber, and 28 Wood.
+- Uses three elongated orchard lanes with seven mature trees and five saplings distributed along the route.
+
+### Crescent Wetland
+
+- Contract ID: `crescent-wetland`
+- No time limit.
+- Collect 220 Grass, 240 Flowers, 18 Fiber, and 10 Wood.
+- Uses a crescent shoreline footprint with fourteen reeds, wetland bloom banks, and three mature trees around an open origin route.
+
 ### Clear Every Patch
 
 - Contract ID: `clear-every-patch`

@@ -193,7 +193,7 @@ async function checkZoomedGrayscale(browser, options) {
     );
     assertEqual(
       completionMetrics.labels.join("|"),
-      "Time|Targets cut|Highest level",
+      "Time|Best|Medal|Targets cut|Highest level",
       "completion labels remain visible",
     );
 

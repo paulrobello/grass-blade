@@ -2,8 +2,18 @@ Original prompt: "i want create a threejs based game where you are a spinning bl
 
 # Grass Blade Progress
 
-Last updated: 2026-08-20
+Last updated: 2026-10-03
 Active milestone: Phase 5 — expansion after first-playable evidence, with the custom-domain site served over valid HTTPS through Cloudflare and native GitHub Pages HTTPS enforcement still optional/pending
+
+## 2026-10-03 visual polish and level variation
+
+- Added three untimed contracts: Pocket Garden (158 grass cells), Long Orchard (288), and Crescent Wetland (225). Each has different field extents, growth geometry, and crop/weed/reed/shrub/tree/rock populations. New harvest targets stay inside their growth masks, avoid solid obstacles, and preserve target/visual index correspondence.
+- Contract chooser thumbnails sample the actual growth masks. Quota rows show proportional fills and completed states. Keyboard, pointer, touch, and reduced-motion controls retain the existing interaction model.
+- Reduced washed-out lighting, added wetland/frost/sunset palettes, and added fixed-radius cutter reach/contact cues with resource disposal and reduced-motion support. Long Orchard trees use the fruit collectible presentation.
+- Verification: make checkall passes 201 tests plus formatting, lint, typecheck, and production build. Five-seed checks validate distinct fields, safe spawn, on-field placement, no stacked plant centers, solid separation, and collision-free approaches to every harvest target. The existing ten-seed completion sweep checks all quota/clear contracts.
+- Headed Chrome polish checks cover seven desktop/phone/environment scenarios with actual movement, cutting, pause/resume, map parity, and quota feedback. The final completion screen uses a debug final-cut fixture. Nineteen mobile layout/input checks and three accessibility checks pass. Artifacts are under output/playwright/polish-check, mobile-check, and accessibility-check.
+- The cut-budget harness completed each new contract on ten seeds: Pocket Garden 42.467s, Long Orchard 75.767s, Crescent Wetland 61.750s. These are cutting-only measurements, not complete traversal times. The all-contract harness still reports the pre-existing Hedge Maze goal mode as incomplete at zero seconds, reproduced on unchanged main e513039 and filed on the backlog as 01a1031b88a8732abcc7e187d5a0e9cf.
+- Impeccable's mechanical scan found only existing typography/easing/width-transition warnings. The incumbent visual identity was retained.
 
 ## 2026-08-20 continuation notes
 

@@ -87,6 +87,9 @@ export interface ContractDefinition {
     | "daisy-drift"
     | "serpentine-grove"
     | "timber-knot"
+    | "pocket-garden"
+    | "long-orchard"
+    | "crescent-wetland"
     | "clear-every-patch";
   title: string;
   summary: string;
@@ -381,6 +384,27 @@ export const CONTRACT_DEFINITIONS = [
     benchmarkSeconds: 82.267,
     timeLimitSeconds: 95,
     objectives: { grass: 260, flowers: 280, fiber: 28, wood: 28 },
+  },
+  {
+    id: "pocket-garden",
+    title: "Pocket Garden",
+    summary: "A compact garden of tight bloom pockets, reeds, and a few stubborn shrubs.",
+    benchmarkSeconds: 48,
+    objectives: { grass: 120, flowers: 180, fiber: 8, wood: 4 },
+  },
+  {
+    id: "long-orchard",
+    title: "Long Orchard",
+    summary: "An elongated orchard lane that rewards a steady harvest from end to end.",
+    benchmarkSeconds: 86,
+    objectives: { grass: 260, flowers: 260, fiber: 18, wood: 28 },
+  },
+  {
+    id: "crescent-wetland",
+    title: "Crescent Wetland",
+    summary: "A crescent shoreline route through reeds, wetland blooms, and scattered timber.",
+    benchmarkSeconds: 78,
+    objectives: { grass: 220, flowers: 240, fiber: 18, wood: 10 },
   },
   {
     id: "clear-every-patch",

@@ -46,6 +46,10 @@ Serpentine Grove is available with `?contract=serpentine-grove`: it is a 100-sec
 
 Timber Knot is available with `?contract=timber-knot`: it is a 95-second knotted timber route with `260 Grass / 280 Flowers / 28 Fiber / 28 Wood` quotas, crossing lanes through tree pockets, and deterministic balance that requires all dense weeds, all shrubs, all five saplings, and three mature trees.
 
+Pocket Garden is available with `?contract=pocket-garden`: it is a compact, untimed `120 Grass / 180 Flowers / 8 Fiber / 4 Wood` garden with four shrubs and two rocks around tight bloom pockets. Long Orchard is available with `?contract=long-orchard`: it is an untimed elongated `260 Grass / 260 Flowers / 18 Fiber / 28 Wood` route with seven mature trees and three orchard lanes. Crescent Wetland is available with `?contract=crescent-wetland`: it is an untimed crescent shoreline route with `220 Grass / 240 Flowers / 18 Fiber / 10 Wood` quotas and fourteen reeds distributed around the wetland bend.
+
+With the development server running and Google Chrome installed in a graphical desktop session, `make polish-check` drives headed movement, harvesting, pause, map-preview parity, and screenshot checks across these routes, including phone widths, frost reduced-motion, and sunset environment passes. Completion-screen checks use the debug final-cut fixture, not an automated full-route playthrough. Its output is written to `output/playwright/polish-check/`; browser launch and interaction waits are bounded to 15 seconds.
+
 ## Play online
 
 The public GitHub Pages deployment is configured to publish the production Vite build from `main`:
@@ -175,6 +179,8 @@ make perf-capture-headed
 The capture output defaults to `output/playwright/performance-capture/`. A `summary.json` entry is only hardware evidence when `hardwareEvidence` is `true`; SwiftShader, software, or llvmpipe renderers are useful automation checks but do not satisfy the Phase 3 integrated-GPU/mobile performance exit criterion. The latest tracked hardware summary is [docs/evidence/performance/2026-07-22-headed-summary.json](docs/evidence/performance/2026-07-22-headed-summary.json).
 
 ## Rendering direction
+
+Environment-specific lighting distinguishes meadow, orchard, berry basin, wetland, frost, and sunset fields. A subtle fixed-radius ring marks the cutter reach, with contact feedback that respects reduced motion. The contract chooser previews actual field silhouettes, and HUD quota rows fill as resources are collected and change state when complete.
 
 The project uses an authoritative CPU target grid plus GPU instancing. This keeps collection, XP, quotas, tests, and debug snapshots deterministic without creating a JavaScript object or raycast for every visible blade. Decorative grass now renders in 64 deterministic world chunks with conservative camera-footprint visibility plus near/far distance LOD. Completed grass cuts are projected into a world-aligned 104 by 104 GPU cut-mask texture that the instanced grass shader samples by world position; after the authored fall animation completes, persistent grass stubble is driven by that GPU mask instead of a terminal per-instance matrix rewrite. CPU target state remains authoritative for resources, XP, quotas, and debug snapshots. The cutter now has a generated GLB asset at `public/assets/blades/cutter-v1.glb`, produced by `tools/build_blade_asset.py`, with stable tier nodes loaded at runtime and the procedural cutter kept as a fallback if the asset fails to load. The rotating blade tiers use a cyan inlaid orientation stripe, not a gold protruding peg, so the blade cadence remains readable without looking like an accidental bolt.
 

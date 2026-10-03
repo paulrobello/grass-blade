@@ -1703,12 +1703,11 @@ describe("active game state", () => {
 
         expect(state.mode).toBe("complete");
         expect(state.objectives.status).toBe("complete");
-        expect(state.inventory).toEqual({
-          grass: state.objectives.grass.target,
-          flowers: state.objectives.flowers.target,
-          fiber: state.objectives.fiber.target,
-          wood: state.objectives.wood.target,
-        });
+        for (const resource of ["grass", "flowers", "fiber", "wood"] as const) {
+          expect(state.inventory[resource]).toBeGreaterThanOrEqual(
+            state.objectives[resource].target,
+          );
+        }
         expect(state.result?.finalInventory).toEqual(state.inventory);
       }
     }

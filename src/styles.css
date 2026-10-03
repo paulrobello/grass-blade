@@ -302,6 +302,7 @@ body {
 }
 
 .objective-row {
+  --objective-progress: 0%;
   display: grid;
   grid-template-columns: 2rem 1fr auto;
   min-height: 2.35rem;
@@ -309,8 +310,18 @@ body {
   gap: 0.45rem;
   padding: 0.25rem 0.6rem 0.25rem 0.3rem;
   border: 0.12rem solid #e9c995;
-  background: linear-gradient(180deg, #fff5df, #f7e3c4);
+  background:
+    linear-gradient(
+      90deg,
+      rgb(213 241 191 / 88%) 0 var(--objective-progress),
+      transparent var(--objective-progress)
+    ),
+    linear-gradient(180deg, #fff5df, #f7e3c4);
   color: #26334d;
+  transition:
+    background 180ms ease,
+    transform 180ms ease,
+    border-color 180ms ease;
 }
 
 .objective-row[hidden] {
@@ -349,6 +360,16 @@ body {
   position: relative;
   z-index: 2;
   animation: objective-award-pulse 520ms ease-out;
+}
+
+.objective-row[data-complete="true"] {
+  border-color: #83bd68;
+  background: linear-gradient(180deg, #e5f8cf, #c2e99f);
+  color: #214d2b;
+}
+
+.objective-row[data-complete="true"] strong {
+  color: #214d2b;
 }
 
 .collection-mote-layer {
@@ -921,8 +942,9 @@ body {
 
 .intro-card__contract {
   display: grid;
+  grid-template-columns: 3.05rem minmax(0, 1fr);
   grid-template-rows: repeat(7, auto);
-  min-height: 7.35rem;
+  min-height: 6.75rem;
   align-content: start;
   gap: 0.22rem;
   padding: 0.62rem 0.62rem 0.76rem;
@@ -937,6 +959,22 @@ body {
   font: inherit;
   text-align: left;
   cursor: pointer;
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease,
+    border-color 160ms ease;
+}
+
+.intro-card__contract:hover {
+  transform: translateY(-0.12rem);
+  border-color: #a77a2e;
+  box-shadow:
+    inset 0 0.12rem 0 rgb(255 255 255 / 78%),
+    0 0.28rem 0 rgb(38 52 125 / 24%);
+}
+
+.intro-card__contract:active {
+  transform: translateY(0.06rem);
 }
 
 .intro-card__contract--selected {
@@ -953,6 +991,38 @@ body {
   font-size: 0.9rem;
   font-weight: 950;
   letter-spacing: -0.025em;
+}
+
+.intro-card__contract-preview {
+  display: block;
+  grid-column: 1;
+  grid-row: 1 / -1;
+  width: 3.05rem;
+  height: auto;
+  aspect-ratio: 1;
+  margin: 0;
+  overflow: hidden;
+  border-radius: 0.58rem;
+  background: #d6efb3;
+}
+
+.intro-card__contract-preview-bg {
+  fill: #d6efb3;
+}
+
+.intro-card__contract-preview-cell {
+  fill: #4d9f5c;
+  opacity: 0.92;
+}
+
+.intro-card__contract-preview-hub {
+  fill: #ffe9a9;
+  stroke: #26347d;
+  stroke-width: 0.25;
+}
+
+.intro-card__contract > :not(.intro-card__contract-preview) {
+  grid-column: 2;
 }
 
 .intro-card__contract-badges {
@@ -1199,6 +1269,7 @@ body {
   .intro-card__contract {
     display: grid;
     flex: 0 0 auto;
+    grid-template-columns: 2.6rem minmax(0, 1fr);
     grid-template-rows: repeat(7, auto);
     min-height: 0;
     gap: 0.14rem;
@@ -1209,6 +1280,10 @@ body {
   .intro-card__contract-name {
     font-size: 0.82rem;
     line-height: 1.04;
+  }
+
+  .intro-card__contract-preview {
+    width: 2.6rem;
   }
 
   .intro-card__contract-badges {
@@ -2041,6 +2116,11 @@ body {
 }
 
 #app[data-motion="reduced"] .xp-track span {
+  transition: none;
+}
+
+#app[data-motion="reduced"] .objective-row,
+#app[data-motion="reduced"] .intro-card__contract {
   transition: none;
 }
 

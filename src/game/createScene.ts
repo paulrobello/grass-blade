@@ -152,6 +152,9 @@ export interface MeadowPresentationDiagnostics {
   consumedGrassVisualCuts: number;
   rockDeflectionEmissions: number;
   lastRockDeflectionTargetId: string | null;
+  bladeReachCueVisible: boolean;
+  bladeReachCueContactCount: number;
+  bladeReachCueRadius: number;
 }
 
 interface BladeVisual {
@@ -230,7 +233,7 @@ export function createScene(
     resources,
     new THREE.MeshStandardMaterial({
       color: environmentPalette.ground,
-      roughness: 0.92,
+      roughness: 0.98,
       metalness: 0,
     }),
   );
@@ -390,6 +393,7 @@ export function createScene(
   const cutEffects = createCutEffects(scene, seed, reducedMotion);
   const playerRoot = new THREE.Group();
   const blade = addBlade(playerRoot, resources);
+  const bladeReachCue = addBladeReachCue(playerRoot, resources, reducedMotion);
   scene.add(playerRoot);
 
   const presentation: MeadowPresentationDiagnostics = {
@@ -438,12 +442,22 @@ export function createScene(
     consumedGrassVisualCuts: 0,
     rockDeflectionEmissions: 0,
     lastRockDeflectionTargetId: null,
+    bladeReachCueVisible: true,
+    bladeReachCueContactCount: 0,
+    bladeReachCueRadius: BLADE_ASSET_CONTRACT.sweptRadius,
   };
 
-  const hemisphere = new THREE.HemisphereLight(0xeafcff, 0x4f8a3f, 2.4);
+  const hemisphere = new THREE.HemisphereLight(
+    environmentPalette.hemisphereSky,
+    environmentPalette.hemisphereGround,
+    environmentPalette.hemisphereIntensity,
+  );
   scene.add(hemisphere);
 
-  const sunlight = new THREE.DirectionalLight(0xfff4d0, 3.1);
+  const sunlight = new THREE.DirectionalLight(
+    environmentPalette.sunlight,
+    environmentPalette.sunlightIntensity,
+  );
   sunlight.position.set(14, 24, 10);
   sunlight.castShadow = quality.shadowsEnabled;
   if (quality.shadowsEnabled) {
@@ -458,13 +472,17 @@ export function createScene(
   }
   scene.add(sunlight);
 
-  const fillLight = new THREE.DirectionalLight(0x9edbff, 0.8);
+  const fillLight = new THREE.DirectionalLight(
+    environmentPalette.fill,
+    environmentPalette.fillIntensity,
+  );
   fillLight.position.set(-10, 8, -14);
   scene.add(fillLight);
 
   function sync(state: GameState, simulationTimeSeconds: number): void {
     playerRoot.position.set(state.player.x, 0, state.player.z);
     blade.sync(state.player.level, state.player.bladeAngleRadians);
+    bladeReachCue.sync(state, simulationTimeSeconds);
 
     camera.position.set(
       state.player.x + CAMERA_OFFSET_X,
@@ -522,6 +540,8 @@ export function createScene(
     presentation.consumedGrassVisualCuts = cutEffects.diagnostics.consumedGrassVisualCuts;
     presentation.rockDeflectionEmissions = cutEffects.diagnostics.rockDeflectionEmissions;
     presentation.lastRockDeflectionTargetId = cutEffects.diagnostics.lastRockDeflectionTargetId;
+    presentation.bladeReachCueVisible = bladeReachCue.diagnostics.visible;
+    presentation.bladeReachCueContactCount = bladeReachCue.diagnostics.contactCount;
   }
 
   function resize(aspect: number): void {
@@ -640,14 +660,93 @@ function environmentPaletteFor(environment: MeadowLayout["environment"]): {
   sky: number;
   ground: number;
   patch: number;
+  hemisphereSky: number;
+  hemisphereGround: number;
+  hemisphereIntensity: number;
+  sunlight: number;
+  sunlightIntensity: number;
+  fill: number;
+  fillIntensity: number;
 } {
   switch (environment) {
     case "berry-basin":
-      return { sky: 0xc9b8dc, ground: 0x749e68, patch: 0x5f8759 };
+      return {
+        sky: 0xc9b8dc,
+        ground: 0x749e68,
+        patch: 0x5f8759,
+        hemisphereSky: 0xe4d9f2,
+        hemisphereGround: 0x385d3d,
+        hemisphereIntensity: 1.15,
+        sunlight: 0xffe6c5,
+        sunlightIntensity: 1.55,
+        fill: 0x8db9d0,
+        fillIntensity: 0.28,
+      };
     case "orchard-canopy":
-      return { sky: 0xf0ca85, ground: 0x88b55d, patch: 0x6e994d };
+      return {
+        sky: 0xf0ca85,
+        ground: 0x88b55d,
+        patch: 0x6e994d,
+        hemisphereSky: 0xffe4ad,
+        hemisphereGround: 0x3c6533,
+        hemisphereIntensity: 1.08,
+        sunlight: 0xffd39a,
+        sunlightIntensity: 1.62,
+        fill: 0x8eb8bd,
+        fillIntensity: 0.25,
+      };
     case "meadow":
-      return { sky: 0xb5df8b, ground: 0x74c85c, patch: 0x66b953 };
+      return {
+        sky: 0xb5df8b,
+        ground: 0x74c85c,
+        patch: 0x66b953,
+        hemisphereSky: 0xd6f2c2,
+        hemisphereGround: 0x315d35,
+        hemisphereIntensity: 1.1,
+        sunlight: 0xffedbf,
+        sunlightIntensity: 1.7,
+        fill: 0x8fc8d0,
+        fillIntensity: 0.3,
+      };
+    case "wetland":
+      return {
+        sky: 0x9bc8c2,
+        ground: 0x527f67,
+        patch: 0x416e5a,
+        hemisphereSky: 0xc6e7df,
+        hemisphereGround: 0x294f42,
+        hemisphereIntensity: 1.12,
+        sunlight: 0xffe1ac,
+        sunlightIntensity: 1.48,
+        fill: 0x74b9bd,
+        fillIntensity: 0.32,
+      };
+    case "frost":
+      return {
+        sky: 0xb7d5e7,
+        ground: 0x7199a0,
+        patch: 0x5a818b,
+        hemisphereSky: 0xe0f1ff,
+        hemisphereGround: 0x3f6470,
+        hemisphereIntensity: 1.2,
+        sunlight: 0xfff3d5,
+        sunlightIntensity: 1.5,
+        fill: 0x9fc8e0,
+        fillIntensity: 0.34,
+      };
+    case "sunset":
+      return {
+        sky: 0xeac99e,
+        ground: 0x8da86e,
+        patch: 0x78965b,
+        hemisphereSky: 0xffeacf,
+        hemisphereGround: 0x445a38,
+        hemisphereIntensity: 1.05,
+        sunlight: 0xffe2b8,
+        sunlightIntensity: 1.62,
+        fill: 0x8a9fc7,
+        fillIntensity: 0.28,
+      };
   }
 }
 
@@ -3342,6 +3441,78 @@ function addBoundaryStones(
   stones.receiveShadow = true;
   stones.instanceMatrix.needsUpdate = true;
   scene.add(stones);
+}
+
+interface BladeReachCue {
+  diagnostics: {
+    visible: boolean;
+    contactCount: number;
+  };
+  sync: (state: GameState, simulationTimeSeconds: number) => void;
+}
+
+function addBladeReachCue(
+  playerRoot: THREE.Group,
+  resources: SceneResource[],
+  reducedMotion: boolean,
+): BladeReachCue {
+  const cue = new THREE.Group();
+  cue.name = "GB_BladeReachCue";
+
+  const radius = BLADE_ASSET_CONTRACT.sweptRadius;
+  const ringGeometry = track(resources, new THREE.TorusGeometry(radius, 0.026, 5, 64));
+  ringGeometry.rotateX(Math.PI / 2);
+  const ringMaterial = track(
+    resources,
+    new THREE.MeshBasicMaterial({
+      color: 0x69d7c5,
+      transparent: true,
+      opacity: 0.13,
+      depthWrite: false,
+    }),
+  );
+  const ring = new THREE.Mesh(ringGeometry, ringMaterial);
+  ring.name = "GB_BladeReachRing";
+  ring.position.y = 0.1;
+  ring.renderOrder = 2;
+  cue.add(ring);
+
+  const contactGeometry = track(resources, new THREE.TorusGeometry(radius, 0.052, 5, 64));
+  contactGeometry.rotateX(Math.PI / 2);
+  const contactMaterial = track(
+    resources,
+    new THREE.MeshBasicMaterial({
+      color: 0xffd27a,
+      transparent: true,
+      opacity: 0,
+      depthWrite: false,
+    }),
+  );
+  const contactRing = new THREE.Mesh(contactGeometry, contactMaterial);
+  contactRing.name = "GB_BladeContactRing";
+  contactRing.position.y = 0.1;
+  contactRing.renderOrder = 3;
+  cue.add(contactRing);
+  playerRoot.add(cue);
+
+  const diagnostics = { visible: true, contactCount: 0 };
+  return {
+    diagnostics,
+    sync(state: GameState, simulationTimeSeconds: number): void {
+      const contactCount = state.bladeContactTargetIds.length;
+      const hasContact = contactCount > 0 && state.mode === "active";
+      diagnostics.contactCount = contactCount;
+      diagnostics.visible = state.mode !== "complete";
+      cue.visible = diagnostics.visible;
+      ringMaterial.opacity = hasContact ? 0.2 : 0.11;
+      contactMaterial.opacity = hasContact
+        ? reducedMotion
+          ? 0.34
+          : 0.24 + Math.sin(simulationTimeSeconds * 7) * 0.08
+        : 0;
+      contactRing.scale.setScalar(1);
+    },
+  };
 }
 
 function addBlade(playerRoot: THREE.Group, resources: SceneResource[]): BladeVisual {

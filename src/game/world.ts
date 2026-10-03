@@ -70,6 +70,9 @@ export type ArenaLayoutId =
   | "daisy-drift"
   | "serpentine-grove"
   | "timber-knot"
+  | "pocket-garden"
+  | "long-orchard"
+  | "crescent-wetland"
   | "clear-every-patch";
 export type ArenaShape =
   | "starter-meadow-paths"
@@ -106,9 +109,13 @@ export type ArenaShape =
   | "daisy-drift"
   | "serpentine-grove"
   | "timber-knot"
+  | "pocket-garden"
+  | "long-orchard"
+  | "crescent-wetland"
   | "split-clearings";
 
-export type MeadowEnvironment = "meadow" | "berry-basin" | "orchard-canopy";
+export type MeadowEnvironment =
+  "meadow" | "berry-basin" | "orchard-canopy" | "wetland" | "frost" | "sunset";
 
 const DENSE_WEED_CLUSTER_CENTERS = [
   [-4.8, -3.5],
@@ -363,44 +370,62 @@ export function createMeadowLayout(
     grass.logicalCellIndexToCellIndex,
   );
   const isHedgeMaze = resolvedArenaId === "hedge-maze";
+  const matureTreeTargets = isHedgeMaze ? [] : createMatureTreeTargets(resolvedArenaId);
+  const matureTreeVisuals = isHedgeMaze ? [] : createMatureTreeVisuals(resolvedArenaId);
+  const rockTargets = isHedgeMaze ? [] : createRockTargets(resolvedArenaId);
+  const rockVisuals = isHedgeMaze
+    ? []
+    : createRockVisuals(createSeededRandom(seed ^ 0x082efa98), resolvedArenaId);
+  const obstacles = [...rockTargets, ...matureTreeTargets];
+  const occupied = new Set<string>();
+  const constrainTargets = (targets: TargetSeed[]): TargetSeed[] =>
+    placeTargetsOnField(targets, grass.cells, resolvedArenaId, obstacles, occupied);
+  const shrubTargets = constrainTargets(
+    createShrubTargets(createSeededRandom(seed ^ 0x452821e6), resolvedArenaId),
+  );
+  obstacles.push(...shrubTargets);
+  const shrubVisuals = createShrubVisuals(shrubTargets, createSeededRandom(seed ^ 0x38d01377));
+  const saplingTargets = isHedgeMaze
+    ? []
+    : constrainTargets(
+        createSaplingTargets(createSeededRandom(seed ^ 0xa4093822), resolvedArenaId),
+      );
+  obstacles.push(...saplingTargets);
+  const saplingVisuals = createSaplingVisuals(
+    saplingTargets,
+    createSeededRandom(seed ^ 0x299f31d0),
+  );
   const flowerTargets = isHedgeMaze
     ? []
-    : createFlowerTargets(createSeededRandom(seed ^ 0x243f6a88), resolvedArenaId);
+    : constrainTargets(createFlowerTargets(createSeededRandom(seed ^ 0x243f6a88), resolvedArenaId));
   const flowerVisuals = createFlowerVisuals(flowerTargets, createSeededRandom(seed ^ 0xb7e15162));
   const softCropTargets = isHedgeMaze
     ? []
-    : createSoftCropTargets(createSeededRandom(seed ^ 0x8aed2a6b));
+    : constrainTargets(
+        createSoftCropTargets(createSeededRandom(seed ^ 0x8aed2a6b), resolvedArenaId),
+      );
   const softCropVisuals = createSoftCropVisuals(
     softCropTargets,
     createSeededRandom(seed ^ 0xf2b9d4e5),
   );
   const denseWeedTargets = isHedgeMaze
     ? []
-    : createDenseWeedTargets(createSeededRandom(seed ^ 0x13198a2e));
+    : constrainTargets(
+        createDenseWeedTargets(createSeededRandom(seed ^ 0x13198a2e), resolvedArenaId),
+      );
   const denseWeedVisuals = createDenseWeedVisuals(
     denseWeedTargets,
     createSeededRandom(seed ^ 0x03707344),
   );
   const fiberReedTargets = isHedgeMaze
     ? []
-    : createFiberReedTargets(createSeededRandom(seed ^ 0x85a308d3));
+    : constrainTargets(
+        createFiberReedTargets(createSeededRandom(seed ^ 0x85a308d3), resolvedArenaId),
+      );
   const fiberReedVisuals = createFiberReedVisuals(
     fiberReedTargets,
     createSeededRandom(seed ^ 0x131a2e03),
   );
-  const shrubTargets = createShrubTargets(createSeededRandom(seed ^ 0x452821e6), resolvedArenaId);
-  const shrubVisuals = createShrubVisuals(shrubTargets, createSeededRandom(seed ^ 0x38d01377));
-  const saplingTargets = isHedgeMaze
-    ? []
-    : createSaplingTargets(createSeededRandom(seed ^ 0xa4093822));
-  const saplingVisuals = createSaplingVisuals(
-    saplingTargets,
-    createSeededRandom(seed ^ 0x299f31d0),
-  );
-  const matureTreeTargets = isHedgeMaze ? [] : createMatureTreeTargets(resolvedArenaId);
-  const matureTreeVisuals = isHedgeMaze ? [] : createMatureTreeVisuals();
-  const rockTargets = isHedgeMaze ? [] : createRockTargets();
-  const rockVisuals = isHedgeMaze ? [] : createRockVisuals(createSeededRandom(seed ^ 0x082efa98));
 
   return {
     arenaId: resolvedArenaId,
@@ -428,13 +453,67 @@ export function createMeadowLayout(
   };
 }
 
+function placeTargetsOnField(
+  targets: TargetSeed[],
+  cells: TargetSeed[],
+  arenaId: ArenaLayoutId,
+  obstacles: TargetSeed[],
+  occupied: Set<string>,
+): TargetSeed[] {
+  if (arenaId !== "pocket-garden" && arenaId !== "long-orchard" && arenaId !== "crescent-wetland") {
+    return targets;
+  }
+  return targets.map((target) => {
+    const key = (x: number, z: number): string => `${x.toFixed(3)},${z.toFixed(3)}`;
+    const available = (x: number, z: number): boolean =>
+      isPointInArenaGrowth(arenaId, x, z) &&
+      !occupied.has(key(x, z)) &&
+      !obstacles.some(
+        (solid) =>
+          Math.hypot(x - solid.x, z - solid.z) <
+          solid.solidRadius + (target.solidRadius || target.radius) + 0.12,
+      );
+    if (available(target.x, target.z)) {
+      occupied.add(key(target.x, target.z));
+      return target;
+    }
+    let nearest: { x: number; z: number } | undefined;
+    let nearestDistance = Infinity;
+    for (const cell of cells) {
+      for (const offsetX of [-0.45, 0, 0.45]) {
+        for (const offsetZ of [-0.45, 0, 0.45]) {
+          const x = cell.x + offsetX;
+          const z = cell.z + offsetZ;
+          const distance = (x - target.x) ** 2 + (z - target.z) ** 2;
+          if (distance < nearestDistance && available(x, z)) {
+            nearest = { x, z };
+            nearestDistance = distance;
+          }
+        }
+      }
+    }
+    if (nearest === undefined) throw new Error(`No field placement for ${arenaId}/${target.id}`);
+    occupied.add(key(nearest.x, nearest.z));
+    return { ...target, ...nearest };
+  });
+}
+
 function resolveMeadowEnvironment(arenaId: ArenaLayoutId): MeadowEnvironment {
   switch (arenaId) {
     case "berry-bloom":
       return "berry-basin";
+    case "brook-bend":
+    case "lagoon-braid":
+    case "crescent-wetland":
+      return "wetland";
+    case "sunset-switchback":
+      return "sunset";
     case "orchard-loop":
     case "switchback-orchard":
+    case "long-orchard":
       return "orchard-canopy";
+    case "frost-ribbons":
+      return "frost";
     default:
       return "meadow";
   }
@@ -614,11 +693,45 @@ function createFlowerTargets(random: () => number, arenaId: ArenaLayoutId): Targ
   return targets;
 }
 
-function createSoftCropTargets(random: () => number): TargetSeed[] {
+function createSoftCropTargets(random: () => number, arenaId: ArenaLayoutId): TargetSeed[] {
   const targets: TargetSeed[] = [];
+  const anchors =
+    arenaId === "pocket-garden"
+      ? ([
+          [-5, -4],
+          [0, -5],
+          [5, -4],
+          [-5, 4],
+          [0, 5],
+          [5, 4],
+        ] as const)
+      : arenaId === "long-orchard"
+        ? ([
+            [-16, -5],
+            [-10, 5],
+            [-4, -5],
+            [2, 5],
+            [8, -5],
+            [14, 5],
+            [17, -2],
+          ] as const)
+        : arenaId === "crescent-wetland"
+          ? ([
+              [-13, -7],
+              [-8, -12],
+              [-2, -14],
+              [5, -12],
+              [12, -6],
+              [14, 2],
+              [8, 10],
+              [0, 13],
+              [-8, 10],
+              [-14, 3],
+            ] as const)
+          : SOFT_CROP_PLACEMENT_ANCHORS;
 
-  for (let index = 0; index < SOFT_CROP_COUNT; index += 1) {
-    const anchor = SOFT_CROP_PLACEMENT_ANCHORS[index];
+  for (let index = 0; index < anchors.length; index += 1) {
+    const anchor = anchors[index];
     if (anchor === undefined) {
       continue;
     }
@@ -704,6 +817,19 @@ function createArenaBoundaryMarkers(arenaId: ArenaLayoutId): ArenaBoundaryMarker
     }
   }
 
+  if (arenaId === "pocket-garden") {
+    for (let index = markers.length; index < 84; index += 1) {
+      const angle = (index / 84) * TAU;
+      markers.push({
+        x: Math.cos(angle) * 9.5,
+        z: Math.sin(angle) * 9.5,
+        rotation: angle,
+        scale: 0.76,
+        colorIndex: index % 4,
+      });
+    }
+  }
+
   return markers;
 }
 
@@ -742,6 +868,9 @@ function resolveArenaLayoutId(arenaId: string): ArenaLayoutId {
     case "daisy-drift":
     case "serpentine-grove":
     case "timber-knot":
+    case "pocket-garden":
+    case "long-orchard":
+    case "crescent-wetland":
     case "clear-every-patch":
       return arenaId;
     default:
@@ -817,6 +946,12 @@ function resolveArenaShape(arenaId: ArenaLayoutId): ArenaShape {
       return "serpentine-grove";
     case "timber-knot":
       return "timber-knot";
+    case "pocket-garden":
+      return "pocket-garden";
+    case "long-orchard":
+      return "long-orchard";
+    case "crescent-wetland":
+      return "crescent-wetland";
     case "clear-every-patch":
       return "split-clearings";
     case "meadow-delivery":
@@ -1722,6 +1857,70 @@ function createFlowerClusterCenters(
     );
   }
 
+  if (arenaId === "pocket-garden") {
+    return jitterAnchors(
+      [
+        [-7, -7],
+        [0, -8],
+        [7, -7],
+        [-8, 0],
+        [0, 0],
+        [8, 0],
+        [-7, 7],
+        [0, 8],
+        [7, 7],
+      ],
+      random,
+      0.34,
+    );
+  }
+
+  if (arenaId === "long-orchard") {
+    return jitterAnchors(
+      [
+        [-17, -8],
+        [-11, -8],
+        [-5, -8],
+        [1, -8],
+        [7, -8],
+        [13, -8],
+        [-14, 0],
+        [-7, 0],
+        [0, 0],
+        [7, 0],
+        [14, 0],
+        [-11, 8],
+        [-4, 8],
+        [3, 8],
+        [10, 8],
+        [16, 8],
+      ],
+      random,
+      0.42,
+    );
+  }
+
+  if (arenaId === "crescent-wetland") {
+    return jitterAnchors(
+      [
+        [-15, -9],
+        [-9, -14],
+        [-2, -16],
+        [6, -14],
+        [13, -8],
+        [16, 0],
+        [13, 8],
+        [6, 14],
+        [-2, 16],
+        [-9, 13],
+        [-15, 7],
+        [-17, 0],
+      ],
+      random,
+      0.48,
+    );
+  }
+
   const usableFieldSize = 34;
   const clusterCellSize = usableFieldSize / FLOWER_CLUSTER_COLUMNS;
   const halfUsableField = usableFieldSize / 2;
@@ -1753,6 +1952,44 @@ function jitterAnchors(
 
 export function isPointInArenaGrowth(arenaId: ArenaLayoutId, x: number, z: number): boolean {
   switch (arenaId) {
+    case "pocket-garden":
+      return (
+        (isPointInCircle(x, z, 0, 0, 6.2) ||
+          isPointInCapsule(x, z, -9, -7, 9, -7, 2.55) ||
+          isPointInCapsule(x, z, -9, 7, 9, 7, 2.55) ||
+          isPointInCapsule(x, z, -7, -8, -7, 8, 2.45) ||
+          isPointInCapsule(x, z, 7, -8, 7, 8, 2.45) ||
+          isPointInCircle(x, z, -8, -8, 3.4) ||
+          isPointInCircle(x, z, 8, 8, 3.4)) &&
+        !isPointInCircle(x, z, -3, 0, 1.8) &&
+        !isPointInCircle(x, z, 3, 0, 1.8)
+      );
+    case "long-orchard":
+      return (
+        (isPointInCapsule(x, z, -19, -9, 19, -9, 2.65) ||
+          isPointInCapsule(x, z, -19, 0, 19, 0, 2.7) ||
+          isPointInCapsule(x, z, -19, 9, 19, 9, 2.65) ||
+          isPointInCapsule(x, z, -15, -9, -15, 9, 2.15) ||
+          isPointInCapsule(x, z, -3, -9, -3, 9, 2.15) ||
+          isPointInCapsule(x, z, 9, -9, 9, 9, 2.15) ||
+          isPointInCircle(x, z, 0, 0, 4.2)) &&
+        !isPointInCircle(x, z, -8, 0, 1.7) &&
+        !isPointInCircle(x, z, 8, 0, 1.7)
+      );
+    case "crescent-wetland":
+      return (
+        (isPointInCapsule(x, z, -15, -9, -2, -16, 2.6) ||
+          isPointInCapsule(x, z, -2, -16, 12, -9, 2.6) ||
+          isPointInCapsule(x, z, 12, -9, 17, 1, 2.5) ||
+          isPointInCapsule(x, z, 17, 1, 9, 12, 2.5) ||
+          isPointInCapsule(x, z, 9, 12, -2, 17, 2.5) ||
+          isPointInCapsule(x, z, -2, 17, -13, 10, 2.45) ||
+          isPointInCapsule(x, z, -13, 10, -17, 0, 2.45) ||
+          isPointInCircle(x, z, 0, 0, 4.8)) &&
+        !isPointInCircle(x, z, -5, -7, 1.8) &&
+        !isPointInCircle(x, z, 6, -5, 1.75) &&
+        !isPointInCircle(x, z, 5, 8, 1.8)
+      );
     case "flower-sweep":
       return (
         (isPointInCapsule(x, z, 0, -18, 0, 18, 2.85) ||
@@ -2687,12 +2924,37 @@ function createSoftCropVisuals(targets: TargetSeed[], random: () => number): Sof
   return visuals;
 }
 
-function createDenseWeedTargets(random: () => number): TargetSeed[] {
+function createDenseWeedTargets(random: () => number, arenaId: ArenaLayoutId): TargetSeed[] {
   const targets: TargetSeed[] = [];
+  const centers =
+    arenaId === "pocket-garden"
+      ? ([
+          [-4, -4],
+          [4, -4],
+          [-4, 4],
+          [4, 4],
+        ] as const)
+      : arenaId === "long-orchard"
+        ? ([
+            [-13, -1],
+            [-4, 1],
+            [5, -1],
+            [14, 1],
+          ] as const)
+        : arenaId === "crescent-wetland"
+          ? ([
+              [-9, -10],
+              [4, -12],
+              [12, -2],
+              [6, 10],
+            ] as const)
+          : DENSE_WEED_CLUSTER_CENTERS;
+  const targetCount =
+    arenaId === "pocket-garden" ? 6 : arenaId === "crescent-wetland" ? 8 : DENSE_WEED_COUNT;
 
-  for (let index = 0; index < DENSE_WEED_COUNT; index += 1) {
-    const clusterIndex = index % DENSE_WEED_CLUSTER_CENTERS.length;
-    const cluster = DENSE_WEED_CLUSTER_CENTERS[clusterIndex];
+  for (let index = 0; index < targetCount; index += 1) {
+    const clusterIndex = index % centers.length;
+    const cluster = centers[clusterIndex];
     if (cluster === undefined) {
       continue;
     }
@@ -2744,8 +3006,45 @@ function createDenseWeedVisuals(targets: TargetSeed[], random: () => number): De
   return visuals;
 }
 
-function createFiberReedTargets(random: () => number): TargetSeed[] {
-  return FIBER_REED_PLACEMENT_ANCHORS.map(([anchorX, anchorZ], index) => ({
+function createFiberReedTargets(random: () => number, arenaId: ArenaLayoutId): TargetSeed[] {
+  const anchors =
+    arenaId === "pocket-garden"
+      ? ([
+          [-8, -3],
+          [8, -3],
+          [-8, 3],
+          [8, 3],
+        ] as const)
+      : arenaId === "long-orchard"
+        ? ([
+            [-17, -4],
+            [-11, 4],
+            [-5, -4],
+            [1, 4],
+            [7, -4],
+            [13, 4],
+            [17, -4],
+            [0, 6],
+          ] as const)
+        : arenaId === "crescent-wetland"
+          ? ([
+              [-14, -5],
+              [-10, -13],
+              [-3, -15],
+              [5, -13],
+              [13, -6],
+              [15, 3],
+              [8, 11],
+              [0, 15],
+              [-9, 11],
+              [-15, 4],
+              [-4, -5],
+              [6, 3],
+              [-6, 6],
+              [4, 8],
+            ] as const)
+          : FIBER_REED_PLACEMENT_ANCHORS;
+  return anchors.map(([anchorX, anchorZ], index) => ({
     id: `fiber-reed-${index}`,
     kind: "fiberReed",
     x: anchorX + randomRange(random, -0.5, 0.5),
@@ -2791,7 +3090,34 @@ function createShrubTargets(random: () => number, arenaId: ArenaLayoutId): Targe
     return createHedgeMazeShrubTargets(random);
   }
 
-  return SHRUB_PLACEMENT_ANCHORS.map(([anchorX, anchorZ], index) => {
+  const anchors =
+    arenaId === "pocket-garden"
+      ? ([
+          [-6, -6],
+          [6, -6],
+          [-6, 6],
+          [6, 6],
+        ] as const)
+      : arenaId === "long-orchard"
+        ? ([
+            [-16, -6],
+            [-5, -6],
+            [6, -6],
+            [16, -6],
+            [-10, 6],
+            [10, 6],
+          ] as const)
+        : arenaId === "crescent-wetland"
+          ? ([
+              [-13, -8],
+              [0, -15],
+              [14, -5],
+              [12, 9],
+              [-7, 12],
+            ] as const)
+          : SHRUB_PLACEMENT_ANCHORS;
+
+  return anchors.map(([anchorX, anchorZ], index) => {
     const size = 0.84 + random() * 0.24;
     const solidRadius = size * 0.54;
     return {
@@ -2890,8 +3216,25 @@ function createShrubVisuals(targets: TargetSeed[], random: () => number): ShrubV
   }));
 }
 
-function createSaplingTargets(random: () => number): TargetSeed[] {
-  return SAPLING_PLACEMENT_ANCHORS.map(([anchorX, anchorZ], index) => {
+function createSaplingTargets(random: () => number, arenaId: ArenaLayoutId): TargetSeed[] {
+  const anchors =
+    arenaId === "pocket-garden"
+      ? ([
+          [-5, -5],
+          [5, 5],
+        ] as const)
+      : arenaId === "crescent-wetland"
+        ? ([[-8, -11]] as const)
+        : arenaId === "long-orchard"
+          ? ([
+              [-14, -5],
+              [-7, 5],
+              [0, -5],
+              [8, 5],
+              [15, -5],
+            ] as const)
+          : SAPLING_PLACEMENT_ANCHORS;
+  return anchors.map(([anchorX, anchorZ], index) => {
     const size = 0.82 + random() * 0.28;
     const trunkRadius = size * 0.34;
     return {
@@ -2921,8 +3264,31 @@ function createSaplingVisuals(targets: TargetSeed[], random: () => number): Sapl
   }));
 }
 
+function matureTreePlacements(
+  arenaId: ArenaLayoutId,
+): ReadonlyArray<readonly [number, number, number]> {
+  if (arenaId === "pocket-garden") return [];
+  if (arenaId === "crescent-wetland")
+    return [
+      [-14, -8, 0.9],
+      [14, -4, 0.95],
+      [7, 13, 0.85],
+    ];
+  if (arenaId === "long-orchard")
+    return [
+      [-18, -7, 0.95],
+      [-12, 7, 0.9],
+      [-6, -7, 1.05],
+      [0, 7, 0.9],
+      [6, -7, 1.1],
+      [12, 7, 0.95],
+      [18, -7, 1.0],
+    ];
+  return MATURE_TREE_PLACEMENTS;
+}
+
 function createMatureTreeTargets(arenaId: ArenaLayoutId): TargetSeed[] {
-  return MATURE_TREE_PLACEMENTS.map(([x, z, size], index) => {
+  return matureTreePlacements(arenaId).map(([x, z, size], index) => {
     const trunkRadius = 0.5 * size;
     return {
       id: `mature-tree-${index}`,
@@ -2936,15 +3302,17 @@ function createMatureTreeTargets(arenaId: ArenaLayoutId): TargetSeed[] {
       resistance: 1.6,
       yield: 6,
       xp: 75,
-      ...(arenaId === "orchard-loop" || arenaId === "switchback-orchard"
+      ...(arenaId === "orchard-loop" ||
+      arenaId === "switchback-orchard" ||
+      arenaId === "long-orchard"
         ? { collectible: "fruit" as const }
         : {}),
     };
   });
 }
 
-function createMatureTreeVisuals(): MatureTreeVisual[] {
-  return MATURE_TREE_PLACEMENTS.map(([x, z, size], targetIndex) => ({
+function createMatureTreeVisuals(arenaId: ArenaLayoutId): MatureTreeVisual[] {
+  return matureTreePlacements(arenaId).map(([x, z, size], targetIndex) => ({
     x,
     z,
     size,
@@ -2952,8 +3320,33 @@ function createMatureTreeVisuals(): MatureTreeVisual[] {
   }));
 }
 
-function createRockTargets(): TargetSeed[] {
-  return ROCK_PLACEMENTS.map(([x, z, size], index) => ({
+function rockPlacements(arenaId: ArenaLayoutId): ReadonlyArray<readonly [number, number, number]> {
+  if (arenaId === "pocket-garden")
+    return [
+      [-8, 0, 0.7],
+      [8, 0, 0.7],
+    ];
+  if (arenaId === "long-orchard")
+    return [
+      [-10, 0, 0.75],
+      [0, -5, 0.7],
+      [10, 0, 0.75],
+      [0, 5, 0.7],
+    ];
+  if (arenaId === "crescent-wetland")
+    return [
+      [-12, -2, 0.8],
+      [-3, -12, 0.72],
+      [10, -7, 0.78],
+      [14, 4, 0.72],
+      [0, 14, 0.75],
+      [-12, 7, 0.7],
+    ];
+  return ROCK_PLACEMENTS;
+}
+
+function createRockTargets(arenaId: ArenaLayoutId): TargetSeed[] {
+  return rockPlacements(arenaId).map(([x, z, size], index) => ({
     id: `rock-${index}`,
     kind: "rock",
     x,
@@ -2968,8 +3361,8 @@ function createRockTargets(): TargetSeed[] {
   }));
 }
 
-function createRockVisuals(random: () => number): RockVisual[] {
-  return ROCK_PLACEMENTS.map(([x, z, size], targetIndex) => ({
+function createRockVisuals(random: () => number, arenaId: ArenaLayoutId): RockVisual[] {
+  return rockPlacements(arenaId).map(([x, z, size], targetIndex) => ({
     x,
     z,
     size,

@@ -1,4 +1,4 @@
-.PHONY: install dev preview build test lint fmt fmt-check typecheck accessibility-check mobile-check playthrough-check playthrough-check-headed contract-balance-capture timed-balance-capture perf-capture perf-capture-headed checkall pre-commit pre-commit-update
+.PHONY: install dev preview build test lint fmt fmt-check typecheck accessibility-check mobile-check polish-check playthrough-check playthrough-check-headed contract-balance-capture timed-balance-capture perf-capture perf-capture-headed checkall pre-commit pre-commit-update
 
 install:
 	bun install --frozen-lockfile
@@ -26,6 +26,9 @@ fmt-check:
 
 typecheck:
 	bun run typecheck
+
+polish-check:
+	node tools/check_polish.mjs
 
 accessibility-check:
 	bun run accessibility:check

@@ -25,6 +25,7 @@ import {
   type ObjectivesState,
 } from "./state";
 import { createTargetProgressOverlay, type TargetProgressOverlay } from "./targetProgress";
+import { createLevelPreview } from "./levelPreview";
 
 const MILLISECONDS_PER_SECOND = 1000;
 const OBJECTIVE_RESOURCES = ["grass", "flowers", "fiber", "wood"] as const;
@@ -1298,6 +1299,7 @@ export class Game {
     finalTarget.z = this.state.player.z;
     finalTarget.status = "cutting";
     finalTarget.accumulatedWork = finalTarget.requiredWork - 0.001;
+    this.state.player.rpm = this.state.player.targetRpm;
     this.resetInput();
     this.step(FIXED_TIME_STEP_SECONDS);
     this.render();
@@ -1938,6 +1940,12 @@ function contractRouteBadge(contract: ContractDefinition): string {
       return "Serpentine";
     case "timber-knot":
       return "Timber knot";
+    case "pocket-garden":
+      return "Pocket garden";
+    case "long-orchard":
+      return "Long orchard";
+    case "crescent-wetland":
+      return "Crescent wetland";
     case "clear-every-patch":
       return "Split clearings";
   }
@@ -2365,6 +2373,7 @@ function createIntroElements(
     button.setAttribute("aria-pressed", "false");
     name.className = "intro-card__contract-name";
     name.textContent = contract.title;
+    button.append(createLevelPreview(contract.id, contract.title));
     badges.className = "intro-card__contract-badges";
     badges.setAttribute("aria-label", "Contract tags");
     for (const label of contractCardBadges(contract)) {
@@ -2563,6 +2572,15 @@ function updateObjectiveRow(
   row.hidden = objective.target <= 0;
   setText(collected, String(objective.collected));
   setText(target, String(objective.target));
+  const progress = objective.target <= 0 ? 0 : Math.min(1, objective.collected / objective.target);
+  row.style.setProperty("--objective-progress", `${Math.round(progress * 100)}%`);
+  row.dataset.complete =
+    objective.target > 0 && objective.collected >= objective.target ? "true" : "false";
+  const label = row.querySelector<HTMLElement>(".objective-row__name")?.textContent ?? "Objective";
+  row.setAttribute(
+    "aria-label",
+    `${label}: ${objective.collected} of ${objective.target}${objective.target > 0 && objective.collected >= objective.target ? ", complete" : ""}`,
+  );
 }
 
 function formatContractGoal(contract: ContractDefinition): string {
