@@ -8,7 +8,8 @@ Active milestone: Phase 5 — expansion after first-playable evidence, with the 
 ## 2026-10-03 tree fruit attachment fix
 
 - Fruit instances now retain a crown-local transform and follow the crown during contact sway, recovery, falling, ground lift, and shrinking. They hide only when the canopy fall completes. Updated fruit bounds prevent stale instance culling during motion.
-- Seven focused regressions cover all three orchard contracts in normal/reduced motion, untouched neighboring trees, and hidden fruit on non-orchard trees. The tests reproduced static fruit before the fix. `make checkall` passes all 208 tests.
+- Seven focused regressions cover all three orchard contracts in normal/reduced motion, untouched neighboring trees, and hidden fruit on non-orchard trees. The tests reproduced static fruit before the fix. `make checkall` passes all 217 tests.
+- The first CI attempt exceeded the existing 30-second timeout for the combined ten-seed contract-completion test. That sweep now reports each seed as its own case with the same assertions, seed list, and per-case timeout, preserving coverage without depending on total runner speed for all ten seeds.
 - Inspected headed Long Orchard captures at sway, falling, shrinking, and cleared stages with no browser console errors. Fruit rewards remain unchanged.
 
 ## 2026-10-03 visual polish and level variation

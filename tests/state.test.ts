@@ -1690,8 +1690,9 @@ describe("active game state", () => {
     });
   });
 
-  it("keeps every authored contract completable across ten authored seeds", () => {
-    for (const seed of COMPLETION_VALIDATION_SEEDS) {
+  it.each(COMPLETION_VALIDATION_SEEDS)(
+    "keeps every authored contract completable for seed %i",
+    (seed) => {
       for (const contract of CONTRACT_DEFINITIONS) {
         const state = createInitialState(seed, contract.id);
 
@@ -1710,8 +1711,9 @@ describe("active game state", () => {
         }
         expect(state.result?.finalInventory).toEqual(state.inventory);
       }
-    }
-  }, 30000);
+    },
+    30000,
+  );
 
   it("keeps timed contract benchmark buffers above the minimum playtest margin", () => {
     const minimumBufferSeconds = 5;
