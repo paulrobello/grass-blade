@@ -5,6 +5,12 @@ Original prompt: "i want create a threejs based game where you are a spinning bl
 Last updated: 2026-10-03
 Active milestone: Phase 5 — expansion after first-playable evidence, with the custom-domain site served over valid HTTPS through Cloudflare and native GitHub Pages HTTPS enforcement still optional/pending
 
+## 2026-10-03 remaining plant attachment audit
+
+- Bush berries and the hedge-maze goal decoration now use shrub-local attachment transforms for contact sway, recovery, falling, and flattening, then hide at fall completion. Undecorated shrubs remain undecorated.
+- Flower centers now follow the petal head's bend rather than the stem's stronger bend. Crop berry/leaf anchor motion and sapling foliage motion were already synchronized and are now covered by regression checks. Grass, weeds, and reeds keep their details in a single geometry, while cutter decorations inherit their scene-graph parent transforms.
+- Twelve new tests cover decorated/undecorated bushes, flower centers, crop berries/leaves, and sapling crowns in normal and reduced motion. Together with the tree fruit regressions, `make checkall` passes 229 tests. Headed Berry Bloom gameplay and isolated production-renderer close-ups verify berry attachment during sway, fall, and flattening with no browser errors.
+
 ## 2026-10-03 tree fruit attachment fix
 
 - Fruit instances now retain a crown-local transform and follow the crown during contact sway, recovery, falling, ground lift, and shrinking. They hide only when the canopy fall completes. Updated fruit bounds prevent stale instance culling during motion.

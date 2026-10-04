@@ -1466,6 +1466,8 @@ function addFlowers(
   const stems = new THREE.InstancedMesh(stemGeometry, stemMaterial, count);
   const heads = new THREE.InstancedMesh(headGeometry, headMaterial, count);
   const centers = new THREE.InstancedMesh(centerGeometry, centerMaterial, count);
+  heads.name = "GB_FlowerHeads";
+  centers.name = "GB_FlowerCenters";
   const palette = [0xfff7d6, 0xff6fa9, 0xc675ff, 0xffffff, 0x6ec8ff] as const;
   const cutStemMatrices = new Float32Array(count * 16);
   const hiddenMatrices = new Float32Array(count * 16);
@@ -1624,9 +1626,9 @@ function addFlowers(
         matrix.compose(position, headRotation, scale);
         heads.setMatrixAt(visualIndex, matrix);
 
-        localOffset.set(0, 0.9 * flowerScale * visibilityScale, 0);
-        localOffset.applyQuaternion(fallRotation);
-        position.set(visual.x + localOffset.x, localOffset.y, visual.z + localOffset.z);
+        localOffset.set(0, 0.04 * flowerScale * visibilityScale, 0);
+        localOffset.applyQuaternion(headRotation);
+        position.add(localOffset);
         matrix.compose(position, headRotation, scale);
         centers.setMatrixAt(visualIndex, matrix);
 
@@ -1683,6 +1685,9 @@ function addSoftCrops(
   const leaves = new THREE.InstancedMesh(leafGeometry, leafMaterial, count);
   const berries = new THREE.InstancedMesh(berryGeometry, berryMaterial, count);
   const leafPalette = [0x2b8f38, 0x55b947, 0x89d64d] as const;
+  stems.name = "GB_CropStems";
+  leaves.name = "GB_CropLeaves";
+  berries.name = "GB_CropBerries";
   const berryPalette = [0xf64f3f, 0xff6b42, 0xf2cf4a] as const;
   const hiddenMatrices = new Float32Array(count * 16);
   const fallStartTimes = new Float32Array(count);
@@ -2477,10 +2482,16 @@ function addShrubs(
   );
   const berries = new THREE.InstancedMesh(berryGeometry, berryMaterial, count);
   const palette = [0x2f9b45, 0x46b756, 0x6bcb61] as const;
+  shrubs.name = "GB_Shrubs";
+  berries.name = "GB_ShrubBerries";
   const hedgePalette = [0x173d27, 0x205531, 0x2a6a3b] as const;
   const standingMatrices = new Float32Array(count * 16);
   const flattenedMatrices = new Float32Array(count * 16);
   const hiddenBerryMatrices = new Float32Array(count * 16);
+  const localBerryMatrices = new Float32Array(count * 16);
+  const inverseShrubMatrix = new THREE.Matrix4();
+  const localBerryMatrix = new THREE.Matrix4();
+  const worldBerryMatrix = new THREE.Matrix4();
   const queuedCutTargets = new Uint8Array(count);
   const movingTargets = new Uint8Array(count);
   const fallStartTimes = new Float32Array(count);
@@ -2531,6 +2542,10 @@ function addShrubs(
     );
     matrix.compose(position, rotation, scale);
     berries.setMatrixAt(visual.targetIndex, matrix);
+    readMatrix(inverseShrubMatrix, standingMatrices, visual.targetIndex);
+    inverseShrubMatrix.invert();
+    localBerryMatrix.multiplyMatrices(inverseShrubMatrix, matrix);
+    writeMatrix(localBerryMatrices, visual.targetIndex, localBerryMatrix);
     color.setHex(
       layout.shrubTargets[visual.targetIndex]?.collectible === "fruit"
         ? 0xf2b84b
@@ -2556,6 +2571,12 @@ function addShrubs(
   }
   scene.add(shrubs, berries);
 
+  function syncBerryAttachment(targetIndex: number, shrubMatrix: THREE.Matrix4): void {
+    readMatrix(localBerryMatrix, localBerryMatrices, targetIndex);
+    worldBerryMatrix.multiplyMatrices(shrubMatrix, localBerryMatrix);
+    berries.setMatrixAt(targetIndex, worldBerryMatrix);
+  }
+
   return {
     diagnostics,
     syncTargets(state: GameState, simulationTimeSeconds: number): void {
@@ -2575,8 +2596,6 @@ function addShrubs(
                 ? Math.atan2(deltaZ, deltaX)
                 : visual.rotation + Math.PI * 0.5;
             fallingTargetIndices.push(visual.targetIndex);
-            readMatrix(matrix, hiddenBerryMatrices, visual.targetIndex);
-            berries.setMatrixAt(visual.targetIndex, matrix);
             matricesChanged = true;
           }
           continue;
@@ -2593,6 +2612,7 @@ function addShrubs(
         if (!isInBladeContact) {
           readMatrix(matrix, standingMatrices, visual.targetIndex);
           shrubs.setMatrixAt(visual.targetIndex, matrix);
+          syncBerryAttachment(visual.targetIndex, matrix);
           matricesChanged = true;
           continue;
         }
@@ -2615,6 +2635,7 @@ function addShrubs(
         scale.set(visual.size * 0.98, visual.size * 0.62, visual.size * 0.9);
         matrix.compose(position, rotation, scale);
         shrubs.setMatrixAt(visual.targetIndex, matrix);
+        syncBerryAttachment(visual.targetIndex, matrix);
         matricesChanged = true;
       }
 
@@ -2633,6 +2654,8 @@ function addShrubs(
         if (fallSample.stage === "complete") {
           readMatrix(matrix, flattenedMatrices, targetIndex);
           shrubs.setMatrixAt(targetIndex, matrix);
+          readMatrix(matrix, hiddenBerryMatrices, targetIndex);
+          berries.setMatrixAt(targetIndex, matrix);
           matricesChanged = true;
           continue;
         }
@@ -2654,6 +2677,7 @@ function addShrubs(
         }
         matrix.compose(position, rotation, scale);
         shrubs.setMatrixAt(targetIndex, matrix);
+        syncBerryAttachment(targetIndex, matrix);
         fallingTargetIndices[activeWriteIndex] = targetIndex;
         activeWriteIndex += 1;
         matricesChanged = true;
@@ -2664,6 +2688,7 @@ function addShrubs(
       if (matricesChanged) {
         shrubs.instanceMatrix.needsUpdate = true;
         berries.instanceMatrix.needsUpdate = true;
+        berries.computeBoundingSphere();
       }
     },
   };
@@ -2716,6 +2741,9 @@ function addSaplings(
   const middleCrowns = new THREE.InstancedMesh(crownGeometry, crownMaterial, count);
   const upperCrowns = new THREE.InstancedMesh(crownGeometry, crownMaterial, count);
   const tipCrowns = new THREE.InstancedMesh(crownGeometry, crownMaterial, count);
+  trunks.name = "GB_SaplingTrunks";
+  lowerCrowns.name = "GB_SaplingLowerCrowns";
+  tipCrowns.name = "GB_SaplingTipCrowns";
   const crownLayers = [
     {
       mesh: lowerCrowns,
