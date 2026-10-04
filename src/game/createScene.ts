@@ -3070,12 +3070,18 @@ function addTrees(
     new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5, flatShading: true }),
   );
   const fruits = new THREE.InstancedMesh(fruitGeometry, fruitMaterial, count * fruitPerTree);
+  crowns.name = "GB_MatureTreeCrowns";
+  fruits.name = "GB_MatureTreeFruit";
   const crownPalette = [0x2f9c55, 0x42b45f, 0x5ac56a] as const;
   const standingTrunkMatrices = new Float32Array(count * 16);
   const standingCrownMatrices = new Float32Array(count * 16);
   const cutTrunkMatrices = new Float32Array(count * 16);
   const cutCrownMatrices = new Float32Array(count * 16);
   const hiddenFruitMatrices = new Float32Array(count * fruitPerTree * 16);
+  const localFruitMatrices = new Float32Array(count * fruitPerTree * 16);
+  const inverseStandingCrown = new THREE.Matrix4();
+  const localFruitMatrix = new THREE.Matrix4();
+  const worldFruitMatrix = new THREE.Matrix4();
   const queuedCutTargets = new Uint8Array(count);
   const movingTargets = new Uint8Array(count);
   const fallStartTimes = new Float32Array(count);
@@ -3132,6 +3138,8 @@ function addTrees(
     writeMatrix(cutCrownMatrices, index, matrix);
     stumps.setMatrixAt(index, matrix);
 
+    readMatrix(inverseStandingCrown, standingCrownMatrices, index);
+    inverseStandingCrown.invert();
     for (let fruitIndex = 0; fruitIndex < fruitPerTree; fruitIndex += 1) {
       const instanceIndex = index * fruitPerTree + fruitIndex;
       const angle = index * 1.7 + fruitIndex * ((Math.PI * 2) / fruitPerTree);
@@ -3144,6 +3152,8 @@ function addTrees(
       scale.setScalar(layout.matureTreeTargets[index]?.collectible === "fruit" ? size : 0);
       matrix.compose(position, rotation, scale);
       fruits.setMatrixAt(instanceIndex, matrix);
+      localFruitMatrix.multiplyMatrices(inverseStandingCrown, matrix);
+      writeMatrix(localFruitMatrices, instanceIndex, localFruitMatrix);
       color.setHex(fruitIndex % 2 === 0 ? 0xe05a35 : 0xf2b84b);
       fruits.setColorAt(instanceIndex, color);
 
@@ -3164,6 +3174,15 @@ function addTrees(
   }
   scene.add(trunks, stumps, crowns, fruits);
 
+  function syncFruitAttachments(targetIndex: number, crownMatrix: THREE.Matrix4): void {
+    for (let fruitIndex = 0; fruitIndex < fruitPerTree; fruitIndex += 1) {
+      const instanceIndex = targetIndex * fruitPerTree + fruitIndex;
+      readMatrix(localFruitMatrix, localFruitMatrices, instanceIndex);
+      worldFruitMatrix.multiplyMatrices(crownMatrix, localFruitMatrix);
+      fruits.setMatrixAt(instanceIndex, worldFruitMatrix);
+    }
+  }
+
   return {
     diagnostics,
     syncTargets(state: GameState, simulationTimeSeconds: number): void {
@@ -3178,11 +3197,6 @@ function addTrees(
             fallStartTimes[visual.targetIndex] = simulationTimeSeconds;
             readMatrix(matrix, cutTrunkMatrices, visual.targetIndex);
             stumps.setMatrixAt(visual.targetIndex, matrix);
-            for (let fruitIndex = 0; fruitIndex < fruitPerTree; fruitIndex += 1) {
-              const instanceIndex = visual.targetIndex * fruitPerTree + fruitIndex;
-              readMatrix(matrix, hiddenFruitMatrices, instanceIndex);
-              fruits.setMatrixAt(instanceIndex, matrix);
-            }
             const deltaX = visual.x - state.player.x;
             const deltaZ = visual.z - state.player.z;
             fallDirections[visual.targetIndex] =
@@ -3207,6 +3221,7 @@ function addTrees(
           trunks.setMatrixAt(visual.targetIndex, matrix);
           readMatrix(matrix, standingCrownMatrices, visual.targetIndex);
           crowns.setMatrixAt(visual.targetIndex, matrix);
+          syncFruitAttachments(visual.targetIndex, matrix);
           matricesChanged = true;
           continue;
         }
@@ -3252,6 +3267,7 @@ function addTrees(
         scale.set(visual.size * 1.05, visual.size * 0.92, visual.size * 1.05);
         matrix.compose(position, rotation, scale);
         crowns.setMatrixAt(visual.targetIndex, matrix);
+        syncFruitAttachments(visual.targetIndex, matrix);
         matricesChanged = true;
       }
 
@@ -3271,6 +3287,11 @@ function addTrees(
           readMatrix(matrix, cutCrownMatrices, targetIndex);
           trunks.setMatrixAt(targetIndex, matrix);
           crowns.setMatrixAt(targetIndex, matrix);
+          for (let fruitIndex = 0; fruitIndex < fruitPerTree; fruitIndex += 1) {
+            const instanceIndex = targetIndex * fruitPerTree + fruitIndex;
+            readMatrix(matrix, hiddenFruitMatrices, instanceIndex);
+            fruits.setMatrixAt(instanceIndex, matrix);
+          }
           matricesChanged = true;
           continue;
         }
@@ -3338,6 +3359,7 @@ function addTrees(
         );
         matrix.compose(position, rotation, scale);
         crowns.setMatrixAt(targetIndex, matrix);
+        syncFruitAttachments(targetIndex, matrix);
         fallingTargetIndices[activeWriteIndex] = targetIndex;
         activeWriteIndex += 1;
         matricesChanged = true;
@@ -3350,6 +3372,7 @@ function addTrees(
         stumps.instanceMatrix.needsUpdate = true;
         crowns.instanceMatrix.needsUpdate = true;
         fruits.instanceMatrix.needsUpdate = true;
+        fruits.computeBoundingSphere();
       }
     },
   };

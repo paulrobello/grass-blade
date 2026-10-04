@@ -5,6 +5,12 @@ Original prompt: "i want create a threejs based game where you are a spinning bl
 Last updated: 2026-10-03
 Active milestone: Phase 5 — expansion after first-playable evidence, with the custom-domain site served over valid HTTPS through Cloudflare and native GitHub Pages HTTPS enforcement still optional/pending
 
+## 2026-10-03 tree fruit attachment fix
+
+- Fruit instances now retain a crown-local transform and follow the crown during contact sway, recovery, falling, ground lift, and shrinking. They hide only when the canopy fall completes. Updated fruit bounds prevent stale instance culling during motion.
+- Seven focused regressions cover all three orchard contracts in normal/reduced motion, untouched neighboring trees, and hidden fruit on non-orchard trees. The tests reproduced static fruit before the fix. `make checkall` passes all 208 tests.
+- Inspected headed Long Orchard captures at sway, falling, shrinking, and cleared stages with no browser console errors. Fruit rewards remain unchanged.
+
 ## 2026-10-03 visual polish and level variation
 
 - Added three untimed contracts: Pocket Garden (158 grass cells), Long Orchard (288), and Crescent Wetland (225). Each has different field extents, growth geometry, and crop/weed/reed/shrub/tree/rock populations. New harvest targets stay inside their growth masks, avoid solid obstacles, and preserve target/visual index correspondence.
